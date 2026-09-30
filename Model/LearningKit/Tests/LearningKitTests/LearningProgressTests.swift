@@ -47,7 +47,9 @@ final class LearningProgressTests: XCTestCase {
 
     func test_theWatermarkIsKeptPerSurah() {
         var planned = makeProgram(goals: [twoSuras], pace: .soutenu)
-        for index in planned.items.indices {
+        // `0 ..< count` plutôt que `items.indices` : la borne est relue à chaque tour, et rien ne
+        // dépend d'une vue sur la collection pendant qu'on la modifie.
+        for index in 0 ..< planned.items.count {
             let id = planned.items[index].id
             planned.markLearned(id: id, at: day(0), calendar: calendar)
         }

@@ -472,7 +472,7 @@ final class LearningPlannerTests: XCTestCase {
         XCTAssertEqual(Array(resumed.items.prefix(2).map(\.storedStatus)), [.learned, .learned])
         XCTAssertEqual(
             resumed.items.dropFirst(2).map(\.storedStatus),
-            Array(repeating: .notLearned, count: resumed.items.count - 2)
+            Array(repeating: LearningStatus.notLearned, count: resumed.items.count - 2)
         )
         XCTAssertEqual(
             resumed.nextToLearn()?.range,

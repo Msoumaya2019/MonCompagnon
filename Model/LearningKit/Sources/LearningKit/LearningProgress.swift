@@ -255,13 +255,18 @@ public struct LearningProgress: Codable, Equatable, Sendable {
     ) -> [(surahId: Int, ayah: Int)] {
         let firstSurah = bounds.first.sura.suraNumber
         let lastSurah = bounds.last.sura.suraNumber
-        guard firstSurah != lastSurah else { return [(firstSurah, bounds.last.ayah)] }
+        guard firstSurah != lastSurah else {
+            return [(surahId: firstSurah, ayah: bounds.last.ayah)]
+        }
 
         return quran.suras
             .filter { $0.suraNumber >= firstSurah && $0.suraNumber <= lastSurah }
-            .map { sura in
+            .map { sura -> (surahId: Int, ayah: Int) in
+                // Les étiquettes sont posées explicitement : la conversion d'un tuple non étiqueté
+                // vers un tuple étiqueté n'est pas garantie dans un `map`, dont le type de retour
+                // est inféré avant d'être confronté à celui de la fonction.
                 let end = sura.suraNumber == lastSurah ? bounds.last.ayah : sura.lastVerse.ayah
-                return (sura.suraNumber, end)
+                return (surahId: sura.suraNumber, ayah: end)
             }
     }
 }
