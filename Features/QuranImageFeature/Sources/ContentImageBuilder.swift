@@ -148,18 +148,23 @@ public struct ContentImageBuilder {
 
     /// Le dossier d'images d'une lecture, ou `nil` si l'appareil n'en possède aucune.
     ///
-    /// Ne force plus l'ouverture d'un dossier absent : une lecture non disponible renvoie `nil`,
-    /// que les appelants traduisent par un message au lieu d'un arrêt de l'application.
+    /// L'ordre compte : le **paquet** d'abord, puis les ressources téléchargées — et seulement si
+    /// leurs images y sont réellement. Se fier à l'existence d'une ressource distante ne suffisait
+    /// pas : pendant le téléchargement, le dossier existe sans images, et l'application ouvrait
+    /// alors un dossier vide au lieu du mushaf embarqué.
     static func readingDirectory(_ reading: Reading, container: AppDependencies) -> URL? {
-        let remoteResource = container.remoteResources?.resource(for: reading)
-        let remotePath = remoteResource?.downloadDestination.url
-        let bundlePath = Bundle.main.url(forResource: reading.localPath, withExtension: nil)
-        logger.info("Images: Use \(remotePath != nil ? "remote" : "bundle") For reading \(reading)")
-        guard let directory = remotePath ?? bundlePath else {
-            logger.error("Images: No images for reading \(reading); neither downloaded nor bundled")
+        if let bundlePath = Bundle.main.url(forResource: reading.localPath, withExtension: nil) {
+            logger.info("Images: Use bundle for reading \(reading)")
+            return bundlePath
+        }
+
+        let remotePath = container.remoteResources?.resource(for: reading)?.downloadDestination.url
+        guard let remotePath, reading.hasImages(at: remotePath) else {
+            logger.error("Images: No images for reading \(reading); neither bundled nor downloaded")
             return nil
         }
-        return directory
+        logger.info("Images: Use downloaded for reading \(reading)")
+        return remotePath
     }
 
     // MARK: Private

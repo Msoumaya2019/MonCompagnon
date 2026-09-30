@@ -27,9 +27,22 @@ extension Reading {
     }
 
     /// Vrai si les images de cette lecture ont déjà été téléchargées sur cet appareil.
+    ///
+    /// Le test porte sur le **dossier des images**, et non sur le dossier de la lecture : une
+    /// lecture en cours de téléchargement a déjà le sien — il contient l'archive — mais pas encore
+    /// d'images. S'en tenir au dossier faisait passer une lecture à moitié téléchargée pour
+    /// disponible, et l'application ouvrait alors un dossier d'images vide au lieu du mushaf du
+    /// paquet.
     public var isDownloaded: Bool {
-        let directory = Self.readingsPath.appendingPathComponent(localPath, isDirectory: true)
-        return FileManager.default.fileExists(atPath: directory.url.path)
+        hasImages(at: Self.readingsPath.appendingPathComponent(localPath, isDirectory: true).url)
+    }
+
+    /// Vrai si le dossier des images de cette lecture existe sous `racine`.
+    ///
+    /// Sert aussi à l'affichage, qui doit choisir entre le paquet et les ressources téléchargées :
+    /// une ressource distante **déclarée** ne prouve pas que ses images sont arrivées.
+    public func hasImages(at racine: URL) -> Bool {
+        FileManager.default.fileExists(atPath: imagesDirectory(in: racine).path)
     }
 
     /// Vrai si cette lecture peut réellement être affichée sur cet appareil.

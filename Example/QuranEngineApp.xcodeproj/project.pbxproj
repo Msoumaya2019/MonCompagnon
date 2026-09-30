@@ -19,6 +19,7 @@
 		D9A1C0DE2E8F000100000002 /* AppIconCatalog+Example.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9A1C0DE2E8F000100000001 /* AppIconCatalog+Example.swift */; };
 		D975EDEA2A4799A2009DE942 /* reciters.plist in Resources */ = {isa = PBXBuildFile; fileRef = D975EDE92A4799A2009DE942 /* reciters.plist */; };
 		D98543D32A47C88700F477A2 /* hafs_1405 in Resources */ = {isa = PBXBuildFile; fileRef = D98543D22A47C88700F477A2 /* hafs_1405 */; };
+		D9A1C0DE2E8F0001000000A2 /* tajweed in Resources */ = {isa = PBXBuildFile; fileRef = D9A1C0DE2E8F0001000000A1 /* tajweed */; };
 		D98543DD2A49095800F477A2 /* words.db in Resources */ = {isa = PBXBuildFile; fileRef = D98543DC2A49095800F477A2 /* words.db */; };
 /* End PBXBuildFile section */
 
@@ -36,6 +37,7 @@
 		D975EDE62A4796AA009DE942 /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
 		D975EDE92A4799A2009DE942 /* reciters.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = reciters.plist; sourceTree = "<group>"; };
 		D98543D22A47C88700F477A2 /* hafs_1405 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = hafs_1405; sourceTree = "<group>"; };
+		D9A1C0DE2E8F0001000000A1 /* tajweed */ = {isa = PBXFileReference; lastKnownFileType = folder; path = tajweed; sourceTree = "<group>"; };
 		D98543D42A47E14200F477A2 /* QuranEngineApp-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "QuranEngineApp-Bridging-Header.h"; sourceTree = "<group>"; };
 		D98543DC2A49095800F477A2 /* words.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = words.db; sourceTree = "<group>"; };
 		D9A1C0DE2E8F000100000001 /* AppIconCatalog+Example.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppIconCatalog+Example.swift"; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 				D98543D22A47C88700F477A2 /* hafs_1405 */,
 				D975EDD02A4791D7009DE942 /* LaunchScreen.storyboard */,
 				D975EDE92A4799A2009DE942 /* reciters.plist */,
+				D9A1C0DE2E8F0001000000A1 /* tajweed */,
 				D98543DC2A49095800F477A2 /* words.db */,
 			);
 			path = Resources;
@@ -182,6 +185,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D98543D32A47C88700F477A2 /* hafs_1405 in Resources */,
+				D9A1C0DE2E8F0001000000A2 /* tajweed in Resources */,
 				D975EDD22A4791D7009DE942 /* LaunchScreen.storyboard in Resources */,
 				D98543DD2A49095800F477A2 /* words.db in Resources */,
 				D975EDCF2A4791D7009DE942 /* Assets.xcassets in Resources */,

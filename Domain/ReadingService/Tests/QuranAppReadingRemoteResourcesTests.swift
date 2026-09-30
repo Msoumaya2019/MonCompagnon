@@ -1,12 +1,15 @@
+//
+//  QuranAppReadingRemoteResourcesTests.swift
+//  ReadingServiceTests
+//
+//  Éprouve la table des mushafs téléchargeables.
+//
+
 import Foundation
 import QuranKit
 import XCTest
 @testable import ReadingService
 
-/// L'adresse et la version sont celles qui ont été mesurées sur le serveur : l'archive du
-/// Tajweed répond, pèse 143 688 256 octets, contient les 604 pages en largeur 1280 et la base
-/// `ayahinfo_1280.db`, et porte les marqueurs `.v2` à `.v7`. Ces tests figent ce qui a été
-/// vérifié, pour qu'une faute de frappe ne puisse pas passer inaperçue.
 final class QuranAppReadingRemoteResourcesTests: XCTestCase {
     private let baseURL = URL(string: "https://files.quran.app/")!
 
@@ -14,49 +17,28 @@ final class QuranAppReadingRemoteResourcesTests: XCTestCase {
         QuranAppReadingRemoteResources(baseURL: baseURL)
     }
 
-    func test_tajweedIsDownloadableFromTheAddressVerifiedAgainstTheServer() throws {
-        let resource = try XCTUnwrap(resources.resource(for: .tajweed))
-
-        XCTAssertEqual(
-            resource.url.absoluteString,
-            "https://files.quran.app/hafs/tajweed/zips/images_1280.zip"
-        )
-        XCTAssertEqual(resource.url.scheme, "https")
-        XCTAssertEqual(resource.url.host, "files.quran.app")
-        XCTAssertEqual(resource.version, 7)
-    }
-
-    func test_theBundledMushafHasNothingToDownload() {
-        XCTAssertNil(resources.resource(for: .hafs_1405))
-    }
-
-    func test_theOtherMushafsAreNotOffered() {
-        let others: [Reading] = [.hafs_1421, .hafs_1439, .hafs_1440, .hafs_1441, .indoPak]
-        for reading in others {
-            let message = "\(reading) ne doit pas être téléchargeable"
+    /// Aucune lecture n'est téléchargeable : les deux mushafs proposés sont dans le paquet.
+    ///
+    /// Le test porte sur les **sept** lectures, et non sur les cinq écartées : rétablir une ligne
+    /// dans la table sans embarquer les images correspondantes le fera échouer, ce qui est
+    /// exactement ce qu'on veut savoir — une lecture téléchargeable qui n'est pas embarquée doit
+    /// être un choix conscient, pas un oubli.
+    func test_noReadingIsDownloadable() {
+        for reading in Reading.allReadings {
+            let message = "\(reading) ne doit pas être téléchargeable : son mushaf est embarqué"
             XCTAssertNil(resources.resource(for: reading), message)
         }
     }
 
-    /// Le dossier de destination doit être celui que l'application ira lire : c'est `localPath`
-    /// qui décide, et le décompresser ailleurs rendrait le mushaf introuvable.
-    func test_theArchiveIsDownloadedUnderTheReadingFolder() throws {
-        let resource = try XCTUnwrap(resources.resource(for: .tajweed))
-
-        XCTAssertEqual(resource.downloadDestination.path, "readings/tajweed")
-        XCTAssertEqual(resource.zipFile.path, "readings/tajweed/images_1280.zip")
-        XCTAssertEqual(resource.reading, .tajweed)
-    }
-
-    /// L'hôte appartient à l'application : il ne doit pas être figé ici.
-    func test_theAddressFollowsTheBaseURLItIsGiven() throws {
+    /// L'adresse de base ne fait naître aucune ressource tant que la table est vide.
+    ///
+    /// Vérifie au passage que la construction d'une ressource dépend bien de l'hôte reçu : le jour
+    /// où la table sera rétablie, l'adresse ne devra pas être figée sur `files.quran.app`.
+    func test_theBaseURLIsTheOnlySourceOfAnAddress() {
         let racine = URL(string: "https://exemple.test/racine/")!
-        let other = QuranAppReadingRemoteResources(baseURL: racine)
-        let resource = try XCTUnwrap(other.resource(for: .tajweed))
-
-        XCTAssertEqual(
-            resource.url.absoluteString,
-            "https://exemple.test/racine/hafs/tajweed/zips/images_1280.zip"
-        )
+        let autre = QuranAppReadingRemoteResources(baseURL: racine)
+        for reading in Reading.allReadings {
+            XCTAssertNil(autre.resource(for: reading))
+        }
     }
 }
