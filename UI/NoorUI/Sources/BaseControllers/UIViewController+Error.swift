@@ -46,8 +46,19 @@ extension UIViewController {
 }
 
 extension Error {
+    /// Le message à montrer à l'utilisateur.
+    ///
+    /// Point de passage unique des alertes de l'application : le modificateur SwiftUI
+    /// `errorAlert` et `showErrorAlert` s'y ramènent tous les deux. Une erreur qui n'est pas
+    /// `LocalizedError` — une erreur POSIX, un `NSError` rendu par le système — n'a aucune
+    /// description, et tombait donc sur le message générique : muet. On y accole son domaine et
+    /// son code, pour qu'une capture d'écran suffise à savoir ce qui a échoué.
     func getErrorDescription() -> String {
-        let description = (self as? LocalizedError)?.errorDescription
-        return description ?? l("error.message.general")
+        let generic = l("error.message.general")
+        if let description = (self as? LocalizedError)?.errorDescription, description != generic {
+            return description
+        }
+        let nsError = self as NSError
+        return "\(generic) (\(nsError.domain) \(nsError.code))"
     }
 }

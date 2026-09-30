@@ -41,13 +41,25 @@ public enum FileSystemError: Error {
 }
 
 extension FileSystemError: LocalizedError {
+    /// Le message à montrer, avec de quoi savoir **ce qui** a échoué.
+    ///
+    /// `.unknown` recouvre tout ce qui n'est pas un disque plein — un dossier non créé, un
+    /// déplacement refusé, un fichier illisible. Le message générique seul ne les distingue pas :
+    /// on y accole donc le domaine et le code de l'erreur d'origine, faute de quoi aucune capture
+    /// d'écran ne permet de la diagnostiquer.
     public var errorDescription: String? {
         let text: String = switch self {
-        case .unknown:
-            l("error.message.general")
+        case .unknown(let underlying):
+            "\(l("error.message.general")) (\(Self.identify(underlying)))"
         case .noDiskSpace:
             l("error.message.no_disk_space")
         }
         return text
+    }
+
+    /// « NSCocoaErrorDomain 4 », pour nommer l'erreur au lieu de la taire.
+    private static func identify(_ error: Error) -> String {
+        let nsError = error as NSError
+        return "\(nsError.domain) \(nsError.code)"
     }
 }

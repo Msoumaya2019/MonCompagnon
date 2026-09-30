@@ -36,7 +36,35 @@ public enum PersistenceError: Error {
 }
 
 extension PersistenceError: LocalizedError {
+    /// Le message à montrer, avec de quoi savoir **ce qui** a échoué.
+    ///
+    /// Toutes les variantes rendaient le même message, sans exception : une base impossible à
+    /// ouvrir, une requête refusée et un fichier de base corrompu étaient indiscernables à
+    /// l'écran. On accole donc le détail que porte la variante, ou l'identité de l'erreur
+    /// d'origine — domaine et code.
     public var errorDescription: String? {
-        l("error.message.general")
+        "\(l("error.message.general")) (\(detail))"
+    }
+
+    private var detail: String {
+        switch self {
+        case .general(let info):
+            return info
+        case .openDatabase(let error, let filePath):
+            return "\(Self.identify(error)) — \(filePath)"
+        case .query(let error), .unknown(let error):
+            return Self.identify(error)
+        case .badFile(let error):
+            guard let error else {
+                return "fichier de base illisible"
+            }
+            return Self.identify(error)
+        }
+    }
+
+    /// « SQLite.SQLiteError 11 », pour nommer l'erreur au lieu de la taire.
+    private static func identify(_ error: Error) -> String {
+        let nsError = error as NSError
+        return "\(nsError.domain) \(nsError.code)"
     }
 }

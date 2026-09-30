@@ -54,9 +54,21 @@ public enum NetworkError: Error {
 }
 
 extension NetworkError: LocalizedError {
+    /// Le message à montrer, avec de quoi savoir **ce qui** a échoué.
+    ///
+    /// Le message générique est le point de sortie de trop d'erreurs différentes pour dire quoi
+    /// que ce soit : un domaine réseau non reconnu, un code de statut inattendu et une base
+    /// illisible s'y rendent à l'identique. On y accole donc l'identité de l'erreur d'origine —
+    /// son domaine et son code — et le détail quand il y en a un. Sans cela, aucune capture
+    /// d'écran ne permet de diagnostiquer l'échec, et il faut reconstruire l'application pour
+    /// l'apprendre : c'est exactement ce qui est arrivé aux téléchargements de récitateurs.
     public var errorDescription: String? {
         switch self {
-        case .unknown, .serverError, .serverNotReachable:
+        case .unknown(let underlying):
+            return "\(l("error.message.general")) (\(Self.identify(underlying)))"
+        case .serverError(let detail):
+            return "\(l("error.message.general")) (\(detail))"
+        case .serverNotReachable:
             return l("error.message.general")
         case .notConnectedToInternet:
             return l("error.message.not_connected_to_internet")
@@ -65,5 +77,14 @@ extension NetworkError: LocalizedError {
         case .connectionLost:
             return l("error.message.connection_lost")
         }
+    }
+
+    /// « NSURLErrorDomain -1009 », ou « aucun » si l'erreur d'origine manque.
+    private static func identify(_ error: Error?) -> String {
+        guard let error else {
+            return "aucune erreur d'origine"
+        }
+        let nsError = error as NSError
+        return "\(nsError.domain) \(nsError.code)"
     }
 }
