@@ -65,6 +65,12 @@ public struct SurahLearningProgress: Codable, Equatable, Identifiable, Sendable 
     /// Un verset antérieur au repère est réputé appris : le repère avance d'un trait, il ne saute
     /// pas de verset. Interroger un verset qu'aucun objectif ne couvre ne peut donc rien fausser,
     /// puisque le programme ne contient que les versets visés.
+    ///
+    /// - Important: cette affirmation n'est vraie que parce que le relevé la **vérifie** :
+    ///   `LearningProgress.init(of:in:)` ne pose un repère que si le bloc appris part réellement du
+    ///   verset 1. Un programme parcouru à rebours apprend une fin de sourate, et laisse donc le
+    ///   repère à 0 — sans quoi des versets jamais travaillés passeraient pour appris, et ne
+    ///   seraient plus jamais proposés.
     public func covers(verse ayah: Int) -> Bool {
         ayah >= 1 && ayah <= lastMemorizedVerse
     }
@@ -109,13 +115,16 @@ public struct LearningProgress: Codable, Equatable, Sendable {
 
     /// Relève la progression portée par un programme.
     ///
-    /// Pour chaque sourate, le repère est la fin du **premier bloc continu** de passages appris,
-    /// dans l'ordre du programme. S'arrêter au premier passage non appris est ce qui rend le relevé
-    /// honnête : un passage appris plus loin — parce qu'on l'a sauté — ne fait pas passer pour
-    /// appris ce qui le précède.
+    /// Pour chaque sourate, le repère est le plus grand `k` tel que **tous** les versets `1..k`
+    /// soient couverts par un passage appris du premier bloc continu. S'arrêter au premier passage
+    /// non appris est ce qui rend le relevé honnête : un passage appris plus loin — parce qu'on l'a
+    /// sauté — ne fait pas passer pour appris ce qui le précède. Et exiger que le bloc **parte du
+    /// début** de la sourate est ce qui le rend vrai quel que soit le sens de parcours : à rebours,
+    /// on apprend une *fin* de sourate, et l'annoncer comme un début ferait passer pour appris des
+    /// versets jamais travaillés.
     ///
     /// Un passage peut chevaucher une fin de sourate : ses versets sont alors répartis entre les
-    /// sourates qu'il traverse, chacune recevant le repère qui la concerne.
+    /// sourates qu'il traverse, chacune recevant l'étendue qui la concerne.
     public init(of program: LearningProgram, in quran: Quran) {
         var readings: [Int: [Reading]] = [:]
         var order: [Int] = []
@@ -124,10 +133,10 @@ public struct LearningProgress: Codable, Equatable, Sendable {
             guard let bounds = item.range.bounds(in: quran) else { continue }
             let learned = item.storedStatus != .notLearned
             let workedAt = item.lastWorkedAt ?? program.generatedAt ?? Date()
-            for end in Self.surahEnds(of: bounds, in: quran) {
-                if readings[end.surahId] == nil { order.append(end.surahId) }
-                readings[end.surahId, default: []].append(
-                    Reading(ayah: end.ayah, isLearned: learned, workedAt: workedAt)
+            for span in Self.surahSpans(of: bounds, in: quran) {
+                if readings[span.surahId] == nil { order.append(span.surahId) }
+                readings[span.surahId, default: []].append(
+                    Reading(firstAyah: span.first, lastAyah: span.last, isLearned: learned, workedAt: workedAt)
                 )
             }
         }
@@ -211,9 +220,14 @@ public struct LearningProgress: Codable, Equatable, Sendable {
 
     // MARK: Private
 
-    /// Ce qu'un passage dit d'une sourate : jusqu'où il va, et s'il est appris.
+    /// Ce qu'un passage dit d'une sourate : l'étendue qu'il y couvre, et s'il est appris.
+    ///
+    /// L'étendue, et non seulement sa fin : sans le premier verset, on ne peut pas dire si le bloc
+    /// appris part du début de la sourate — et c'est précisément ce qui décide si le repère a le
+    /// droit d'être un préfixe.
     private struct Reading {
-        let ayah: Int
+        let firstAyah: Int
+        let lastAyah: Int
         let isLearned: Bool
         let workedAt: Date
     }
@@ -224,13 +238,21 @@ public struct LearningProgress: Codable, Equatable, Sendable {
 
         // Le repère s'arrête au premier passage non appris : c'est ce qui en fait un bloc continu,
         // et non le plus lointain des versets travaillés.
-        var watermark = 0
+        var covered: Set<Int> = []
         var worked: [Date] = []
         for reading in readings {
             guard reading.isLearned else { break }
-            watermark = reading.ayah
+            covered.formUnion(reading.firstAyah ... reading.lastAyah)
             worked.append(reading.workedAt)
         }
+
+        // Puis il ne retient que le début ininterrompu de ce bloc. `covers(verse:)` affirme que
+        // tout verset jusqu'au repère est appris, et cette affirmation ne vaut que si le bloc
+        // commence au verset 1 : un objectif qui part au milieu d'une sourate, ou qui la parcourt à
+        // rebours, n'apprend pas un début. Le repère reste alors à 0, et c'est la reprise verset par
+        // verset qui porte le travail fait.
+        var watermark = 0
+        while covered.contains(watermark + 1) { watermark += 1 }
 
         // Les dates ne portent que sur ce qui est appris. Y compter un passage jamais travaillé
         // ferait passer pour un jour de travail le jour où le programme a été régénéré — et la
@@ -239,34 +261,35 @@ public struct LearningProgress: Codable, Equatable, Sendable {
         return SurahLearningProgress(
             surahId: surahId,
             lastMemorizedVerse: watermark,
-            targetVerse: readings.map(\.ayah).max() ?? first.ayah,
+            targetVerse: readings.map(\.lastAyah).max() ?? first.lastAyah,
             startedAt: dates.min() ?? first.workedAt,
             updatedAt: dates.max() ?? first.workedAt
         )
     }
 
-    /// Les derniers versets d'un intervalle, un par sourate traversée.
+    /// Les étendues couvertes par un intervalle, une par sourate traversée.
     ///
-    /// Un passage qui s'arrête au milieu d'une sourate n'en livre qu'une fin ; un passage qui la
-    /// traverse en livre une par sourate, la dernière pouvant être partielle.
-    private static func surahEnds(
+    /// Un passage qui s'arrête au milieu d'une sourate n'en couvre qu'une fin ; un passage qui la
+    /// traverse en couvre une par sourate, la première et la dernière pouvant être partielles.
+    private static func surahSpans(
         of bounds: (first: AyahNumber, last: AyahNumber),
         in quran: Quran
-    ) -> [(surahId: Int, ayah: Int)] {
+    ) -> [(surahId: Int, first: Int, last: Int)] {
         let firstSurah = bounds.first.sura.suraNumber
         let lastSurah = bounds.last.sura.suraNumber
         guard firstSurah != lastSurah else {
-            return [(surahId: firstSurah, ayah: bounds.last.ayah)]
+            return [(surahId: firstSurah, first: bounds.first.ayah, last: bounds.last.ayah)]
         }
 
         return quran.suras
             .filter { $0.suraNumber >= firstSurah && $0.suraNumber <= lastSurah }
-            .map { sura -> (surahId: Int, ayah: Int) in
+            .map { sura -> (surahId: Int, first: Int, last: Int) in
                 // Les étiquettes sont posées explicitement : la conversion d'un tuple non étiqueté
                 // vers un tuple étiqueté n'est pas garantie dans un `map`, dont le type de retour
                 // est inféré avant d'être confronté à celui de la fonction.
+                let start = sura.suraNumber == firstSurah ? bounds.first.ayah : 1
                 let end = sura.suraNumber == lastSurah ? bounds.last.ayah : sura.lastVerse.ayah
-                return (surahId: sura.suraNumber, ayah: end)
+                return (surahId: sura.suraNumber, first: start, last: end)
             }
     }
 }

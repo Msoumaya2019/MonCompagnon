@@ -66,13 +66,15 @@ final class LearningPlannerTests: XCTestCase {
         goals: [QuranRange],
         known: [KnownRange] = [],
         pace: LearningPace = .regulier,
-        days: Set<LearningDay> = Set(LearningDay.allCases)
+        days: Set<LearningDay> = Set(LearningDay.allCases),
+        direction: LearningDirection = .depuisLeDebut
     ) -> LearningProfile {
         LearningProfile(
             knownRanges: known,
             goals: goals.map { LearningGoal(range: $0, label: nil, targetDate: nil) },
             pace: pace,
             days: days,
+            direction: direction,
             createdAt: day0,
             isConfigured: true
         )
@@ -386,6 +388,87 @@ final class LearningPlannerTests: XCTestCase {
         let decoded = try JSONDecoder().decode(LearningProgram.self, from: data)
 
         XCTAssertEqual(decoded, program, "Un programme généré doit survivre à un aller-retour JSON")
+    }
+
+    // MARK: - Le sens d'apprentissage
+
+    /// À rebours, ce sont **les mêmes passages**, pris par l'autre bout.
+    ///
+    /// C'est ce qui distingue un sens d'un autre découpage : le programme aller et le programme
+    /// retour couvrent le même ensemble de versets, au verset près. Un découpage refait à rebours
+    /// laisserait un reste du côté du départ, et les deux programmes ne se reconnaîtraient plus.
+    func test_aReversedProgramme_takesTheSamePassagesFromTheOtherEnd() {
+        let goal = QuranRange(quran.suras[77])
+        let forward = planner().makeProgram(for: makeProfile(goals: [goal]), from: day0)
+        let backward = planner().makeProgram(
+            for: makeProfile(goals: [goal], direction: .depuisLaFin),
+            from: day0
+        )
+
+        XCTAssertFalse(forward.items.isEmpty)
+        XCTAssertEqual(backward.items.count, forward.items.count)
+        XCTAssertEqual(backward.items.map(\.range), Array(forward.items.map(\.range).reversed()))
+        XCTAssertEqual(backward.items.map(\.label), Array(forward.items.map(\.label).reversed()))
+    }
+
+    /// Et le premier passage part bien de la **fin** de l'objectif.
+    func test_aReversedProgramme_startsAtTheEndOfTheGoal() throws {
+        let goal = QuranRange(quran.suras[77])
+        let backward = planner().makeProgram(
+            for: makeProfile(goals: [goal], direction: .depuisLaFin),
+            from: day0
+        )
+
+        let first = try XCTUnwrap(backward.items.first)
+        XCTAssertEqual(first.range.firstSura, goal.lastSura)
+        XCTAssertEqual(first.range.lastAyah, goal.lastAyah)
+        XCTAssertEqual(backward.items.last?.range.firstSura, goal.firstSura)
+        XCTAssertEqual(backward.items.last?.range.firstAyah, goal.firstAyah)
+    }
+
+    /// Les objectifs eux aussi sont pris par l'autre bout : le plus avancé dans le mushaf d'abord.
+    ///
+    /// Les deux objectifs sont volontairement éloignés — Al-Baqara et An-Naba — sans quoi ils
+    /// fusionneraient en un seul intervalle, et le retour des intervalles ne serait pas éprouvé.
+    func test_aReversedProgramme_takesTheFurthestGoalFirst() {
+        let anNaba = QuranRange(quran.suras[77])
+        let alBaqara = QuranRange(quran.suras[1])
+        let backward = planner().makeProgram(
+            for: makeProfile(goals: [anNaba, alBaqara], direction: .depuisLaFin),
+            from: day0
+        )
+
+        XCTAssertEqual(backward.items.first?.range.firstSura, 78)
+        XCTAssertEqual(backward.items.last?.range.firstSura, 2)
+    }
+
+    /// Les rangs restent `0 ..< count` : c'est l'**ordre de la liste** qui décide de l'ordre du
+    /// travail, puisque `nextToLearn()` prend le premier passage non appris.
+    func test_aReversedProgramme_numbersItsPassagesFromZero() {
+        let program = planner().makeProgram(
+            for: makeProfile(goals: [QuranRange(quran.juzs[29])], direction: .depuisLaFin),
+            from: day0
+        )
+
+        XCTAssertEqual(program.items.map(\.position), Array(0 ..< program.items.count))
+    }
+
+    /// Un programme à rebours reste **continu** : chaque passage commence juste avant le précédent.
+    func test_aReversedProgramme_isContiguousBackwards() {
+        let program = planner().makeProgram(
+            for: makeProfile(goals: [QuranRange(quran.suras[77])], direction: .depuisLaFin),
+            from: day0
+        )
+
+        let covered = coveredOffsets(of: program)
+        XCTAssertGreaterThan(covered.count, 1)
+        for (previous, next) in zip(covered, covered.dropFirst()) {
+            XCTAssertEqual(
+                next.upperBound,
+                previous.lowerBound - 1,
+                "À rebours, chaque passage doit se terminer juste avant le début du précédent"
+            )
+        }
     }
 
     // MARK: - Date de fin estimée

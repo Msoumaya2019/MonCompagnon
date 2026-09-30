@@ -82,9 +82,22 @@ public struct LearningPlanner {
         // Pas de sortie si `remaining` est vide : les acquis fragiles sont ajoutés plus bas,
         // et un objectif entièrement fragile n'a plus rien à apprendre mais tout à revoir.
         // Sortir ici perdait ces révisions, et le programme passait pour vide.
+        //
+        // Le sens de parcours décide de l'ordre, et de lui seul : les morceaux sont pris par
+        // l'autre bout, et chacun est découpé puis retourné — voir `orderedSessions`. C'est ce qui
+        // garde la couverture exacte, et ce qui fait qu'un programme aller et un programme retour
+        // proposent les mêmes passages.
+        let descending = profile.direction.isDescending
+        let intervals = descending ? Array(remaining.reversed()) : remaining
+
         var items: [LearningItem] = []
-        for interval in remaining {
-            for chunk in sessions(in: interval, targetVerses: profile.versesPerSession) {
+        for interval in intervals {
+            let chunks = orderedSessions(
+                in: interval,
+                targetVerses: profile.versesPerSession,
+                descending: descending
+            )
+            for chunk in chunks {
                 guard let range = QuranRange(offsets: chunk, in: index) else { continue }
                 var item = LearningItem(
                     range: range,
@@ -177,6 +190,21 @@ public struct LearningPlanner {
             cursor = end + 1
         }
         return result
+    }
+
+    /// Le découpage d'un intervalle, dans l'ordre où il doit être travaillé.
+    ///
+    /// Le sens ne change **pas** le découpage : ce sont les mêmes passages, pris par l'autre bout.
+    /// Un découpage refait à rebours laisserait un reste du côté du départ — le même intervalle
+    /// livrerait alors deux ensembles de passages selon le sens, et un programme régénéré après un
+    /// changement de sens ne reconnaîtrait plus les siens.
+    private func orderedSessions(
+        in interval: ClosedRange<Int>,
+        targetVerses: Int,
+        descending: Bool
+    ) -> [ClosedRange<Int>] {
+        let chunks = sessions(in: interval, targetVerses: targetVerses)
+        return descending ? Array(chunks.reversed()) : chunks
     }
 
     /// La fin de page la plus proche de `offset`, entre `lower` et `upper` inclus.

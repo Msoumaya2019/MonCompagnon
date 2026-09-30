@@ -80,6 +80,66 @@ final class LearningProgressTests: XCTestCase {
         XCTAssertFalse(record.covers(verse: 0), "Aucun verset ne porte le numéro 0")
     }
 
+    // MARK: - Le sens d'apprentissage
+
+    /// Un programme parcouru à rebours apprend une **fin** de sourate, et le relevé doit le dire.
+    ///
+    /// `covers(verse:)` teste un préfixe du mushaf. Sans la vérification faite par le relevé, tout
+    /// ce qui précède le premier verset travaillé passerait pour appris — et, à la régénération
+    /// suivante, ne serait plus jamais proposé à l'apprentissage.
+    func test_aReversedProgramme_doesNotClaimWhatItHasNotTaught() throws {
+        let index = QuranVerseIndex(quran: quran)
+        var planned = makeProgram(direction: .depuisLaFin)
+        let first = try XCTUnwrap(planned.items.first)
+        let last = try XCTUnwrap(planned.items.last)
+        XCTAssertGreaterThan(planned.items.count, 1, "Sans plusieurs passages, ce test ne prouve rien")
+
+        // Une seule séance faite : la première, qui est la **dernière** dans l'ordre du mushaf.
+        planned.markLearned(id: first.id, at: day0, calendar: calendar)
+        let progress = LearningProgress(of: planned, in: quran)
+
+        XCTAssertEqual(
+            progress.lastMemorizedVerse(inSurah: 78),
+            0,
+            "Le travail a commencé par la fin : rien n'est appris depuis le verset 1"
+        )
+        let offsets = try XCTUnwrap(last.range.offsets(in: index))
+        XCTAssertFalse(
+            progress.covers(offsets, in: index),
+            "La dernière séance dans l'ordre du mushaf ne doit pas passer pour apprise"
+        )
+    }
+
+    /// Et un objectif qui commence **au milieu** d'une sourate ne fait pas passer pour appris ce qui
+    /// le précède : ces versets n'ont jamais été dans le programme.
+    func test_aGoalStartingMidSurah_doesNotClaimTheVersesBeforeIt() {
+        let midSurah = QuranRange(firstSura: 78, firstAyah: 20, lastSura: 78, lastAyah: 40)
+        var planned = makeProgram(goals: [midSurah])
+        for index in 0 ..< planned.items.count {
+            planned.markLearned(id: planned.items[index].id, at: day0, calendar: calendar)
+        }
+
+        let progress = LearningProgress(of: planned, in: quran)
+
+        XCTAssertEqual(
+            progress.lastMemorizedVerse(inSurah: 78),
+            0,
+            "78:1-19 n'ont jamais été dans le programme : ils ne peuvent pas être réputés appris"
+        )
+    }
+
+    /// Le repère reste ce qu'il était pour un programme dans l'ordre du mushaf.
+    ///
+    /// C'est le garde-fou du correctif : la règle nouvelle ne doit rien changer à ce que les
+    /// profils déjà enregistrés relisent aujourd'hui.
+    func test_aForwardProgramme_keepsItsWatermark() {
+        let planned = makeProgram(learned: [0, 1])
+
+        let progress = LearningProgress(of: planned, in: quran)
+
+        XCTAssertEqual(progress.lastMemorizedVerse(inSurah: 78), planned.items[1].range.lastAyah)
+    }
+
     // MARK: - Couverture d'un intervalle
 
     func test_learnedAt_takesTheEarliestOfTheSurasCrossed() throws {
@@ -234,12 +294,14 @@ final class LearningProgressTests: XCTestCase {
     private func makeProgram(
         goals: [QuranRange]? = nil,
         pace: LearningPace = .doux,
-        learned: [Int] = []
+        learned: [Int] = [],
+        direction: LearningDirection = .depuisLeDebut
     ) -> LearningProgram {
         let profile = LearningProfile(
             goals: (goals ?? [naba]).map { LearningGoal(range: $0, label: nil, targetDate: nil) },
             pace: pace,
             days: Set(LearningDay.allCases),
+            direction: direction,
             createdAt: day0,
             isConfigured: true
         )
