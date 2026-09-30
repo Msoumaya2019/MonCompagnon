@@ -80,7 +80,25 @@ class Container: AppDependencies {
     #endif
 
     private(set) lazy var downloadManager: DownloadManager = {
-        let configuration = URLSessionConfiguration.background(withIdentifier: "DownloadsBackgroundIdentifier")
+        // Le transfert se fait dans l'application, et non dans le démon d'arrière-plan.
+        //
+        // Le terrain a montré que **tout** téléchargement échoue — les trois hôtes, tous les lots —
+        // avec `NSURLErrorCannotCreateFile` (`-3000`), et toujours **à la fin** du transfert : le
+        // journal d'une version antérieure montre la progression atteindre 1,0, puis l'échec, sans
+        // que `didFinishDownloadingTo` soit jamais appelé. Les octets arrivent donc, et c'est le
+        // démon qui n'arrive pas à créer son fichier. Ni le disque — 24,44 Go libres — ni le
+        // conteneur — où l'application écrit son archive de diagnostics sans peine — ne sont en
+        // cause. La session d'arrière-plan est le seul suspect qui reste.
+        //
+        // Ce que cela coûte : un téléchargement s'interrompt quand l'application est suspendue. Rien
+        // n'est perdu pour autant : le gestionnaire reprend les lots en attente depuis sa base à
+        // chaque lancement (`startPendingTasksIfNeeded`). Il faut donc laisser l'application
+        // ouverte, ce qui reste préférable à des téléchargements qui n'aboutissent jamais.
+        //
+        // Pour revenir en arrière : `URLSessionConfiguration.background(withIdentifier:
+        // "DownloadsBackgroundIdentifier")`. L'identifiant reste celui qu'attend
+        // `AppDelegate.handleEventsForBackgroundURLSession`.
+        let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 60 * 5 // 5 minutes
         return DownloadManager(
             // Un récitateur continu demande 115 fichiers, un récitateur verset par verset en
