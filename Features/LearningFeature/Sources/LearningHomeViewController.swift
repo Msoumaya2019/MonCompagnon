@@ -27,6 +27,7 @@ final class LearningHomeViewController: UIHostingController<LearningHomeView> {
         // `self` n'existe qu'après `super.init`, et la vue est construite avant : on lui donne ses
         // actions ici. Les capturer dans l'initialiseur serait refusé par Swift.
         rootView.editProgram = { [weak self] in self?.openProgramSetup() }
+        rootView.openPlanning = { [weak self] in self?.openPlanning() }
         rootView.open = { [weak self] item in self?.openLearning(item) }
     }
 
@@ -52,6 +53,19 @@ final class LearningHomeViewController: UIHostingController<LearningHomeView> {
     private func openProgramSetup() {
         let setup = LearningSetupViewController(persistence: persistence)
         navigationController?.pushViewController(setup, animated: true)
+    }
+
+    /// Ouvre le planning.
+    ///
+    /// Le modèle de vue du planning est construit ici, et non par le constructeur : il a besoin du
+    /// magasin et du navigateur, que le tableau de bord tient déjà. Le faire remonter jusqu'à
+    /// `LearningBuilder` obligerait celui-ci à connaître un écran de plus, sans rien apporter.
+    private func openPlanning() {
+        let planning = LearningPlanningViewController(
+            viewModel: LearningPlanningViewModel(persistence: persistence),
+            listener: listener
+        )
+        navigationController?.pushViewController(planning, animated: true)
     }
 
     /// Ouvre le Coran sur un passage.

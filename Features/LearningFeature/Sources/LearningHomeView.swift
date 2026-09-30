@@ -33,6 +33,11 @@ struct LearningHomeView: View {
     /// l'initialiseur du contrôleur serait refusé par Swift.
     var editProgram: Action = {}
 
+    /// Ouvre le planning : ce qui vient, ce qui est fait, et ce qui est dû.
+    ///
+    /// Renseignée par le contrôleur, comme `editProgram` — la vue ne sait pas naviguer.
+    var openPlanning: Action = {}
+
     /// Ouvre le Coran sur un passage.
     ///
     /// Renseignée par le contrôleur, comme `editProgram` : la vue ne sait pas naviguer, et ne doit
@@ -59,6 +64,7 @@ struct LearningHomeView: View {
                 reviewSection
                 programSection
                 NoorBasicSection {
+                    planningItem
                     editItem
                 }
             }
@@ -184,6 +190,22 @@ struct LearningHomeView: View {
             ),
             accessory: .disclosureIndicator,
             action: .sync { editProgram() }
+        )
+    }
+
+    /// Le bouton qui ouvre le planning.
+    ///
+    /// Il n'est proposé qu'une fois le programme en place : un planning vide n'apprendrait rien, et
+    /// l'écran qui le porte dirait « rien à réviser » sur un programme qui n'existe pas encore.
+    private var planningItem: some View {
+        NoorListItem(
+            title: .text(l("learning.planning.title", table: .learning)),
+            subtitle: .init(
+                text: .text(l("learning.planning.detail", table: .learning)),
+                location: .bottom
+            ),
+            accessory: .disclosureIndicator,
+            action: .sync { openPlanning() }
         )
     }
 

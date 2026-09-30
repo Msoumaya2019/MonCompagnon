@@ -10,7 +10,6 @@ import Foundation
 import LearningKit
 import LearningPersistence
 import QuranKit
-import QuranLocalization
 
 /// Où en est l'utilisateur dans son programme d'apprentissage.
 ///
@@ -109,12 +108,11 @@ final class LearningHomeViewModel: ObservableObject {
     /// Le libellé d'un passage : sa sourate, puis la page où il commence.
     ///
     /// Le libellé du modèle — « page 582 », « 78:1-78:40 » — est un repère technique, pas du texte
-    /// d'interface. Il est composé ici, dans la langue de l'utilisateur, à partir de la sourate et
-    /// de la page, dont les noms sont déjà traduits.
+    /// d'interface. La composition vit dans `learningItemLabel(_:in:)`, partagée avec le planning :
+    /// les deux écrans montrent les mêmes passages, et deux compositions divergentes se verraient
+    /// tout de suite.
     func label(of item: LearningItem) -> String? {
-        guard let bounds = item.range.bounds(in: quran) else { return nil }
-        let sura = bounds.first.sura
-        return "\(sura.localizedName()) · \(bounds.first.page.localizedName)"
+        learningItemLabel(item, in: quran)
     }
 
     /// Relit le profil et le programme enregistrés.
