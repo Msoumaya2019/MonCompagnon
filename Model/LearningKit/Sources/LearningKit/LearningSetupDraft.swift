@@ -243,6 +243,27 @@ public struct LearningSetupDraft: Equatable {
         toggleGoal(QuranRange(group), label: label)
     }
 
+    /// Pose un objectif d'un geste, parmi les cinq que l'application propose.
+    ///
+    /// Trois des cinq choix posent une **étendue** — tout le Coran, la moitié, jusqu'à Yâsîn —, et
+    /// les objectifs déjà posés sont alors **remplacés**, pour la raison qui vaut déjà pour
+    /// `continueThroughTheQuran()` : ces étendues contiennent tout ce qui les précède, donc garder
+    /// les anciens à côté ferait compter deux fois les mêmes versets.
+    ///
+    /// Les deux autres ne posent qu'une **unité** : ils ramènent à la liste, où le morceau se
+    /// désigne, sans rien y ajouter.
+    ///
+    /// Un choix qui ne peut rien poser — un mushaf sans Yâsîn, par exemple — ne fait rien. Poser un
+    /// intervalle faux serait pire que ne rien faire.
+    public mutating func apply(_ preset: LearningGoalPreset) {
+        if let unit = preset.unit {
+            goalUnit = unit
+            return
+        }
+        guard let range = preset.range(in: quran) else { return }
+        goals = [LearningGoal(range: range, label: nil, targetDate: nil)]
+    }
+
     // MARK: - Repartir de zéro
 
     /// Efface toutes les déclarations : ni acquis, ni objectif.
