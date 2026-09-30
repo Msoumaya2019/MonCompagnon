@@ -10,6 +10,7 @@ import AppDependencies
 import BatchDownloader
 import Foundation
 import LastPagePersistence
+import LearningPersistence
 import NoorUI
 import NotePersistence
 import PageBookmarkPersistence
@@ -63,6 +64,7 @@ struct AppDependenciesStub: AppDependencies {
     var lastPagePersistence: LastPagePersistence { fatalError("Unused in tests") }
     var notePersistence: NotePersistence { fatalError("Unused in tests") }
     var pageBookmarkPersistence: PageBookmarkPersistence { fatalError("Unused in tests") }
+    var learningPersistence: LearningPersistence { fatalError("Unused in tests") }
 }
 
 struct NoopAnalytics: AnalyticsLibrary {
