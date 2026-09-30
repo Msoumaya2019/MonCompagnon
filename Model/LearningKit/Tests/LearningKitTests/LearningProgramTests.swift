@@ -211,8 +211,15 @@ final class LearningProgramTests: XCTestCase {
 
     /// Travailler un passage compte comme une journée de travail, **quel que soit** le verdict :
     /// sinon la série ignorerait une séance réellement faite.
+    ///
+    /// L'épreuve porte sur le **lendemain** du verdict, et non sur le jour même. `lastWorkedAt` est
+    /// un champ unique : le verdict *efface* la date d'apprentissage, et c'est voulu — il date la
+    /// dernière fois qu'on a travaillé le passage. La série ne peut donc valoir 1 à J+2 que si
+    /// c'est bien le jour du verdict qu'elle retient : sans cette écriture, le seul jour travaillé
+    /// serait J+0, trop loin derrière pour compter, et la série vaudrait 0.
     func test_aVerdict_recordsTheDayAsWorked() {
         let day1 = date(daysAfter: day0, 1)
+        let day2 = date(daysAfter: day0, 2)
         for outcome in LearningOutcome.allCases {
             var (program, id) = program()
             program.markLearned(id: id, at: day0, calendar: calendar)
@@ -220,7 +227,7 @@ final class LearningProgramTests: XCTestCase {
             program.apply(outcome, toItem: id, at: day1, calendar: calendar)
 
             XCTAssertEqual(program.items[0].lastWorkedAt, day1, "« \(outcome.rawValue) » compte le jour du verdict")
-            XCTAssertEqual(program.streak(now: day1, calendar: calendar), 2, "« \(outcome.rawValue) » : les deux jours comptent")
+            XCTAssertEqual(program.streak(now: day2, calendar: calendar), 1, "« \(outcome.rawValue) » : la série le retient")
         }
     }
 
