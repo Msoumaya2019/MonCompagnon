@@ -35,14 +35,12 @@ final class QuranAmountTests: XCTestCase {
     }
 
     func test_amount_ofEmptyRange_isEmpty() {
-        let verse = quran.suras[0].firstVerse
         let amount = QuranAmount(verses: 0, quran: quran)
         XCTAssertTrue(amount.isEmpty)
         XCTAssertEqual(amount.unit, .verse)
         XCTAssertEqual(amount.unitCount, 0)
         // Une quantité négative est ramenée à zéro plutôt que de produire un compte négatif.
         XCTAssertEqual(QuranAmount(verses: -5, quran: quran).verseCountValue, 0)
-        _ = verse
     }
 
     // MARK: - Divisibilité

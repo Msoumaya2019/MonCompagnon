@@ -120,7 +120,8 @@ public struct LearningProgram: Codable, Equatable, Sendable {
         update(id: id) { item in
             guard item.storedStatus == .notLearned else { return }
             item.storedStatus = .learned
-            item.reviewStage = 1
+            // Aucune révision n'a encore eu lieu : la prochaine est la première, donc à J+1.
+            item.reviewStage = 0
             item.lastWorkedAt = date
             item.nextReview = LearningConsolidation.nextReview(afterSuccessAt: 0, from: date, calendar: calendar)
         }

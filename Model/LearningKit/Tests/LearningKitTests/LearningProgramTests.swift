@@ -24,6 +24,16 @@ final class LearningProgramTests: XCTestCase {
         calendar.date(byAdding: .day, value: days, to: reference)!
     }
 
+    /// La date de révision attendue : le **début** du jour J+`offsetDays`.
+    ///
+    /// Les échéances sont normalisées au début du jour : une révision due le 1ᵉʳ octobre est due
+    /// dès le matin du 1ᵉʳ octobre, pas à midi. Comparer à midi ferait échouer le test alors que
+    /// le comportement est correct.
+    private func expectedReview(offsetDays: Int) -> Date {
+        let startOfDay0 = calendar.startOfDay(for: day0)
+        return calendar.date(byAdding: .day, value: offsetDays, to: startOfDay0)!
+    }
+
     /// Un programme d'un seul passage : Al-Fatiha.
     private func program() -> (program: LearningProgram, id: UUID) {
         let quran = Quran.hafsMadani1405
@@ -40,9 +50,9 @@ final class LearningProgramTests: XCTestCase {
 
         let item = program.items[0]
         XCTAssertEqual(item.storedStatus, .learned)
-        XCTAssertEqual(item.reviewStage, 1)
+        XCTAssertEqual(item.reviewStage, 0, "Aucune révision n'a encore eu lieu après l'apprentissage")
         XCTAssertEqual(item.lastWorkedAt, day0)
-        XCTAssertEqual(item.nextReview, date(daysAfter: day0, 1))
+        XCTAssertEqual(item.nextReview, expectedReview(offsetDays: 1))
     }
 
     func test_markLearned_isIgnoredWhenAlreadyLearned() {
@@ -52,27 +62,31 @@ final class LearningProgramTests: XCTestCase {
         program.markLearned(id: id, at: date(daysAfter: day0, 5), calendar: calendar)
 
         let item = program.items[0]
-        XCTAssertEqual(item.reviewStage, 1, "Une consolidation acquise ne doit pas être réinitialisée")
-        XCTAssertEqual(item.nextReview, date(daysAfter: day0, 1))
+        XCTAssertEqual(item.reviewStage, 0, "Un passage déjà appris ne doit pas repartir de zéro")
+        XCTAssertEqual(item.nextReview, expectedReview(offsetDays: 1))
     }
 
     func test_reviews_followJ1ThenJ3ThenJ7() {
         var (program, id) = program()
         program.markLearned(id: id, at: day0, calendar: calendar)
+        XCTAssertEqual(program.items[0].nextReview, expectedReview(offsetDays: 1), "Après apprentissage : J+1")
 
         // J+1 → prochaine à J+1+3 = J+4
         let j1 = date(daysAfter: day0, 1)
         program.markReviewed(id: id, at: j1, calendar: calendar)
-        XCTAssertEqual(program.items[0].nextReview, date(daysAfter: j1, 3))
+        XCTAssertEqual(program.items[0].reviewStage, 1)
+        XCTAssertEqual(program.items[0].nextReview, expectedReview(offsetDays: 4), "Après 1ʳᵉ révision : J+3")
 
         // J+4 → prochaine à J+4+7 = J+11
         let j4 = date(daysAfter: day0, 4)
         program.markReviewed(id: id, at: j4, calendar: calendar)
-        XCTAssertEqual(program.items[0].nextReview, date(daysAfter: j4, 7))
+        XCTAssertEqual(program.items[0].reviewStage, 2)
+        XCTAssertEqual(program.items[0].nextReview, expectedReview(offsetDays: 11), "Après 2ᵉ révision : J+7")
 
         // Après la 3ᵉ révision : consolidé, plus de révision programmée.
         let j11 = date(daysAfter: day0, 11)
         program.markReviewed(id: id, at: j11, calendar: calendar)
+        XCTAssertEqual(program.items[0].reviewStage, 3)
         XCTAssertNil(program.items[0].nextReview, "Après J+7, le passage est consolidé")
         XCTAssertTrue(program.items[0].isConsolidated)
     }
@@ -114,10 +128,12 @@ final class LearningProgramTests: XCTestCase {
 
         // Le jour même : encore « appris ».
         XCTAssertEqual(program.items[0].status(now: day0, calendar: calendar), .learned)
-        // La veille de l'échéance : encore « appris ».
-        XCTAssertEqual(program.items[0].status(now: date(daysAfter: day0, 0), calendar: calendar), .learned)
-        // Le jour de l'échéance : « à revoir ».
-        XCTAssertEqual(program.items[0].status(now: date(daysAfter: day0, 1), calendar: calendar), .toReview)
+        // Tard le jour même : toujours « appris ».
+        let lateOnDay0 = DateComponents(calendar: calendar, year: 2026, month: 9, day: 30, hour: 23, minute: 59).date!
+        XCTAssertEqual(program.items[0].status(now: lateOnDay0, calendar: calendar), .learned)
+        // Dès la première minute du jour d'échéance : « à revoir ».
+        let earlyOnDueDate = DateComponents(calendar: calendar, year: 2026, month: 10, day: 1, hour: 0, minute: 1).date!
+        XCTAssertEqual(program.items[0].status(now: earlyOnDueDate, calendar: calendar), .toReview)
         // Après : toujours « à revoir ».
         XCTAssertEqual(program.items[0].status(now: date(daysAfter: day0, 9), calendar: calendar), .toReview)
     }
@@ -125,7 +141,7 @@ final class LearningProgramTests: XCTestCase {
     func test_dueReviews_listsOnlyMatureItems() {
         let quran = Quran.hafsMadani1405
         var first = LearningItem(range: QuranRange(quran.suras[0]), label: nil, position: 0)
-        var second = LearningItem(range: QuranRange(quran.suras[1]), label: nil, position: 1)
+        let second = LearningItem(range: QuranRange(quran.suras[1]), label: nil, position: 1)
         var program = LearningProgram(items: [first, second], generatedAt: day0)
 
         program.markLearned(id: first.id, at: day0, calendar: calendar)
@@ -146,8 +162,10 @@ final class LearningProgramTests: XCTestCase {
             program.markReviewed(id: id, at: date(daysAfter: day0, offset), calendar: calendar)
         }
 
-        XCTAssertTrue(program.dueReviews(now: date(daysAfter: day0, 400), calendar: calendar).isEmpty,
-                      "Un passage consolidé ne redevient jamais à revoir")
+        XCTAssertTrue(
+            program.dueReviews(now: date(daysAfter: day0, 400), calendar: calendar).isEmpty,
+            "Un passage consolidé ne redevient jamais à revoir"
+        )
     }
 
     // MARK: - Progression et série
@@ -200,10 +218,16 @@ final class LearningProgramTests: XCTestCase {
         var program = LearningProgram(items: [item], generatedAt: day0)
         program.markLearned(id: item.id, at: date(daysAfter: day0, -1), calendar: calendar)
 
-        XCTAssertEqual(program.streak(now: day0, calendar: calendar), 1,
-                       "Travaillé hier : la série tient encore aujourd'hui")
-        XCTAssertEqual(program.streak(now: date(daysAfter: day0, 2), calendar: calendar), 0,
-                       "Après un jour manqué, la série est rompue")
+        XCTAssertEqual(
+            program.streak(now: day0, calendar: calendar),
+            1,
+            "Travaillé hier : la série tient encore aujourd'hui"
+        )
+        XCTAssertEqual(
+            program.streak(now: date(daysAfter: day0, 2), calendar: calendar),
+            0,
+            "Après un jour manqué, la série est rompue"
+        )
     }
 
     func test_streak_isZeroWhenNothingWorked() {

@@ -41,28 +41,14 @@ public struct LearningItem: Codable, Equatable, Identifiable, Sendable {
         label: String?,
         position: Int
     ) {
-        self.init(id: id, range: range, label: label, position: position, storedStatus: .notLearned,
-                  reviewStage: 0, nextReview: nil, lastWorkedAt: nil)
-    }
-
-    init(
-        id: UUID,
-        range: QuranRange,
-        label: String?,
-        position: Int,
-        storedStatus: LearningStatus,
-        reviewStage: Int,
-        nextReview: Date?,
-        lastWorkedAt: Date?
-    ) {
         self.id = id
         self.range = range
         self.label = label
         self.position = position
-        self.storedStatus = storedStatus
-        self.reviewStage = reviewStage
-        self.nextReview = nextReview
-        self.lastWorkedAt = lastWorkedAt
+        storedStatus = .notLearned
+        reviewStage = 0
+        nextReview = nil
+        lastWorkedAt = nil
     }
 
     // MARK: Public
