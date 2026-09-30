@@ -151,12 +151,15 @@ final class LearningPlannerTests: XCTestCase {
 
     func test_sessions_neverExceedTwiceTheTarget() {
         // Le découpage cherche une fin de page : il peut dépasser la cible, mais jamais du double.
+        // La cible est lue sur le **profil**, et non sur l'allure : c'est le profil que le
+        // planificateur applique, valeur personnalisée comprise.
         for pace in LearningPace.allCases {
-            let program = planner().makeProgram(for: makeProfile(goals: [QuranRange(quran.juzs[29])], pace: pace), from: day0)
+            let profile = makeProfile(goals: [QuranRange(quran.juzs[29])], pace: pace)
+            let program = planner().makeProgram(for: profile, from: day0)
             for item in program.items {
                 XCTAssertLessThanOrEqual(
                     item.verseCount(in: quran),
-                    pace.targetVersesPerSession * 2,
+                    profile.versesPerSession * 2,
                     "Allure \(pace) : aucune séance ne dépasse le double de la cible"
                 )
             }
@@ -164,9 +167,10 @@ final class LearningPlannerTests: XCTestCase {
     }
 
     func test_sessions_endOnAPageBoundaryOrOnTheExactTarget() {
-        let program = planner().makeProgram(for: makeProfile(goals: [QuranRange(quran.juzs[29])], pace: .regulier), from: day0)
+        let profile = makeProfile(goals: [QuranRange(quran.juzs[29])], pace: .regulier)
+        let program = planner().makeProgram(for: profile, from: day0)
         let pageEnds = Set(quran.pages.compactMap { verseOffsets(of: QuranRange($0))?.upperBound })
-        let target = LearningPace.regulier.targetVersesPerSession
+        let target = profile.versesPerSession
 
         // Toutes les séances sauf la dernière, qui peut être plus courte faute de matière.
         for item in program.items.dropLast() {
@@ -186,7 +190,8 @@ final class LearningPlannerTests: XCTestCase {
         // Toutes les pages ne conviennent pas : il faut que la page tienne dans la fenêtre de la
         // cible (entre une et deux fois). On prend la première qui convient plutôt que de figer un
         // numéro de page — c'est le mushaf qui fait référence, pas le test.
-        let target = LearningPace.soutenu.targetVersesPerSession
+        let profile = makeProfile(goals: [QuranRange(quran.juzs[29])], pace: .soutenu)
+        let target = profile.versesPerSession
         let fitting = quran.pages.filter { page in
             guard let chunk = verseOffsets(of: QuranRange(page)) else { return false }
             let size = chunk.upperBound - chunk.lowerBound + 1
@@ -197,7 +202,7 @@ final class LearningPlannerTests: XCTestCase {
         }
 
         let range = QuranRange(page)
-        let program = planner().makeProgram(for: makeProfile(goals: [range], pace: .soutenu), from: day0)
+        let program = planner().makeProgram(for: profile, from: day0)
 
         XCTAssertEqual(program.items.count, 1, "Une page entière doit former une seule séance")
         XCTAssertEqual(program.items.first?.range, range)
@@ -386,7 +391,7 @@ final class LearningPlannerTests: XCTestCase {
     func test_estimatedEndDate_withEveryDayWorked_landsOnTheSessionCount() {
         let profile = makeProfile(goals: [QuranRange(quran.juzs[29])], pace: .regulier)
         let program = planner().makeProgram(for: profile, from: day0)
-        let perSession = LearningPace.regulier.targetVersesPerSession
+        let perSession = profile.versesPerSession
         let sessions = (program.totalVerses(in: quran) + perSession - 1) / perSession
 
         XCTAssertEqual(
@@ -399,7 +404,7 @@ final class LearningPlannerTests: XCTestCase {
     func test_estimatedEndDate_withOneWorkingDayPerWeek_countsOnlyThatDay() {
         let profile = makeProfile(goals: [QuranRange(quran.suras[1])], pace: .regulier, days: [.lundi])
         let program = planner().makeProgram(for: profile, from: day0)
-        let perSession = LearningPace.regulier.targetVersesPerSession
+        let perSession = profile.versesPerSession
         let sessions = (program.totalVerses(in: quran) + perSession - 1) / perSession
 
         guard let end = planner().estimatedEndDate(for: program, profile: profile, from: day0) else {

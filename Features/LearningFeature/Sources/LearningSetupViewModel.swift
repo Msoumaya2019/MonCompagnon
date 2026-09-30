@@ -24,6 +24,11 @@ final class LearningSetupViewModel: ObservableObject {
 
     init(persistence: LearningPersistence, calendar: Calendar = .current, now: Date = Date()) {
         self.persistence = persistence
+        // Conservé : l'annonce du récapitulatif et la génération du programme doivent partir de la
+        // **même** date. Les recalculer chacune à l'heure courante les ferait diverger — un
+        // franchissement de minuit suffit — et l'utilisateur verrait une fin estimée que le
+        // programme engendré ne tiendrait pas.
+        self.now = now
         quran = persistence.quran
 
         let profile = persistence.loadProfile()
@@ -89,11 +94,11 @@ final class LearningSetupViewModel: ObservableObject {
     /// Une seule liste pour les deux étapes : un Juz' se déclare connu et se choisit comme objectif
     /// au même endroit, ce qui évite à l'utilisateur de parcourir deux fois le mushaf.
     func juzRows() -> [JuzRow] {
-        draft.juzChoices().map { choice in
+        draft.choices(for: .juz).map { choice in
             JuzRow(
-                id: choice.juzNumber,
+                id: choice.number,
                 range: choice.range,
-                title: juzName(choice.juzNumber),
+                title: juzName(choice.number),
                 amount: lFormat("verses", table: .android, choice.verseCount),
                 solidity: choice.solidity,
                 isGoal: choice.isGoal
@@ -139,7 +144,7 @@ final class LearningSetupViewModel: ObservableObject {
     var pace: LearningPace { draft.pace }
 
     func select(pace: LearningPace) {
-        update { $0.pace = pace }
+        update { $0.select(pace: pace) }
     }
 
     func paceTitle(_ pace: LearningPace) -> String {
@@ -151,8 +156,12 @@ final class LearningSetupViewModel: ObservableObject {
     }
 
     /// Le nombre de versets visés par séance, dans l'unité où l'utilisateur les compte.
+    ///
+    /// L'allure personnalisée n'a pas de nombre à elle : elle affiche celui du brouillon, qui est
+    /// exactement ce qui sera appliqué.
     func paceAmount(_ pace: LearningPace) -> String {
-        lFormat("verses", table: .android, pace.targetVersesPerSession)
+        let verses = pace.versesPerSession ?? draft.versesPerSession
+        return lFormat("verses", table: .android, verses)
     }
 
     // MARK: - Les jours
@@ -206,7 +215,7 @@ final class LearningSetupViewModel: ObservableObject {
     func start() {
         let profile = draft.makeProfile()
         persistence.saveProfile(profile)
-        persistence.regenerateProgram(for: profile, from: Date())
+        persistence.regenerateProgram(for: profile, from: now)
     }
 
     // MARK: Private
@@ -221,6 +230,9 @@ final class LearningSetupViewModel: ObservableObject {
     private let persistence: LearningPersistence
     private let quran: Quran
 
+    /// Le moment où l'écran s'est ouvert — la même date pour l'annonce et pour le programme.
+    private let now: Date
+
     /// Applique une modification au brouillon, et remet le récapitulatif à jour.
     ///
     /// Le brouillon est un type valeur : le réécrire est ce qui prévient l'écran du changement, et
@@ -229,6 +241,6 @@ final class LearningSetupViewModel: ObservableObject {
         var updated = draft
         body(&updated)
         draft = updated
-        summary = updated.summary(from: Date())
+        summary = updated.summary(from: now)
     }
 }

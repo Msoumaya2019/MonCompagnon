@@ -15,8 +15,8 @@ import QuranKit
 /// étape validée.
 ///
 /// Tout ce qui décide ici se vérifie sans interface — les choix, leur validité, le nombre de
-/// séances, la date de fin estimée. La vue ne fait que rendre `juzChoices()` et appeler les
-/// mutations.
+/// séances, la date de fin estimée, et son calcul inverse. La vue ne fait que rendre
+/// `choices(for:)` et appeler les mutations.
 public struct LearningSetupDraft: Equatable {
     // MARK: Lifecycle
 
@@ -43,6 +43,7 @@ public struct LearningSetupDraft: Equatable {
         known = profile.knownRanges
         goals = profile.goals
         pace = profile.pace
+        customVersesPerSession = profile.customVersesPerSession
         days = profile.days
         sessionMinutes = profile.sessionMinutes
     }
@@ -63,16 +64,27 @@ public struct LearningSetupDraft: Equatable {
         case summary
     }
 
-    /// Un choix proposé aux étapes « ce que je connais » et « ce que je veux apprendre ».
-    public struct Choice: Equatable {
-        /// Le numéro du juz' — sert aussi à composer son nom dans la langue de l'utilisateur,
-        /// que ce module ne connaît pas.
-        public let juzNumber: Int
+    /// Un choix proposé aux sections « je connais déjà » et « mon objectif ».
+    ///
+    /// Le même type sert aux trois unités : un morceau du Coran est un morceau du Coran, et l'unité
+    /// n'est qu'une façon de le désigner.
+    public struct Choice: Equatable, Identifiable {
+        /// L'unité désignée — une sourate, un hizb ou un juz'.
+        public let unit: LearningUnit
+        /// Le rang de l'unité dans le mushaf, à partir de 1.
+        public let number: Int
         public let range: QuranRange
         public let verseCount: Int
-        /// `nil` si l'utilisateur ne s'est pas prononcé sur ce juz'.
+        /// `nil` si l'utilisateur ne s'est pas prononcé sur ce morceau.
         public let solidity: KnownRange.Solidity?
         public let isGoal: Bool
+
+        /// L'identité d'un choix : son unité **et** son rang.
+        ///
+        /// Le rang seul ne suffirait pas — le hizb 3 et le juz' 3 sont deux morceaux différents — et
+        /// l'intervalle ne suffirait pas davantage : deux unités peuvent couvrir le même intervalle
+        /// sans être le même morceau à désigner.
+        public var id: String { "\(unit.rawValue)-\(number)" }
     }
 
     /// Ce que le programme proposé contient, tel qu'on l'annonce avant de commencer.
@@ -113,8 +125,22 @@ public struct LearningSetupDraft: Equatable {
     /// Les intervalles déclarés à apprendre, triés par position dans le mushaf.
     public private(set) var goals: [LearningGoal] = []
 
+    /// L'unité dans laquelle l'utilisateur désigne les morceaux du Coran.
+    ///
+    /// Elle ne vaut que pour **désigner** : ce qui est déjà déclaré reste, quelle que soit l'unité
+    /// affichée. Changer d'unité ne défait donc rien, et c'est ce qui permet de déclarer une sourate
+    /// connue puis un juz' à apprendre sans repasser par le début.
+    public var unit: LearningUnit = .juz
+
     /// L'allure choisie.
-    public var pace: LearningPace = .regulier
+    ///
+    /// En lecture seule : choisir une allure n'est pas seulement poser une valeur, c'est aussi
+    /// **poser le nombre** qui va avec quand elle est personnalisée. Une écriture directe
+    /// laisserait passer une allure sans nombre.
+    public private(set) var pace: LearningPace = .regulier
+
+    /// Le nombre de versets par séance quand l'allure est `.personnalise`.
+    public private(set) var customVersesPerSession: Int?
 
     /// Les jours de travail choisis.
     public var days: Set<LearningDay> = Set(LearningDay.allCases)
@@ -268,24 +294,114 @@ public struct LearningSetupDraft: Equatable {
         )
     }
 
+    // MARK: - Repartir de zéro
+
+    /// Efface toutes les déclarations : ni acquis, ni objectif.
+    ///
+    /// N'efface **pas** l'allure, les jours ni la durée de séance : repartir de zéro porte sur ce
+    /// qu'on sait et sur ce qu'on vise, pas sur la manière dont on veut travailler. Tout effacer
+    /// obligerait à rechoisir un rythme qu'on n'a pas remis en question.
+    public mutating func startFromScratch() {
+        known = []
+        goals = []
+    }
+
+    // MARK: - Continuer le Coran
+
+    /// Prend le Coran entier comme objectif, pour le reprendre là où l'on s'est arrêté.
+    ///
+    /// Un seul objectif qui couvre le mushaf : le découpage part donc du début, et c'est le relevé
+    /// de progression qui marque comme appris tout ce qui l'est déjà. Le programme reprend alors
+    /// exactement au verset suivant le dernier appris — sans qu'aucune date n'entre en jeu, et sans
+    /// que les jours manqués n'ajoutent quoi que ce soit.
+    ///
+    /// Les objectifs déjà posés sont **remplacés** : le Coran entier les contient tous, et les
+    /// garder à côté ferait compter deux fois les mêmes versets.
+    public mutating func continueThroughTheQuran() {
+        goals = [LearningGoal(range: QuranRange(quran), label: nil, targetDate: nil)]
+    }
+
     // MARK: - Les choix proposés
 
-    /// Les juz' du mushaf, avec l'état du brouillon pour chacun.
+    /// Les morceaux d'une unité, avec l'état du brouillon pour chacun.
     ///
-    /// Le juz' est la maille du choix : c'est l'unité dont un utilisateur dit « je le connais »,
-    /// et elle tient en trente lignes. La sourate irait de 3 à 286 versets, la page en demanderait
-    /// 604, et ni l'une ni l'autre ne se récite d'un trait.
-    public func juzChoices() -> [Choice] {
-        quran.juzs.map { juz in
-            let range = QuranRange(juz)
-            return Choice(
-                juzNumber: juz.juzNumber,
-                range: range,
-                verseCount: range.verseCount(in: quran),
-                solidity: solidity(of: range),
-                isGoal: isGoal(range)
-            )
+    /// L'unité est un paramètre, et non une lecture de `self.unit` : l'écran doit pouvoir préparer
+    /// la liste d'une autre unité que celle affichée — c'est ce qui lui permet de ne pas faire
+    /// clignoter les pastilles au moment du changement.
+    public func choices(for unit: LearningUnit) -> [Choice] {
+        switch unit {
+        case .sourate:
+            return quran.suras.map { sura in
+                makeChoice(unit: .sourate, number: sura.suraNumber, range: QuranRange(sura))
+            }
+        case .hizb:
+            return quran.hizbs.map { hizb in
+                makeChoice(unit: .hizb, number: hizb.hizbNumber, range: QuranRange(hizb))
+            }
+        case .juz:
+            return quran.juzs.map { juz in
+                makeChoice(unit: .juz, number: juz.juzNumber, range: QuranRange(juz))
+            }
         }
+    }
+
+    /// Les morceaux de l'unité affichée.
+    public func choices() -> [Choice] {
+        choices(for: unit)
+    }
+
+    // MARK: - Le rythme
+
+    /// Choisit une allure.
+    ///
+    /// Choisir « personnalisé » **pose** un nombre — celui de l'allure régulière — faute de quoi le
+    /// programme serait découpé au repli du profil, un nombre que l'utilisateur n'a jamais vu. Le
+    /// nombre est ensuite ajusté par l'écran, qui seul sait le montrer.
+    ///
+    /// Le nombre déjà posé n'est **pas** écrasé : revenir à « personnalisé » après un détour par
+    /// une autre allure retrouve le nombre qu'on avait choisi.
+    public mutating func select(pace: LearningPace) {
+        self.pace = pace
+        if pace == .personnalise, customVersesPerSession == nil {
+            customVersesPerSession = LearningPace.regulier.versesPerSession
+        }
+    }
+
+    /// Fixe le nombre de versets par séance d'une allure personnalisée.
+    ///
+    /// Sans effet sur une allure fixe : son rythme vient de l'allure, et l'écraser ici ferait
+    /// croire à un choix qui ne serait pas appliqué. La valeur est bornée à un verset au moins,
+    /// sans quoi le découpage n'avancerait pas.
+    public mutating func setVersesPerSession(_ verses: Int) {
+        guard pace == .personnalise else { return }
+        customVersesPerSession = max(1, verses)
+    }
+
+    /// Le nombre de versets par séance, valeur personnalisée comprise.
+    ///
+    /// Passe par le profil, qui porte la règle : la réécrire ici la ferait diverger, et c'est
+    /// exactement le genre d'écart qui ne se voit qu'une fois le programme engendré.
+    public var versesPerSession: Int { makeProfile().versesPerSession }
+
+    /// Le nombre de versets par séance qu'exige une échéance.
+    ///
+    /// C'est le calcul **inverse** de l'estimation de fin : au lieu de demander « quand aurai-je
+    /// fini ? », on demande « que dois-je faire pour finir à cette date ? ».
+    ///
+    /// - Note: c'est une **cible**, pas une promesse. Le découpage arrondit chaque séance à une fin
+    ///   de page, et certaines séances portent donc plus de versets que ce nombre ; l'échéance peut
+    ///   s'en trouver avancée, jamais reculée.
+    ///
+    /// - Returns: `nil` s'il n'y a rien à apprendre, si aucun jour de travail n'est choisi, ou si
+    ///   l'échéance ne laisse aucun jour de travail devant elle.
+    public func requiredVersesPerSession(by deadline: Date, from date: Date = Date()) -> Int? {
+        let remaining = summary(from: date).remainingVerses
+        guard remaining > 0 else { return nil }
+
+        let available = planner.workingDays(from: date, through: deadline, days: days)
+        guard available > 0 else { return nil }
+        // Arrondi au supérieur : une séance entamée est une séance à faire.
+        return (remaining + available - 1) / available
     }
 
     // MARK: - Résultat
@@ -296,6 +412,7 @@ public struct LearningSetupDraft: Equatable {
             knownRanges: known,
             goals: goals,
             pace: pace,
+            customVersesPerSession: customVersesPerSession,
             days: days,
             sessionMinutes: sessionMinutes,
             createdAt: createdAt,
@@ -322,6 +439,21 @@ public struct LearningSetupDraft: Equatable {
     // MARK: Private
 
     private var planner: LearningPlanner { LearningPlanner(quran: quran, calendar: calendar) }
+
+    /// Compose un choix à partir de son unité, de son rang et de son intervalle.
+    ///
+    /// Les trois unités passent par ici : c'est ce qui garantit qu'elles rapportent le même genre
+    /// d'état — la solidité déclarée et l'objectif — sans trois copies à faire diverger.
+    private func makeChoice(unit: LearningUnit, number: Int, range: QuranRange) -> Choice {
+        Choice(
+            unit: unit,
+            number: number,
+            range: range,
+            verseCount: range.verseCount(in: quran),
+            solidity: solidity(of: range),
+            isGoal: isGoal(range)
+        )
+    }
 }
 
 /// Range des intervalles dans l'ordre du mushaf.

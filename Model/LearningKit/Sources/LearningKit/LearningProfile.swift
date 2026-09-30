@@ -9,25 +9,39 @@ import Foundation
 import QuranKit
 
 /// L'allure à laquelle on veut avancer.
+///
+/// Quatre rythmes qui portent leur propre nombre, et un cinquième qui n'en porte aucun :
+/// « personnalisé » tire son chiffre du **profil**, parce qu'une allure est une valeur simple qui
+/// doit rester `Codable` sans cas particulier, et que le nombre, lui, doit survivre au disque.
 public enum LearningPace: String, Codable, CaseIterable, Sendable {
-    /// Un verset ou deux par séance — pour ne jamais se décourager.
+    /// Un ou deux versets par séance — pour ne jamais se décourager.
+    case tresDoux
+    /// Trois versets environ par séance.
     case doux
     /// Une page environ par séance.
     case regulier
     /// Un rubu' ou plus par séance.
     case soutenu
+    /// Le nombre de versets par séance est fixé par l'utilisateur.
+    case personnalise
 
     // MARK: Public
 
-    /// Nombre de versets visés par séance.
+    /// Nombre de versets visés par séance, ou `nil` quand c'est à l'utilisateur de le dire.
     ///
     /// Exprimé en versets plutôt qu'en pages : c'est l'unité la plus fine, donc tous les rythmes
     /// deviennent comparables et le calcul de dates reste exact.
-    public var targetVersesPerSession: Int {
+    ///
+    /// - Note: `.personnalise` ne rend **rien**, et c'est délibéré. Une valeur de repli se ferait
+    ///   passer pour le choix de l'utilisateur ; c'est `LearningProfile.versesPerSession` qui
+    ///   tranche, en lisant la valeur que le profil porte.
+    public var versesPerSession: Int? {
         switch self {
+        case .tresDoux: return 2
         case .doux: return 3
         case .regulier: return 8
         case .soutenu: return 20
+        case .personnalise: return nil
         }
     }
 }
@@ -76,6 +90,25 @@ public struct QuranRange: Codable, Equatable, Hashable, Sendable {
     public init(_ group: some QuranGroup) {
         let first = group.firstVerse
         let last = group.lastVerse
+        self.init(
+            firstSura: first.sura.suraNumber,
+            firstAyah: first.ayah,
+            lastSura: last.sura.suraNumber,
+            lastAyah: last.ayah
+        )
+    }
+
+    /// Construit l'intervalle qui couvre le mushaf entier.
+    ///
+    /// Les bornes sont **lues** dans le mushaf plutôt que codées en dur : c'est ce qui rend
+    /// « tout le Coran » correct sur un autre mushaf que celui de référence, où la dernière
+    /// sourate n'a pas forcément six versets.
+    ///
+    /// - Note: `Quran` ne conforme pas à `QuranGroup`, d'où cette surcharge plutôt qu'un cas de
+    ///   plus dans l'initialiseur générique.
+    public init(_ quran: Quran) {
+        let first = quran.firstVerse
+        let last = quran.lastVerse
         self.init(
             firstSura: first.sura.suraNumber,
             firstAyah: first.ayah,
@@ -174,6 +207,7 @@ public struct LearningProfile: Codable, Equatable, Sendable {
         knownRanges: [KnownRange] = [],
         goals: [LearningGoal] = [],
         pace: LearningPace = .regulier,
+        customVersesPerSession: Int? = nil,
         days: Set<LearningDay> = Set(LearningDay.allCases),
         sessionMinutes: Int = 15,
         createdAt: Date = Date(),
@@ -182,6 +216,7 @@ public struct LearningProfile: Codable, Equatable, Sendable {
         self.knownRanges = knownRanges
         self.goals = goals
         self.pace = pace
+        self.customVersesPerSession = customVersesPerSession
         self.days = days
         self.sessionMinutes = sessionMinutes
         self.createdAt = createdAt
@@ -190,9 +225,23 @@ public struct LearningProfile: Codable, Equatable, Sendable {
 
     // MARK: Public
 
+    /// Le repli quand aucune valeur n'est disponible : le rythme de l'allure régulière.
+    ///
+    /// Un profil relu d'un disque abîmé peut porter `.personnalise` sans nombre. Ce repli évite
+    /// alors un programme d'un verset par séance — sans jamais se faire passer pour un choix :
+    /// la configuration, elle, en pose toujours un.
+    public static let fallbackVersesPerSession = 8
+
     public var knownRanges: [KnownRange]
     public var goals: [LearningGoal]
     public var pace: LearningPace
+
+    /// Le nombre de versets par séance choisi par l'utilisateur, quand l'allure est `.personnalise`.
+    ///
+    /// Conservé même lorsque l'allure change : quelqu'un qui essaie « soutenu » puis revient à
+    /// « personnalisé » doit retrouver son nombre, pas un nombre oublié.
+    public var customVersesPerSession: Int?
+
     public var days: Set<LearningDay>
     public var sessionMinutes: Int
     public let createdAt: Date
@@ -202,6 +251,22 @@ public struct LearningProfile: Codable, Equatable, Sendable {
 
     /// Un profil vierge, avant toute configuration.
     public static var empty: LearningProfile { LearningProfile() }
+
+    /// Le nombre de versets visés par séance — la valeur personnalisée si elle s'applique.
+    ///
+    /// C'est **la** source du rythme : le planificateur lit ce nombre et jamais
+    /// `LearningPace.versesPerSession` directement, sans quoi une allure personnalisée serait
+    /// ignorée au profit du repli.
+    ///
+    /// La valeur personnalisée ne s'applique **qu'à** `.personnalise` : sur une allure fixe, c'est
+    /// l'allure qui décide. Autrement, un nombre resté d'un essai précédent se ferait passer pour
+    /// le rythme choisi.
+    public var versesPerSession: Int {
+        if pace == .personnalise, let custom = customVersesPerSession, custom > 0 {
+            return custom
+        }
+        return pace.versesPerSession ?? Self.fallbackVersesPerSession
+    }
 
     /// Les intervalles à ne pas programmer : ceux déclarés solides.
     public var solidRanges: [QuranRange] {

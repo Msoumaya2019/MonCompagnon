@@ -84,7 +84,7 @@ public struct LearningPlanner {
         // Sortir ici perdait ces révisions, et le programme passait pour vide.
         var items: [LearningItem] = []
         for interval in remaining {
-            for chunk in sessions(in: interval, targetVerses: profile.pace.targetVersesPerSession) {
+            for chunk in sessions(in: interval, targetVerses: profile.versesPerSession) {
                 guard let range = QuranRange(offsets: chunk, in: index) else { continue }
                 var item = LearningItem(
                     range: range,
@@ -117,10 +117,39 @@ public struct LearningPlanner {
         let remaining = program.totalVerses(in: quran) - program.learnedVerses(in: quran)
         guard remaining > 0 else { return calendar.startOfDay(for: date) }
 
-        let perSession = max(1, profile.pace.targetVersesPerSession)
+        let perSession = max(1, profile.versesPerSession)
         // Arrondi au supérieur : une séance entamée est une séance à faire.
         let sessions = (remaining + perSession - 1) / perSession
         return dateOfSession(sessions, workingDays: profile.days, from: date)
+    }
+
+    /// Le nombre de jours de travail entre deux dates, bornes incluses.
+    ///
+    /// C'est le calcul **inverse** de `dateOfSession` : au lieu de demander quand on aura fini, il
+    /// compte les jours dont on dispose. Les deux partagent la même définition du jour de travail —
+    /// `LearningDay.calendarWeekday` confronté à `Calendar` — sans quoi l'aller et le retour se
+    /// contrediraient, et une échéance tiendrait compte de jours que l'estimation de fin ignore.
+    ///
+    /// La boucle avance d'un jour à la fois et s'arrête d'elle-même : `cursor` croît strictement,
+    /// donc la terminaison ne dépend pas de la valeur de l'échéance.
+    ///
+    /// - Returns: `0` si aucun jour de travail n'est choisi, ou si l'échéance précède le départ.
+    public func workingDays(from start: Date, through end: Date, days: Set<LearningDay>) -> Int {
+        let weekdays = Set(days.map(\.calendarWeekday))
+        guard !weekdays.isEmpty else { return 0 }
+
+        let last = calendar.startOfDay(for: end)
+        var cursor = calendar.startOfDay(for: start)
+        var count = 0
+
+        while cursor <= last {
+            if weekdays.contains(calendar.component(.weekday, from: cursor)) {
+                count += 1
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+        }
+        return count
     }
 
     // MARK: Private

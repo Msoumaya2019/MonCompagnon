@@ -6,8 +6,9 @@
 //
 //  Le planificateur a déjà ses propres tests — couverture exacte, découpage en séances, acquis
 //  solides et fragiles, date de fin. Ceux-ci portent sur ce que le brouillon décide **avant** de
-//  les lui confier : les choix proposés, la validité de chaque étape, le rangement des
-//  déclarations, et ce qu'on annonce à l'utilisateur avant qu'il commence.
+//  les lui confier : les choix proposés et leurs trois unités, la validité de chaque étape, le
+//  rangement des déclarations, la reprise du Coran entier, et ce qu'on annonce à l'utilisateur
+//  avant qu'il commence.
 //
 
 import Foundation
@@ -43,13 +44,26 @@ final class LearningSetupDraftTests: XCTestCase {
         LearningSetupDraft(quran: quran, calendar: calendar, createdAt: day0)
     }
 
+    /// Le nombre de morceaux d'une unité, écrit en clair.
+    ///
+    /// Les valeurs sont des **oracles indépendants** : les lire sur `quran` ne prouverait rien,
+    /// puisque l'implémentation lit les mêmes tableaux. Elles viennent du mushaf embarqué —
+    /// 114 sourates, 60 hizb, 30 juz'.
+    private func pieceCount(of unit: LearningUnit) -> Int {
+        switch unit {
+        case .sourate: return 114
+        case .hizb: return 60
+        case .juz: return 30
+        }
+    }
+
     // MARK: - Les choix proposés
 
     /// Trente juz', dans l'ordre du mushaf, qui le couvrent exactement.
     func test_juzChoices_coverTheWholeMushafInOrder() {
-        let choices = makeDraft().juzChoices()
+        let choices = makeDraft().choices(for: .juz)
         XCTAssertEqual(choices.count, 30)
-        XCTAssertEqual(choices.map(\.juzNumber), Array(1 ... 30))
+        XCTAssertEqual(choices.map(\.number), Array(1 ... 30))
 
         let covered = choices.reduce(0) { $0 + $1.verseCount }
         XCTAssertEqual(covered, quran.verses.count, "les juz' couvrent le mushaf sans trou")
@@ -57,8 +71,9 @@ final class LearningSetupDraftTests: XCTestCase {
 
     /// Le dernier choix est bien Juz 'Amma, avec sa taille et ses bornes.
     func test_theLastChoiceIsJuzAmma() {
-        let choice = makeDraft().juzChoices().last
-        XCTAssertEqual(choice?.juzNumber, 30)
+        let choice = makeDraft().choices(for: .juz).last
+        XCTAssertEqual(choice?.number, 30)
+        XCTAssertEqual(choice?.unit, .juz)
         XCTAssertEqual(choice?.verseCount, 564)
         XCTAssertEqual(choice?.range, juz30)
     }
@@ -69,8 +84,8 @@ final class LearningSetupDraftTests: XCTestCase {
         draft.setSolidity(.solide, for: juz30)
         draft.toggleGoal(QuranRange(quran.juzs[0]))
 
-        let choices = draft.juzChoices()
-        XCTAssertEqual(choices.first?.juzNumber, 1)
+        let choices = draft.choices(for: .juz)
+        XCTAssertEqual(choices.first?.number, 1)
         XCTAssertEqual(choices.first?.isGoal, true)
         XCTAssertEqual(choices.last?.solidity, .solide)
         XCTAssertEqual(choices.last?.isGoal, false)
@@ -238,7 +253,7 @@ final class LearningSetupDraftTests: XCTestCase {
         var draft = makeDraft()
         draft.toggleGoal(juz30, label: "Juz 'Amma")
         draft.setSolidity(.fragile, for: QuranRange(quran.juzs[0]))
-        draft.pace = .doux
+        draft.select(pace: .doux)
         draft.days = [.lundi, .mercredi]
         draft.sessionMinutes = 25
 
@@ -257,7 +272,7 @@ final class LearningSetupDraftTests: XCTestCase {
         var configured = makeDraft()
         configured.toggleGoal(juz30)
         configured.setSolidity(.solide, for: QuranRange(quran.juzs[0]))
-        configured.pace = .soutenu
+        configured.select(pace: .soutenu)
         configured.days = [.samedi]
         configured.sessionMinutes = 30
         let profile = configured.makeProfile()
@@ -336,11 +351,11 @@ final class LearningSetupDraftTests: XCTestCase {
     func test_thePace_changesTheProgramAndTheAnnouncedEnd() {
         var gentle = makeDraft()
         gentle.toggleGoal(juz30)
-        gentle.pace = .doux
+        gentle.select(pace: .doux)
 
         var sustained = makeDraft()
         sustained.toggleGoal(juz30)
-        sustained.pace = .soutenu
+        sustained.select(pace: .soutenu)
 
         let doux = gentle.summary(from: day0)
         let soutenu = sustained.summary(from: day0)
@@ -349,5 +364,123 @@ final class LearningSetupDraftTests: XCTestCase {
         let finDoux = doux.estimatedEndDate ?? day0
         let finSoutenu = soutenu.estimatedEndDate ?? day0
         XCTAssertGreaterThan(finDoux, finSoutenu, "et finit plus tard")
+    }
+
+    // MARK: - Les trois unités de choix
+
+    /// Chaque unité propose ses morceaux, numérotés dans l'ordre, et ils couvrent le mushaf.
+    func test_eachUnit_coversTheWholeMushaf() {
+        let draft = makeDraft()
+        for unit in LearningUnit.allCases {
+            let choices = draft.choices(for: unit)
+            XCTAssertEqual(choices.count, pieceCount(of: unit), "Unit \(unit) : nombre de morceaux")
+            XCTAssertEqual(choices.map(\.number), Array(1 ... choices.count), "Unit \(unit) : numérotés à partir de 1")
+            XCTAssertTrue(choices.allSatisfy { $0.unit == unit }, "Unit \(unit) : chaque choix dit son unité")
+            XCTAssertEqual(
+                choices.reduce(0) { $0 + $1.verseCount },
+                quran.verses.count,
+                "Unit \(unit) : les morceaux couvrent le mushaf sans trou"
+            )
+        }
+    }
+
+    /// Le premier morceau de chaque unité a les bornes du mushaf, et la première sourate ses versets.
+    func test_theFirstChoiceOfEachUnit_hasTheExpectedBounds() {
+        let draft = makeDraft()
+        XCTAssertEqual(draft.choices(for: .sourate).first?.range, QuranRange(firstSura: 1, firstAyah: 1, lastSura: 1, lastAyah: 7))
+        XCTAssertEqual(draft.choices(for: .sourate).first?.verseCount, 7, "Al-Fatiha compte sept versets")
+        XCTAssertEqual(draft.choices(for: .hizb).first?.range, QuranRange(quran.hizbs[0]))
+        XCTAssertEqual(draft.choices(for: .juz).first?.range, QuranRange(quran.juzs[0]))
+    }
+
+    /// La liste de l'unité affichée suit `unit`.
+    func test_choices_followsTheDisplayedUnit() {
+        var draft = makeDraft()
+        XCTAssertEqual(draft.unit, .juz, "le juz' est l'unité par défaut")
+
+        draft.unit = .hizb
+        XCTAssertEqual(draft.choices().count, 60)
+        draft.unit = .sourate
+        XCTAssertEqual(draft.choices().count, 114)
+    }
+
+    /// Chaque choix a une identité qui distingue les unités.
+    ///
+    /// Le rang seul ne suffirait pas : la sourate 3, le hizb 3 et le juz' 3 sont trois morceaux
+    /// différents, et une identité partagée les ferait passer l'un pour l'autre dans une liste.
+    func test_choicesOfDifferentUnits_doNotShareAnIdentity() {
+        let draft = makeDraft()
+        let sura = draft.choices(for: .sourate)[2]
+        let hizb = draft.choices(for: .hizb)[2]
+        let juz = draft.choices(for: .juz)[2]
+
+        XCTAssertEqual(sura.number, 3)
+        XCTAssertEqual(Set([sura.id, hizb.id, juz.id]).count, 3, "trois morceaux, trois identités")
+    }
+
+    /// Changer d'unité ne défait rien, et deux unités peuvent coexister comme objectifs.
+    func test_changingTheUnit_keepsWhatIsDeclared() {
+        var draft = makeDraft()
+        draft.toggleGoal(QuranRange(quran.suras[0]), label: "Al-Fatiha")
+        draft.setSolidity(.solide, for: juz30)
+
+        draft.unit = .sourate
+        XCTAssertTrue(draft.isGoal(QuranRange(quran.suras[0])))
+        XCTAssertEqual(draft.choices(for: .sourate).first?.isGoal, true, "l'objectif se voit dans l'unité sourate")
+        XCTAssertEqual(draft.choices(for: .juz).last?.solidity, .solide, "et l'acquis dans l'unité juz'")
+
+        draft.toggleGoal(juz30)
+        XCTAssertEqual(draft.goals.count, 2, "une sourate et un juz' coexistent")
+        XCTAssertEqual(draft.goals.map(\.range.firstSura), [1, 78], "et restent rangés dans l'ordre du mushaf")
+    }
+
+    // MARK: - Repartir de zéro, continuer le Coran
+
+    /// « Je commence de zéro » efface les déclarations, et rien d'autre.
+    func test_startFromScratch_clearsTheDeclarationsOnly() {
+        var draft = makeDraft()
+        draft.toggleGoal(juz30)
+        draft.setSolidity(.solide, for: QuranRange(quran.juzs[0]))
+        draft.select(pace: .doux)
+        draft.days = [.lundi]
+        draft.sessionMinutes = 30
+
+        draft.startFromScratch()
+        XCTAssertTrue(draft.known.isEmpty, "plus aucun acquis")
+        XCTAssertTrue(draft.goals.isEmpty, "plus aucun objectif")
+        XCTAssertEqual(draft.pace, .doux, "le rythme n'est pas remis en question")
+        XCTAssertEqual(draft.days, [.lundi])
+        XCTAssertEqual(draft.sessionMinutes, 30)
+    }
+
+    /// « Continuer le Coran » prend le mushaf entier comme objectif, et remplace les autres.
+    func test_continueThroughTheQuran_takesTheWholeMushafAndReplacesTheGoals() {
+        var draft = makeDraft()
+        draft.toggleGoal(juz30)
+
+        draft.continueThroughTheQuran()
+        XCTAssertEqual(draft.goals.count, 1, "un seul objectif : le Coran entier")
+        XCTAssertEqual(
+            draft.goals.first?.range,
+            QuranRange(firstSura: 1, firstAyah: 1, lastSura: 114, lastAyah: 6)
+        )
+        XCTAssertEqual(draft.goals.first?.range.verseCount(in: quran), quran.verses.count)
+        XCTAssertFalse(draft.isGoal(juz30), "l'objectif précédent est remplacé, non doublé")
+    }
+
+    /// Le Coran entier laisse réellement quelque chose à apprendre, et la reprise le couvre en entier.
+    ///
+    /// C'est la promesse de « continuer progressivement » : un programme qui part du début du
+    /// mushaf et va jusqu'à la fin, sans trou. Le relevé de progression, lui, décide où il reprend —
+    /// c'est le lot de `LearningProgress`, et non du brouillon.
+    func test_continuingThroughTheQuran_producesAContiguousProgram() {
+        var draft = makeDraft()
+        draft.continueThroughTheQuran()
+        draft.select(pace: .soutenu)
+
+        let summary = draft.summary(from: day0)
+        XCTAssertFalse(summary.isEmpty)
+        XCTAssertEqual(summary.remainingVerses, quran.verses.count, "tout le Coran reste à apprendre")
+        XCTAssertGreaterThan(summary.sessionCount, 0)
     }
 }
