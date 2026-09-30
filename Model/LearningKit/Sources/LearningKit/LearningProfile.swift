@@ -210,6 +210,7 @@ public struct LearningProfile: Codable, Equatable, Sendable {
         customVersesPerSession: Int? = nil,
         days: Set<LearningDay> = Set(LearningDay.allCases),
         sessionMinutes: Int = 15,
+        direction: LearningDirection = .depuisLeDebut,
         createdAt: Date = Date(),
         isConfigured: Bool = false
     ) {
@@ -219,8 +220,41 @@ public struct LearningProfile: Codable, Equatable, Sendable {
         self.customVersesPerSession = customVersesPerSession
         self.days = days
         self.sessionMinutes = sessionMinutes
+        self.direction = direction
         self.createdAt = createdAt
         self.isConfigured = isConfigured
+    }
+
+    /// Relit un profil enregistré.
+    ///
+    /// Écrit à la main, et non laissé à la synthèse, pour une raison précise : **un champ ajouté
+    /// après coup n'existe pas dans les profils déjà sur les appareils**. Une clé absente fait
+    /// échouer le décodage d'un champ non optionnel, et le magasin range le profil entier dans une
+    /// seule clé JSON dont le contenu illisible rend la valeur par défaut — donc un profil vide.
+    /// L'échec serait **silencieux** : l'utilisateur découvrirait que son programme a disparu.
+    ///
+    /// D'où la règle, à tenir pour tout champ ajouté ici : `decodeIfPresent`, et un repli explicite
+    /// qui décrive l'ancien comportement.
+    ///
+    /// - Note: la synthèse n'est pas un repli acceptable, même en donnant une valeur par défaut à
+    ///   la propriété. Le comportement d'une valeur par défaut — face à une clé absente comme face
+    ///   à une clé présente — ne dit pas ce qu'on croit, et il a changé selon les versions. Un
+    ///   initialiseur écrit à la main dit exactement ce qui se passe, et le test de relecture le
+    ///   prouve.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        knownRanges = try container.decode([KnownRange].self, forKey: .knownRanges)
+        goals = try container.decode([LearningGoal].self, forKey: .goals)
+        pace = try container.decode(LearningPace.self, forKey: .pace)
+        customVersesPerSession = try container.decodeIfPresent(Int.self, forKey: .customVersesPerSession)
+        days = try container.decode(Set<LearningDay>.self, forKey: .days)
+        sessionMinutes = try container.decode(Int.self, forKey: .sessionMinutes)
+        // Le seul champ que les profils déjà enregistrés ne portent pas. Le repli n'est pas une
+        // valeur neutre : c'est l'ordre du mushaf, qui était le seul comportement possible avant
+        // ce réglage — leur programme ne change donc pas d'un verset.
+        direction = try container.decodeIfPresent(LearningDirection.self, forKey: .direction) ?? .depuisLeDebut
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        isConfigured = try container.decode(Bool.self, forKey: .isConfigured)
     }
 
     // MARK: Public
@@ -244,6 +278,13 @@ public struct LearningProfile: Codable, Equatable, Sendable {
 
     public var days: Set<LearningDay>
     public var sessionMinutes: Int
+
+    /// Le sens dans lequel le programme parcourt le mushaf.
+    ///
+    /// Un profil enregistré avant ce réglage n'en porte pas : la relecture retombe alors sur
+    /// `.depuisLeDebut`, qui décrit le seul comportement qui existait alors. Voir `init(from:)`.
+    public var direction: LearningDirection
+
     public let createdAt: Date
     /// `false` tant que la configuration guidée n'a pas été terminée — pilote l'affichage du
     /// parcours d'accueil plutôt que du tableau de bord.
@@ -280,4 +321,25 @@ public struct LearningProfile: Codable, Equatable, Sendable {
 
     /// Vrai si au moins un jour de travail est choisi.
     public var hasWorkingDays: Bool { !days.isEmpty }
+
+    // MARK: Internal
+
+    /// Les clés du profil sur le disque.
+    ///
+    /// Déclarées à la main, et non laissées à la synthèse, parce que le décodeur écrit plus haut
+    /// les nomme une à une : une clé ajoutée ici sans être lue là disparaîtrait au rechargement
+    /// **sans erreur**, et le magasin rendrait un profil amputé.
+    ///
+    /// L'ordre suit celui du décodeur, pour que les deux se lisent côte à côte.
+    enum CodingKeys: String, CodingKey {
+        case knownRanges
+        case goals
+        case pace
+        case customVersesPerSession
+        case days
+        case sessionMinutes
+        case direction
+        case createdAt
+        case isConfigured
+    }
 }
