@@ -2,7 +2,7 @@
 //  LearningHomeView.swift
 //  LearningFeature
 //
-//  Le récapitulatif du programme d'apprentissage.
+//  Le tableau de bord de l'apprentissage.
 //
 
 import LearningKit
@@ -11,18 +11,23 @@ import NoorUI
 import SwiftUI
 import UIx
 
-/// Le récapitulatif du programme : où en est l'utilisateur, et ce qu'il lui reste à faire.
+/// Le tableau de bord : ce qu'il y a à faire aujourd'hui, ce qui est fragile, ce qui est dû, et où
+/// en est le programme.
 ///
-/// Tant que la configuration n'est pas terminée, l'écran n'a rien à récapituler : il propose de la
+/// L'écran ne dit jamais « en retard ». Aucune séance n'est rattachée à un jour : le programme
+/// avance avec les versets réellement appris, et reprend là où l'utilisateur s'est arrêté. C'est
+/// pourquoi « Aujourd'hui » annonce la prochaine séance et les révisions dues, sans rien reprocher
+/// pour les jours manqués.
+///
+/// Tant que la configuration n'est pas terminée, il n'y a rien à récapituler : l'écran propose de la
 /// commencer. C'est le seul état où il n'y a pas de programme à montrer.
 ///
-/// `@MainActor` comme la vue d'accueil : ses sections interrogent le modèle de vue, qui est isolé
-/// sur l'acteur principal.
+/// `@MainActor` comme le modèle de vue, qui est isolé sur l'acteur principal.
 @MainActor
 struct LearningHomeView: View {
     @StateObject var viewModel: LearningHomeViewModel
 
-    /// Ouvre la configuration guidée.
+    /// Ouvre la configuration du programme.
     ///
     /// Renseignée par le contrôleur une fois la vue construite : capturer `self` dans
     /// l'initialiseur du contrôleur serait refusé par Swift.
@@ -32,7 +37,7 @@ struct LearningHomeView: View {
         NoorList {
             if !viewModel.isConfigured {
                 NoorBasicSection {
-                    editItem
+                    configureItem
                 }
             } else if viewModel.isProgramEmpty {
                 NoorBasicSection {
@@ -40,8 +45,10 @@ struct LearningHomeView: View {
                     editItem
                 }
             } else {
+                todaySection
+                consolidateSection
+                reviewSection
                 programSection
-                nextSection
                 NoorBasicSection {
                     editItem
                 }
@@ -51,53 +58,118 @@ struct LearningHomeView: View {
 
     // MARK: Private
 
-    /// Le bouton qui ouvre la configuration guidée.
-    private var editItem: some View {
-        let title = l("learning.setup.title", table: .learning)
-        let detail = l("learning.row.detail", table: .learning)
-        return NoorListItem(
-            title: .text(title),
-            subtitle: .init(text: .text(detail), location: .bottom),
-            accessory: .disclosureIndicator,
-            action: .sync { editProgram() }
-        )
+    /// Ce qu'il y a à faire aujourd'hui.
+    ///
+    /// Deux choses, et deux seulement : la prochaine séance à apprendre, et les révisions dues.
+    /// Quand il n'y a ni l'une ni l'autre, l'écran le dit plutôt que de rester muet — un écran vide
+    /// se lit comme une panne.
+    private var todaySection: some View {
+        NoorBasicSection(title: l("learning.dashboard.today", table: .learning), footer: todayFooter) {
+            if let next = viewModel.nextToLearn, let label = viewModel.label(of: next) {
+                NoorListItem(
+                    title: .text(label),
+                    subtitle: .init(
+                        text: .text(l("learning.dashboard.toLearn", table: .learning)),
+                        location: .bottom
+                    )
+                )
+            } else {
+                NoorListItem(title: .text(l("learning.dashboard.finished", table: .learning)))
+            }
+
+            if viewModel.dueReviewCount() > 0 {
+                NoorListItem(
+                    title: .text(l("learning.dashboard.reviews", table: .learning)),
+                    accessory: .text("\(viewModel.dueReviewCount())")
+                )
+            }
+        }
     }
 
+    /// Les acquis fragiles, qui reviennent en révision dès le premier jour.
+    private var consolidateSection: some View {
+        let items = viewModel.toConsolidate()
+        return NoorBasicSection(
+            title: l("learning.dashboard.consolidate", table: .learning),
+            footer: items.isEmpty ? l("learning.dashboard.consolidate.none", table: .learning) : nil
+        ) {
+            rows(for: items)
+        }
+    }
+
+    /// Les révisions dues d'un passage déjà travaillé.
+    private var reviewSection: some View {
+        let items = viewModel.reviews()
+        return NoorBasicSection(
+            title: l("learning.dashboard.review", table: .learning),
+            footer: items.isEmpty ? l("learning.dashboard.none", table: .learning) : nil
+        ) {
+            rows(for: items)
+        }
+    }
+
+    /// Où en est le programme.
     private var programSection: some View {
-        NoorBasicSection(title: l("learning.title", table: .learning), footer: reviewFooter) {
+        NoorBasicSection(title: l("learning.dashboard.program", table: .learning)) {
             NoorListItem(
                 title: .text(l("learning.dashboard.progress", table: .learning)),
                 accessory: .text(progressText)
-            )
-            NoorListItem(
-                title: .text(l("learning.dashboard.streak", table: .learning)),
-                accessory: .text("\(viewModel.streak())")
             )
             NoorListItem(
                 title: .text(l("learning.dashboard.learned", table: .learning)),
                 accessory: .text(lFormat("verses", table: .android, viewModel.learnedVerses))
             )
             NoorListItem(
-                title: .text(l("learning.dashboard.reviews", table: .learning)),
-                accessory: .text("\(viewModel.dueReviewCount())")
+                title: .text(l("learning.dashboard.consolidated", table: .learning)),
+                accessory: .text("\(viewModel.consolidatedCount)")
+            )
+            NoorListItem(
+                title: .text(l("learning.dashboard.streak", table: .learning)),
+                accessory: .text("\(viewModel.streak())")
             )
         }
     }
 
-    /// Le prochain passage à apprendre, ou l'annonce d'un programme terminé.
-    private var nextSection: some View {
-        NoorBasicSection(title: l("learning.dashboard.next", table: .learning)) {
-            if let next = viewModel.nextToLearn, let label = viewModel.label(of: next) {
+    /// Les passages d'une liste, sous leur libellé lisible.
+    ///
+    /// Le libellé est composé par le modèle de vue — sourate, puis page — parce que le libellé du
+    /// modèle, lui, est un repère technique : « page 582 » ou « 78:1-78:40 » ne se lisent pas.
+    @ViewBuilder
+    private func rows(for items: [LearningItem]) -> some View {
+        ForEach(items) { item in
+            if let label = viewModel.label(of: item) {
                 NoorListItem(title: .text(label))
-            } else {
-                NoorListItem(title: .text(l("learning.dashboard.finished", table: .learning)))
             }
         }
     }
 
-    /// Le pied de section des révisions : ce qu'il faut lire quand il n'y a rien à réviser.
-    private var reviewFooter: String? {
-        viewModel.dueReviewCount() == 0 ? l("learning.dashboard.none", table: .learning) : nil
+    /// Le pied de la section du jour : ce qu'il faut lire quand il n'y a rien à faire.
+    private var todayFooter: String? {
+        viewModel.dueReviewCount() == 0 && viewModel.nextToLearn == nil
+            ? l("learning.dashboard.none", table: .learning)
+            : nil
+    }
+
+    /// Le bouton qui ouvre la configuration, quand il n'y en a pas encore.
+    private var configureItem: some View {
+        NoorListItem(
+            title: .text(l("learning.setup.title", table: .learning)),
+            subtitle: .init(
+                text: .text(l("learning.row.detail", table: .learning)),
+                location: .bottom
+            ),
+            accessory: .disclosureIndicator,
+            action: .sync { editProgram() }
+        )
+    }
+
+    /// Le bouton qui rouvre la configuration, une fois le programme en place.
+    private var editItem: some View {
+        NoorListItem(
+            title: .text(l("learning.dashboard.edit", table: .learning)),
+            accessory: .disclosureIndicator,
+            action: .sync { editProgram() }
+        )
     }
 
     private var progressText: String {

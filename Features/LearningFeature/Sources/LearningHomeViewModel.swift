@@ -53,8 +53,38 @@ final class LearningHomeViewModel: ObservableObject {
 
     /// Le nombre de révisions dues à cette date.
     func dueReviewCount(now: Date = Date()) -> Int {
-        program.dueReviews(now: now, calendar: calendar).count
+        dueReviews(now: now).count
     }
+
+    /// Les passages dont la révision est due à cette date, dans l'ordre du programme.
+    func dueReviews(now: Date = Date()) -> [LearningItem] {
+        program.dueReviews(now: now, calendar: calendar)
+    }
+
+    /// Les acquis fragiles à consolider.
+    ///
+    /// Ce sont des révisions dues d'emblée : déclarer « je le connais, mais je l'oublie » fait entrer
+    /// le passage au programme déjà dû, sans passer par un jour de travail — c'est ce que fait
+    /// `LearningPlanner.reviewItems(for:at:startingAt:)`, et il le fait exprès, pour ne pas compter
+    /// une déclaration comme un jour travaillé.
+    ///
+    /// Le seul repère qui les sépare donc d'une révision ordinaire est `lastWorkedAt`, resté vide.
+    /// Dès que l'utilisateur les aura travaillés une fois, ils rejoindront les révisions ordinaires —
+    /// ce qui est le comportement voulu : ils ne sont plus seulement déclarés, ils sont travaillés.
+    func toConsolidate(now: Date = Date()) -> [LearningItem] {
+        dueReviews(now: now).filter { $0.lastWorkedAt == nil }
+    }
+
+    /// Les révisions dues d'un passage déjà travaillé au moins une fois.
+    func reviews(now: Date = Date()) -> [LearningItem] {
+        dueReviews(now: now).filter { $0.lastWorkedAt != nil }
+    }
+
+    /// Le nombre total de versets du programme.
+    var totalVerses: Int { program.totalVerses(in: quran) }
+
+    /// Le nombre de passages consolidés : appris, et sortis du cycle de révision.
+    var consolidatedCount: Int { program.consolidatedCount }
 
     /// Le prochain passage à apprendre, ou `nil` si tout est appris.
     var nextToLearn: LearningItem? { program.nextToLearn() }
