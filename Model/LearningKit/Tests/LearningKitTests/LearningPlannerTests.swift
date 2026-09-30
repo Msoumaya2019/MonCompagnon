@@ -190,8 +190,9 @@ final class LearningPlannerTests: XCTestCase {
         // Toutes les pages ne conviennent pas : il faut que la page tienne dans la fenêtre de la
         // cible (entre une et deux fois). On prend la première qui convient plutôt que de figer un
         // numéro de page — c'est le mushaf qui fait référence, pas le test.
-        let profile = makeProfile(goals: [QuranRange(quran.juzs[29])], pace: .soutenu)
-        let target = profile.versesPerSession
+        // La cible se lit donc sur un profil **sans objectif** : elle ne dépend que de l'allure, et
+        // le profil définitif ne se bâtit qu'après le choix de la page.
+        let target = makeProfile(goals: [], pace: .soutenu).versesPerSession
         let fitting = quran.pages.filter { page in
             guard let chunk = verseOffsets(of: QuranRange(page)) else { return false }
             let size = chunk.upperBound - chunk.lowerBound + 1
@@ -202,6 +203,7 @@ final class LearningPlannerTests: XCTestCase {
         }
 
         let range = QuranRange(page)
+        let profile = makeProfile(goals: [range], pace: .soutenu)
         let program = planner().makeProgram(for: profile, from: day0)
 
         XCTAssertEqual(program.items.count, 1, "Une page entière doit former une seule séance")
