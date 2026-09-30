@@ -249,7 +249,9 @@ final class LearningSetupViewModel: ObservableObject {
 
     var versesPerSession: Int { draft.versesPerSession }
 
-    func isVersesPerSession(_ verses: Int) -> Bool { draft.customVersesPerSession == verses }
+    func isVersesPerSession(_ verses: Int) -> Bool {
+        draft.customVersesPerSession == verses
+    }
 
     func setVersesPerSession(_ verses: Int) {
         update { $0.setVersesPerSession(verses) }

@@ -107,6 +107,12 @@ struct LearningSetupView: View {
 
     // MARK: - Mon rythme
 
+    /// Le rythme tient en quatre sections : l'allure, les jours, la durée, l'échéance.
+    ///
+    /// `@ViewBuilder` est indispensable ici : la propriété rend **plusieurs** sections, et sans lui
+    /// Swift ne verrait que la première comme expression rendue — les trois autres seraient des
+    /// résultats abandonnés, et la propriété n'aurait aucun `return` à inférer.
+    @ViewBuilder
     private var rhythmSection: some View {
         NoorBasicSection(
             title: l("learning.pace.title", table: .learning),
