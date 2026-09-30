@@ -169,6 +169,11 @@ private func modelTargets() -> [[Target]] {
             "QuranKit",
             "QuranText",
         ]),
+        target(type, name: "LearningKit", dependencies: [
+            "QuranKit",
+        ], testDependencies: [
+            "QuranKit",
+        ]),
     ]
 }
 
