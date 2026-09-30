@@ -115,7 +115,7 @@ class AppViewController: UITabBarController, UITabBarControllerDelegate, AppPres
     private let isAppIconAvailable: Bool
     private var hasStartedPostLaunchPresentation = false
 
-    private let tabNames = ["home", "notes", "bookmarks", "search", "settings"]
+    private let tabNames = ["home", "learning", "notes", "bookmarks", "settings"]
 
     private var visibleViewController: UIViewController? {
         presentedViewController ?? selectedViewController

@@ -9,9 +9,9 @@
 import AnnotationsService
 import AppDependencies
 import FeaturesSupport
-import LearningFeature
 import QuranTextKit
 import ReadingSelectorFeature
+import SearchFeature
 import UIKit
 
 @MainActor
@@ -56,7 +56,15 @@ public struct HomeBuilder {
         let viewController = HomeViewController(
             viewModel: viewModel,
             readingSelectorBuilder: ReadingSelectorBuilder(container: container),
-            learningBuilder: LearningBuilder(container: container)
+            // La recherche n'a plus d'onglet : c'est l'accueil qui l'ouvre. La fabrique est
+            // construite ici parce que le navigateur du Coran ne vit que dans l'onglet, et la
+            // recherche en a besoin pour ouvrir le verset qu'on choisit.
+            makeSearch: { [weak listener] in
+                guard let listener else {
+                    return nil
+                }
+                return SearchBuilder(container: container).build(withListener: listener)
+            }
         )
         return viewController
     }

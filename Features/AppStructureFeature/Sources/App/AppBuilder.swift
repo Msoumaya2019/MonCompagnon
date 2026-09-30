@@ -22,11 +22,14 @@ struct AppBuilder {
             supportsCloudKit: container.supportsCloudKit,
             analytics: container.analytics,
             lastPagePersistence: container.lastPagePersistence,
+            // La recherche a quitté la barre : elle reste accessible par la loupe de l'écran
+            // « Sourate / Juz' », qui l'ouvre dans sa propre pile. L'apprentissage prend sa place,
+            // en seconde position — c'est devenu le geste principal de l'application.
             tabs: [
                 HomeTabBuilder(container: container),
+                LearningTabBuilder(container: container),
                 NotesTabBuilder(container: container),
                 BookmarksTabBuilder(container: container),
-                SearchTabBuilder(container: container),
                 SettingsTabBuilder(container: container),
             ]
         )

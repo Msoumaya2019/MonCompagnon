@@ -879,7 +879,7 @@ private func featuresTargets() -> [[Target]] {
         target(type, name: "HomeFeature", hasTests: false, dependencies: [
             "AppDependencies",
             "ReadingSelectorFeature",
-            "LearningFeature",
+            "SearchFeature",
             "ReadingService",
             "AnnotationsService",
             "FeaturesSupport",
@@ -973,7 +973,7 @@ private func featuresTargets() -> [[Target]] {
             "HomeFeature",
             "BookmarksFeature",
             "NotesFeature",
-            "SearchFeature",
+            "LearningFeature",
             "SettingsFeature",
             "QuranViewFeature",
             "WhatsNewFeature",

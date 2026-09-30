@@ -5,7 +5,6 @@
 //  Created by Mohamed Afifi on 2023-07-16.
 //
 
-import LearningFeature
 import Localization
 import ReadingSelectorFeature
 import SwiftUI
@@ -17,16 +16,12 @@ final class HomeViewController: UIHostingController<HomeView> {
     init(
         viewModel: HomeViewModel,
         readingSelectorBuilder: ReadingSelectorBuilder,
-        learningBuilder: LearningBuilder
+        makeSearch: @escaping @MainActor () -> UIViewController?
     ) {
         self.viewModel = viewModel
         self.readingSelectorBuilder = readingSelectorBuilder
-        self.learningBuilder = learningBuilder
+        self.makeSearch = makeSearch
         super.init(rootView: HomeView(viewModel: viewModel))
-
-        // `self` n'existe qu'après `super.init`, et la vue est construite avant : on lui donne
-        // son action ici. La capturer dans l'initialiseur serait refusé par Swift.
-        rootView.openLearning = { [weak self] in self?.openLearning() }
 
         initialize()
     }
@@ -53,7 +48,10 @@ final class HomeViewController: UIHostingController<HomeView> {
 
     private let viewModel: HomeViewModel
     private let readingSelectorBuilder: ReadingSelectorBuilder
-    private let learningBuilder: LearningBuilder
+    /// Construit l'écran de recherche. C'est une fabrique, et non l'écran : il ne doit être
+    /// construit qu'au moment où on l'ouvre, et il a besoin du navigateur du Coran, que seul
+    /// l'onglet détient.
+    private let makeSearch: @MainActor () -> UIViewController?
     private lazy var segmentedControl = UISegmentedControl(frame: .zero)
 
     private func initialize() {
@@ -92,6 +90,12 @@ final class HomeViewController: UIHostingController<HomeView> {
                 target: self,
                 action: #selector(openReadingSelectors)
             ),
+            UIBarButtonItem(
+                image: UIImage.symbol("magnifyingglass"),
+                style: .plain,
+                target: self,
+                action: #selector(openSearch)
+            ),
         ]
 
         navigationItem.leftBarButtonItem = UIBarButtonItem(
@@ -113,10 +117,16 @@ final class HomeViewController: UIHostingController<HomeView> {
         navigationController?.pushViewController(readingSelector, animated: true)
     }
 
-    /// Ouvre l'espace d'apprentissage, depuis la première section de la liste d'accueil.
-    private func openLearning() {
-        let learning = learningBuilder.build()
-        navigationController?.pushViewController(learning, animated: true)
+    /// Ouvre la recherche depuis l'en-tête.
+    ///
+    /// Elle n'a plus d'onglet — l'apprentissage a pris sa place dans la barre — mais garde son
+    /// écran : c'est la loupe qui l'ouvre désormais, dans la pile de l'accueil.
+    @objc
+    private func openSearch() {
+        guard let search = makeSearch() else {
+            return
+        }
+        navigationController?.pushViewController(search, animated: true)
     }
 
     @objc

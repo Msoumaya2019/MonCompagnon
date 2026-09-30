@@ -18,12 +18,6 @@ import UIx
 struct HomeView: View {
     @StateObject var viewModel: HomeViewModel
 
-    /// Ouvre l'espace d'apprentissage.
-    ///
-    /// Renseignée par le contrôleur une fois la vue construite : capturer `self` dans
-    /// l'initialiseur du contrôleur serait refusé par Swift.
-    var openLearning: Action = {}
-
     var body: some View {
         #if QURAN_SYNC
         HomeViewUI(
@@ -40,8 +34,7 @@ struct HomeView: View {
             selectQuarter: { viewModel.navigateTo($0) },
             surahSortOrder: viewModel.surahSortOrder,
             isJuzExpanded: { viewModel.isJuzExpanded($0) },
-            setJuzExpanded: { viewModel.setJuz($0, expanded: $1) },
-            openLearning: openLearning
+            setJuzExpanded: { viewModel.setJuz($0, expanded: $1) }
         )
         #else
         HomeViewUI(
@@ -56,8 +49,7 @@ struct HomeView: View {
             selectQuarter: { viewModel.navigateTo($0) },
             surahSortOrder: viewModel.surahSortOrder,
             isJuzExpanded: { viewModel.isJuzExpanded($0) },
-            setJuzExpanded: { viewModel.setJuz($0, expanded: $1) },
-            openLearning: openLearning
+            setJuzExpanded: { viewModel.setJuz($0, expanded: $1) }
         )
         #endif
     }
@@ -84,7 +76,6 @@ private struct HomeViewUI: View {
     let surahSortOrder: SurahSortOrder
     let isJuzExpanded: (Juz) -> Bool
     let setJuzExpanded: (Juz, Bool) -> Void
-    let openLearning: Action
 
     var body: some View {
         ZStack {
@@ -100,8 +91,6 @@ private struct HomeViewUI: View {
                 #else
                 ContinueReadingSection(title: l("home.continue-reading.title"), lastPages: lastPages, selectLastPage: selectLastPage)
                 #endif
-
-                learningItem
 
                 switch type {
                 case .suras:
@@ -119,21 +108,6 @@ private struct HomeViewUI: View {
             .id(surahSortOrder.rawValue)
         }
         .task { await start() }
-    }
-
-    /// La ligne qui ouvre l'espace d'apprentissage.
-    ///
-    /// Placée après « reprendre la lecture » : le mode apprentissage est une entrée de plus, pas un
-    /// remplacement du geste le plus fréquent — rouvrir le mushaf là où on l'a laissé.
-    var learningItem: some View {
-        let title = l("learning.title", table: .learning)
-        let detail = l("learning.row.detail", table: .learning)
-        return NoorListItem(
-            title: .text(title),
-            subtitle: .init(text: .text(detail), location: .bottom),
-            accessory: .disclosureIndicator,
-            action: .sync { openLearning() }
-        )
     }
 
     func suraView(_ sura: Sura) -> some View {
@@ -269,8 +243,7 @@ private struct HomePreview: View {
                     isJuzExpanded: { !collapsedJuzs.contains($0) },
                     setJuzExpanded: { juz, expanded in
                         if expanded { collapsedJuzs.remove(juz) } else { collapsedJuzs.insert(juz) }
-                    },
-                    openLearning: {}
+                    }
                 )
                 #else
                 HomeViewUI(
@@ -287,8 +260,7 @@ private struct HomePreview: View {
                     isJuzExpanded: { !collapsedJuzs.contains($0) },
                     setJuzExpanded: { juz, expanded in
                         if expanded { collapsedJuzs.remove(juz) } else { collapsedJuzs.insert(juz) }
-                    },
-                    openLearning: {}
+                    }
                 )
                 #endif
             }
