@@ -81,7 +81,23 @@ final class LearningSetupViewModel: ObservableObject {
         let kind: Kind
     }
 
+    /// Les quatre étapes de la configuration.
+    ///
+    /// L'étape vit ici, et non dans la vue : l'écran « ne décide de rien », et c'est ce qui la rend
+    /// éprouvable sans la rendre. **Aucune étape ne bloque le passage à la suivante** : le brief ne
+    /// le demande nulle part, et `canStart` garde déjà la création — une règle que personne n'a
+    /// demandée coûte plus qu'elle ne rapporte.
+    enum Step: String, CaseIterable {
+        case connu
+        case rythme
+        case sens
+        case resume
+    }
+
     @Published private(set) var draft: LearningSetupDraft
+
+    /// L'étape affichée.
+    @Published private(set) var step: Step = .connu
 
     /// Le récapitulatif du programme tel qu'il serait engendré.
     ///
@@ -209,6 +225,28 @@ final class LearningSetupViewModel: ObservableObject {
     /// Prend le Coran entier comme objectif, pour le reprendre là où l'on s'est arrêté.
     func continueThroughTheQuran() {
         update { $0.continueThroughTheQuran() }
+    }
+
+    // MARK: - Les objectifs d'un geste
+
+    var goalPresets: [LearningGoalPreset] { LearningGoalPreset.allCases }
+
+    func presetTitle(_ preset: LearningGoalPreset) -> String {
+        l("learning.goal.preset.\(preset.rawValue)", table: .learning)
+    }
+
+    /// Vrai si l'étendue du preset est **posée** — c'est-à-dire si elle est un des objectifs.
+    ///
+    /// Les deux choix qui ne portent pas d'intervalle n'ont pas d'état : ils amènent à la liste, où
+    /// le morceau se désigne, et c'est la liste qui montre alors ce qui est choisi.
+    func isActive(_ preset: LearningGoalPreset) -> Bool {
+        guard let range = preset.range(in: quran) else { return false }
+        return draft.isGoal(range)
+    }
+
+    /// Pose un objectif d'un geste.
+    func apply(_ preset: LearningGoalPreset) {
+        update { $0.apply(preset) }
     }
 
     // MARK: - Le rythme
@@ -340,6 +378,25 @@ final class LearningSetupViewModel: ObservableObject {
         Self.endDateFormatter.string(from: date)
     }
 
+    // MARK: - Le sens
+
+    var directions: [LearningDirection] { LearningDirection.allCases }
+
+    /// Le sens dans lequel l'objectif sera parcouru.
+    var direction: LearningDirection { draft.direction }
+
+    func select(direction: LearningDirection) {
+        update { $0.direction = direction }
+    }
+
+    func directionTitle(_ direction: LearningDirection) -> String {
+        l("learning.direction.\(direction.rawValue).title", table: .learning)
+    }
+
+    func directionDetail(_ direction: LearningDirection) -> String {
+        l("learning.direction.\(direction.rawValue).detail", table: .learning)
+    }
+
     // MARK: - Terminer
 
     /// Enregistre le profil et engendre le programme correspondant.
@@ -351,6 +408,33 @@ final class LearningSetupViewModel: ObservableObject {
         let profile = draft.makeProfile()
         persistence.saveProfile(profile)
         persistence.regenerateProgram(for: profile, from: now)
+    }
+
+    // MARK: - Les étapes
+
+    var isFirstStep: Bool { step == .connu }
+
+    var isLastStep: Bool { step == .resume }
+
+    /// Le titre de l'étape, avec sa place dans le parcours.
+    ///
+    /// La place est écrite **dans chaque libellé** plutôt que composée à partir d'un format : la
+    /// table de localisation du dépôt ne porte que des formats à un seul argument (`verses`,
+    /// `%d min`), et un titre entier se traduit mieux qu'un assemblage de morceaux.
+    var stepTitle: String { l("learning.step.\(step.rawValue)", table: .learning) }
+
+    /// Avance d'une étape. Sans effet sur la dernière : c'est la création, et elle est gardée.
+    func advance() {
+        let steps = Step.allCases
+        guard let index = steps.firstIndex(of: step), index + 1 < steps.count else { return }
+        step = steps[index + 1]
+    }
+
+    /// Revient d'une étape. Sans effet sur la première.
+    func goBack() {
+        let steps = Step.allCases
+        guard let index = steps.firstIndex(of: step), index > 0 else { return }
+        step = steps[index - 1]
     }
 
     // MARK: Private

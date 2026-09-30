@@ -30,17 +30,45 @@ struct LearningSetupView: View {
 
     var body: some View {
         NoorList {
-            knownSection
-            goalsSection
-            rhythmSection
-            summarySection
+            stepHeader
+            stepContent
         }
         .safeAreaInset(edge: .bottom) {
-            createBar
+            bottomBar
         }
     }
 
     // MARK: Private
+
+    // MARK: - L'étape
+
+    /// Où l'on en est, en tête de liste.
+    ///
+    /// Une ligne, et non un titre de navigation : la barre de navigation porte déjà le nom de
+    /// l'écran, posé par le contrôleur, et deux titres qui se disputent la même place se
+    /// contrediraient au premier changement d'étape.
+    private var stepHeader: some View {
+        NoorListItem(title: .text(viewModel.stepTitle))
+    }
+
+    /// Ce que l'étape montre : les sections existantes, réparties en quatre groupes.
+    ///
+    /// Aucune section n'est réécrite — le découpage les **répartit**, et c'est ce qui fait de ce lot
+    /// un changement de forme et non de contenu.
+    @ViewBuilder
+    private var stepContent: some View {
+        switch viewModel.step {
+        case .connu:
+            knownSection
+            goalsSection
+        case .rythme:
+            rhythmSection
+        case .sens:
+            directionSection
+        case .resume:
+            summarySection
+        }
+    }
 
     // MARK: - Ce que je connais déjà
 
@@ -81,11 +109,35 @@ struct LearningSetupView: View {
 
     // MARK: - Mon objectif
 
+    /// Les cinq objectifs qu'on pose d'un geste, au-dessus du sélecteur et de la liste.
+    ///
+    /// Ils ne les remplacent pas : viser deux sourates qui ne se suivent pas, ou retirer une sourate
+    /// d'un ensemble, doit rester possible — c'est ce que la liste permet, et les presets n'y
+    /// touchent pas. Deux d'entre eux n'ont d'ailleurs aucun état à montrer : ils **amènent** à la
+    /// liste, et leur chevron le dit.
+    private var presetRows: some View {
+        ForEach(viewModel.goalPresets, id: \.rawValue) { preset in
+            NoorListItem(
+                title: .text(viewModel.presetTitle(preset)),
+                accessory: presetAccessory(for: preset),
+                action: .sync { viewModel.apply(preset) }
+            )
+        }
+    }
+
+    /// Ce qu'un preset montre à sa droite : un chevron s'il mène à la liste, une coche s'il pose
+    /// lui-même son étendue.
+    private func presetAccessory(for preset: LearningGoalPreset) -> NoorListItem.Accessory? {
+        guard preset.unit == nil else { return .disclosureIndicator }
+        return checkmark(isOn: viewModel.isActive(preset))
+    }
+
     private var goalsSection: some View {
         NoorBasicSection(
             title: l("learning.goals.title", table: .learning),
             footer: l("learning.goals.detail", table: .learning)
         ) {
+            presetRows
             unitPicker(selection: goalUnitBinding)
             pills(viewModel.goalPills, in: .goal)
             ForEach(viewModel.goalRows()) { row in
@@ -205,6 +257,29 @@ struct LearningSetupView: View {
         }
     }
 
+    // MARK: - Le sens
+
+    /// Le sens dans lequel l'objectif sera parcouru.
+    ///
+    /// Deux choix, et non trois : « depuis Al-Baqarah » n'est pas un **sens**, c'est un objectif qui
+    /// commence là — le désigner relève de l'étape précédente. L'écran ne montre donc pas plus de
+    /// valeurs que le modèle n'en tient.
+    private var directionSection: some View {
+        NoorBasicSection(
+            title: l("learning.direction.title", table: .learning),
+            footer: l("learning.direction.detail", table: .learning)
+        ) {
+            ForEach(viewModel.directions, id: \.rawValue) { direction in
+                NoorListItem(
+                    title: .text(viewModel.directionTitle(direction)),
+                    subtitle: .init(text: .text(viewModel.directionDetail(direction)), location: .bottom),
+                    accessory: checkmark(isOn: viewModel.direction == direction),
+                    action: .sync { viewModel.select(direction: direction) }
+                )
+            }
+        }
+    }
+
     // MARK: - Ce que le programme contiendra
 
     private var summarySection: some View {
@@ -294,36 +369,66 @@ struct LearningSetupView: View {
         )
     }
 
-    // MARK: - La barre de création
+    // MARK: - La barre du bas
 
-    private var createBar: some View {
+    /// Retour, et le geste qui mène plus loin.
+    ///
+    /// Le bouton principal ne fait pas la même chose selon l'étape : il avance, sauf à la dernière,
+    /// où il crée le programme. Il n'est donc éteint qu'à la dernière — avancer n'a jamais à être
+    /// interdit, la création seule est gardée par `canStart`.
+    private var bottomBar: some View {
         VStack(spacing: 8) {
-            if let footer = createFooter {
+            if let footer = bottomFooter {
                 Text(footer)
                     .font(.footnote)
                     .foregroundColor(.secondaryLabel)
                     .multilineTextAlignment(.center)
             }
 
-            Button(action: finish) {
-                Text(l("learning.setup.create", table: .learning))
-                    .frame(maxWidth: .infinity)
+            HStack(spacing: 12) {
+                if !viewModel.isFirstStep {
+                    Button(action: { viewModel.goBack() }) {
+                        Text(l("learning.step.back", table: .learning))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                Button(action: advance) {
+                    Text(advanceTitle)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.isLastStep && !viewModel.canStart)
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(!viewModel.canStart)
         }
         .padding()
         .frame(maxWidth: .infinity)
         .background(.thinMaterial)
     }
 
-    /// Ce qu'il faut lire quand le bouton est éteint.
+    /// Ce que fait le bouton principal : avancer, ou créer le programme à la dernière étape.
+    private var advance: Action {
+        if viewModel.isLastStep {
+            return finish
+        }
+        return { viewModel.advance() }
+    }
+
+    private var advanceTitle: String {
+        viewModel.isLastStep
+            ? l("learning.setup.create", table: .learning)
+            : l("learning.step.next", table: .learning)
+    }
+
+    /// Ce qu'il faut lire quand le bouton principal est éteint.
     ///
     /// Deux raisons distinctes, et deux phrases distinctes : « aucun jour » se corrige dans la
     /// section du rythme, « rien à apprendre » dans celle des objectifs. Les confondre enverrait
-    /// l'utilisateur au mauvais endroit.
-    private var createFooter: String? {
-        guard !viewModel.canStart else { return nil }
+    /// l'utilisateur au mauvais endroit. Aux autres étapes il n'y a rien à lire, le bouton n'y étant
+    /// jamais éteint.
+    private var bottomFooter: String? {
+        guard viewModel.isLastStep, !viewModel.canStart else { return nil }
         if !viewModel.hasWorkingDays {
             return l("learning.summary.noDays", table: .learning)
         }
