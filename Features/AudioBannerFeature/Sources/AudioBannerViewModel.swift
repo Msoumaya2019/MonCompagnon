@@ -289,6 +289,12 @@ public final class AudioBannerViewModel: ObservableObject {
                                 return
                             }
                             await self?.observe([download])
+                            // `observe` ne fait que suivre la progression, et tait l'échec. Sans
+                            // cette attente, une base ratée passait inaperçue et la lecture
+                            // échouait plus loin, sur une archive absente — avec un message qui ne
+                            // disait rien de la cause. On attend donc le flux ici, comme le fait
+                            // déjà la branche non diffusée, pour remonter la vraie erreur.
+                            for try await _ in download.progress { }
                             logger.info("AudioBanner: database download completed")
                         }
                     }

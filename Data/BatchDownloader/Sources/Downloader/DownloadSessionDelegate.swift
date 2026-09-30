@@ -157,8 +157,11 @@ actor DownloadSessionDelegate: NetworkSessionDelegate {
 
         crasher.recordError(error, reason: "Download network error occurred")
 
-        // check if no disk space
-        let finalError: Error = if let error = error as? POSIXError, error.code == .ENOENT {
+        // Un disque plein se dit `ENOSPC` — « no space left on device ». Le code testé était
+        // `ENOENT`, « no such file or directory », qui n'a rien à voir : un disque plein n'était
+        // donc jamais reconnu, et le message qui l'annonce — « Pas d'espace disque disponible pour
+        // enregistrer les téléchargements » — restait hors d'atteinte.
+        let finalError: Error = if let error = error as? POSIXError, error.code == .ENOSPC {
             FileSystemError.noDiskSpace
         } else {
             NetworkError(error: error)
