@@ -253,6 +253,32 @@ final class LearningPlannerTests: XCTestCase {
         XCTAssertTrue(program.isEmpty, "Tout est déjà connu : il n'y a rien à programmer")
     }
 
+    /// Le pendant exact du test précédent, côté fragile : il reste une révision à faire.
+    ///
+    /// Le cas est étroit — l'objectif est **entièrement** couvert par un acquis fragile — et c'est
+    /// précisément celui où une sortie anticipée sur « plus rien à apprendre » faisait disparaître
+    /// la révision, alors que l'utilisateur venait de déclarer qu'il l'oublie.
+    func test_goalEntirelyKnownFragile_yieldsTheReviewItem() {
+        let sura = QuranRange(quran.suras[0])
+        let fragile = KnownRange(range: sura, label: nil, solidity: .fragile)
+        let profile = makeProfile(goals: [sura], known: [fragile])
+        let program = planner().makeProgram(for: profile, from: day0)
+
+        XCTAssertFalse(program.isEmpty, "Un acquis fragile reste un passage à revoir")
+        XCTAssertEqual(program.items.count, 1, "La sourate fragile est le seul passage")
+        XCTAssertEqual(program.items.first?.range, sura)
+        XCTAssertEqual(
+            program.items.first?.storedStatus,
+            .learned,
+            "Un acquis n'est jamais à apprendre"
+        )
+        XCTAssertEqual(
+            program.dueReviews(now: day0, calendar: calendar).count,
+            1,
+            "Et il est dû dès aujourd'hui"
+        )
+    }
+
     // MARK: - Acquis fragiles
 
     func test_fragileRange_becomesAReviewItemAndLeavesTheNewMaterial() {

@@ -30,6 +30,14 @@ public enum Table: String {
     case android = "Android"
     case suras = "Suras"
     case readers = "Readers"
+    /// Les libellés de l'espace d'apprentissage.
+    ///
+    /// Table à part, et non `Localizable`, pour une raison précise : `LocalizationCatalogTests`
+    /// impose que **toutes** les langues aient exactement les mêmes clés que l'anglais dans
+    /// `Localizable.strings`. Une table par usage, comme `Readers` et `Suras`, n'a pas cette
+    /// contrainte : une langue absente retombe sur l'anglais, et l'espace peut être traduit
+    /// langue par langue sans bloquer le reste.
+    case learning = "Learning"
 }
 
 public func lFormat(_ key: String, table: Table = .localizable, language: Language? = nil, _ arguments: CVarArg...) -> String {

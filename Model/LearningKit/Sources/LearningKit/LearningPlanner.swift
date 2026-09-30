@@ -47,7 +47,9 @@ public struct LearningPlanner {
     /// les intervalles verset par verset ; le planificateur, lui, ne connaît que le profil, et
     /// rend toujours des passages neufs.
     ///
-    /// - Returns: un programme vide si le profil n'a aucun objectif, ou si tout est déjà connu.
+    /// - Returns: un programme vide si le profil n'a aucun objectif, ou si tout ce qu'il vise est
+    ///   déjà connu **et solide**. Un acquis fragile reste un passage à revoir : il suffit
+    ///   donc à rendre le programme non vide.
     public func makeProgram(for profile: LearningProfile, from date: Date = Date()) -> LearningProgram {
         let targets = QuranRangeAlgebra.merged(profile.goals.compactMap { $0.range.offsets(in: index) })
         guard !targets.isEmpty else { return .empty }
@@ -56,8 +58,10 @@ public struct LearningPlanner {
             (profile.solidRanges + profile.fragileRanges).compactMap { $0.offsets(in: index) }
         )
         let remaining = targets.flatMap { QuranRangeAlgebra.subtracting(known, from: $0) }
-        guard !remaining.isEmpty else { return .empty }
 
+        // Pas de sortie si `remaining` est vide : les acquis fragiles sont ajoutés plus bas,
+        // et un objectif entièrement fragile n'a plus rien à apprendre mais tout à revoir.
+        // Sortir ici perdait ces révisions, et le programme passait pour vide.
         var items: [LearningItem] = []
         for interval in remaining {
             for chunk in sessions(in: interval, targetVerses: profile.pace.targetVersesPerSession) {
