@@ -61,6 +61,21 @@ struct QuranVerseIndex {
         verses.indices.contains(offset) ? verses[offset] : nil
     }
 
+    /// Les rangs couverts par un groupe du Coran — page, sourate, juz', hizb, rubu'.
+    ///
+    /// Rend `nil` pour un groupe dont les bornes n'appartiennent pas à ce mushaf, ou dont la
+    /// première borne suit la dernière : dans les deux cas il n'y a rien à désigner.
+    func offsets(of group: some QuranGroup) -> ClosedRange<Int>? {
+        guard
+            let first = offset(of: group.firstVerse),
+            let last = offset(of: group.lastVerse),
+            first <= last
+        else {
+            return nil
+        }
+        return first ... last
+    }
+
     // MARK: Private
 
     private let verses: [AyahNumber]

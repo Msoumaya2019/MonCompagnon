@@ -268,6 +268,15 @@ private func dataTargets() -> [[Target]] {
             "QuranAnnotations",
         ] + mobileSyncTargetDependencies),
 
+        target(type, name: "LearningPersistence", dependencies: [
+            "LearningKit",
+            "Preferences",
+            "QuranKit",
+        ], testDependencies: [
+            "LearningKit",
+            "QuranKit",
+        ]),
+
         target(type, name: "NotePersistence", dependencies: [
             "CoreDataModel",
             "CoreDataPersistence",

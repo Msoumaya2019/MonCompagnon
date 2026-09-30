@@ -42,9 +42,10 @@ public struct LearningPlanner {
     /// 3. les intervalles **fragiles** sont ajoutés en fin de programme, déjà marqués appris et
     ///    dus en révision : l'utilisateur les connaît mais les oublie, donc ils doivent revenir.
     ///
-    /// Les passages portent des identifiants neufs à chaque génération. Rattacher un passage
-    /// régénéré à sa progression antérieure est le rôle de la persistance, qui compare les
-    /// intervalles ; le planificateur, lui, ne connaît que le profil.
+    /// Les passages portent des identifiants neufs à chaque génération. Reporter la progression
+    /// antérieure sur un programme régénéré est le rôle de `LearningProgressTransfer`, qui compare
+    /// les intervalles verset par verset ; le planificateur, lui, ne connaît que le profil, et
+    /// rend toujours des passages neufs.
     ///
     /// - Returns: un programme vide si le profil n'a aucun objectif, ou si tout est déjà connu.
     public func makeProgram(for profile: LearningProfile, from date: Date = Date()) -> LearningProgram {
@@ -61,7 +62,13 @@ public struct LearningPlanner {
         for interval in remaining {
             for chunk in sessions(in: interval, targetVerses: profile.pace.targetVersesPerSession) {
                 guard let range = QuranRange(offsets: chunk, in: index) else { continue }
-                items.append(LearningItem(range: range, label: label(for: chunk), position: items.count))
+                items.append(
+                    LearningItem(
+                        range: range,
+                        label: LearningLabel.label(for: chunk, in: index),
+                        position: items.count
+                    )
+                )
             }
         }
         items.append(contentsOf: reviewItems(for: profile, at: date, startingAt: items.count))
@@ -143,7 +150,11 @@ public struct LearningPlanner {
         var items: [LearningItem] = []
         for range in profile.fragileRanges {
             guard let offsets = range.offsets(in: index) else { continue }
-            var item = LearningItem(range: range, label: label(for: offsets), position: position + items.count)
+            var item = LearningItem(
+                range: range,
+                label: LearningLabel.label(for: offsets, in: index),
+                position: position + items.count
+            )
             // Déjà connu : jamais « à apprendre ». Dû dès aujourd'hui, puisque l'utilisateur a
             // précisément déclaré qu'il l'oublie.
             item.storedStatus = .learned
@@ -152,36 +163,6 @@ public struct LearningPlanner {
             items.append(item)
         }
         return items
-    }
-
-    /// Un libellé technique du passage, non localisé.
-    ///
-    /// Volontairement neutre (« page 582 », « 78:1-78:40 ») : ce n'est pas du texte destiné à être
-    /// affiché tel quel. L'interface compose son propre libellé à partir de `range`, dans la langue
-    /// de l'utilisateur ; ce champ sert de repère stable en journalisation, et de repli.
-    private func label(for offsets: ClosedRange<Int>) -> String? {
-        if let page = quran.pages.first(where: { self.offsets(of: $0) == offsets }) {
-            return "page \(page.pageNumber)"
-        }
-        guard
-            let first = index.verse(at: offsets.lowerBound),
-            let last = index.verse(at: offsets.upperBound)
-        else {
-            return nil
-        }
-        return "\(first.nonLocalizedDescription)-\(last.nonLocalizedDescription)"
-    }
-
-    /// Les rangs couverts par un groupe du Coran.
-    private func offsets(of group: some QuranGroup) -> ClosedRange<Int>? {
-        guard
-            let first = index.offset(of: group.firstVerse),
-            let last = index.offset(of: group.lastVerse),
-            first <= last
-        else {
-            return nil
-        }
-        return first ... last
     }
 
     /// La date de la n-ième séance, en ne comptant que les jours de travail.
