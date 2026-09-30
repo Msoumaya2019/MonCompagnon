@@ -83,7 +83,13 @@ class Container: AppDependencies {
         let configuration = URLSessionConfiguration.background(withIdentifier: "DownloadsBackgroundIdentifier")
         configuration.timeoutIntervalForRequest = 60 * 5 // 5 minutes
         return DownloadManager(
-            maxSimultaneousDownloads: 600,
+            // Un récitateur continu demande 115 fichiers, un récitateur verset par verset en
+            // demande plus de six mille. La limite était de 600 : tous ces fichiers étaient donc
+            // remis au système d'un seul coup, ce qui revient à saturer le démon de
+            // téléchargement d'arrière-plan — celui-là même qui doit créer chaque fichier. On
+            // revient à la valeur par défaut d'Apple pour un hôte, largement suffisante puisque le
+            // débit, et non le nombre de connexions, est le facteur limitant.
+            maxSimultaneousDownloads: 6,
             configuration: configuration,
             downloadsURL: Constant.databasesURL.appendingPathComponent("downloads.db", isDirectory: false)
         )

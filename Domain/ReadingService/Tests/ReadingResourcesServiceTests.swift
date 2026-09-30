@@ -324,7 +324,7 @@ final class ReadingResourcesServiceTests: XCTestCase {
         let reading = Reading.hafs_1440
         ReadingPreferences.shared.reading = reading
         let remoteResource = try XCTUnwrap(remoteResources.resource(for: reading))
-        let error = FileSystemError.noDiskSpace
+        let error = FileSystemError.noDiskSpace(availableBytes: nil)
         let partiallyExtractedFiles = zipper.zipContents(remoteResource.zipFile.url)
             .sorted { $0.path < $1.path }
             .prefix(2)

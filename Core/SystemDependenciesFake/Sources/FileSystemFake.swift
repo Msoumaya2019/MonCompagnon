@@ -11,6 +11,12 @@ import Utilities
 
 public struct ResourceValuesFake: ResourceValues, Sendable {
     public let fileSize: Int?
+    public let availableCapacity: Int64?
+
+    public init(fileSize: Int?, availableCapacity: Int64? = nil) {
+        self.fileSize = fileSize
+        self.availableCapacity = availableCapacity
+    }
 }
 
 public final class FileSystemFake: FileSystem, Sendable {

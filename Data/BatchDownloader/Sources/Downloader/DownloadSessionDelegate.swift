@@ -157,16 +157,36 @@ actor DownloadSessionDelegate: NetworkSessionDelegate {
 
         crasher.recordError(error, reason: "Download network error occurred")
 
-        // Un disque plein se dit `ENOSPC` — « no space left on device ». Le code testé était
-        // `ENOENT`, « no such file or directory », qui n'a rien à voir : un disque plein n'était
-        // donc jamais reconnu, et le message qui l'annonce — « Pas d'espace disque disponible pour
-        // enregistrer les téléchargements » — restait hors d'atteinte.
-        let finalError: Error = if let error = error as? POSIXError, error.code == .ENOSPC {
-            FileSystemError.noDiskSpace
+        // Un disque plein se dit de deux façons selon la couche qui le signale : `ENOSPC` — « no
+        // space left on device » — du côté du système de fichiers, et `NSURLErrorCannotCreateFile`
+        // — code `-3000`, « Impossible de créer le fichier » — du côté d'iOS. Seul le premier était
+        // reconnu, et le code testé était même `ENOENT`, qui veut dire « fichier introuvable » : le
+        // message qui annonce la panne — « Pas d'espace disque disponible pour enregistrer les
+        // téléchargements » — restait donc hors d'atteinte. On traite les deux, et on y accole
+        // l'espace encore libre, seul chiffre qui tranche entre un disque plein et un autre refus.
+        let finalError: Error = if Self.isOutOfSpace(error) {
+            FileSystemError.noDiskSpace(availableBytes: availableDiskSpace())
         } else {
             NetworkError(error: error)
         }
         return finalError
+    }
+
+    /// Un disque plein, dit de deux façons selon la couche qui le signale.
+    private static func isOutOfSpace(_ error: Error) -> Bool {
+        if let error = error as? POSIXError, error.code == .ENOSPC {
+            return true
+        }
+        return (error as? URLError)?.code == .cannotCreateFile
+    }
+
+    /// L'espace encore disponible pour l'application, en octets, ou `nil` s'il est illisible.
+    private func availableDiskSpace() -> Int64? {
+        let values = try? fileManager.resourceValues(
+            at: FileManager.documentsURL,
+            forKeys: [.volumeAvailableCapacityForImportantUsageKey]
+        )
+        return values?.availableCapacity
     }
 
     private func validate(task: NetworkSessionTask) -> Error? {

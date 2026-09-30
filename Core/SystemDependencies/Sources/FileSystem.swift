@@ -70,9 +70,19 @@ public struct DefaultFileSystem: FileSystem {
 
 public protocol ResourceValues {
     var fileSize: Int? { get }
+
+    /// L'espace encore disponible pour l'application, en octets.
+    ///
+    /// C'est le seul chiffre qui distingue « le disque est plein » d'un autre refus d'écriture —
+    /// et donc la seule façon de le savoir depuis une capture d'écran.
+    var availableCapacity: Int64? { get }
 }
 
-extension URLResourceValues: ResourceValues { }
+extension URLResourceValues: ResourceValues {
+    /// `volumeAvailableCapacityForImportantUsage` n'est renseigné que si la clé a été demandée
+    /// dans `forKeys` ; sinon il vaut `nil`, ce qui est exactement ce qu'on veut savoir.
+    public var availableCapacity: Int64? { volumeAvailableCapacityForImportantUsage }
+}
 
 public extension FileSystem {
     func contentsOfDirectory(at path: RelativeFilePath, includingPropertiesForKeys keys: [URLResourceKey]?) throws -> [URL] {

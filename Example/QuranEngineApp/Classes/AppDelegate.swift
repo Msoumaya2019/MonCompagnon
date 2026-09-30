@@ -88,7 +88,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         if let attributes = try? FileManager.default.attributesOfItem(atPath: fileURL.path),
            let size = attributes[.size] as? NSNumber,
-           size.intValue > logSizeLimit {
+           size.intValue > logSizeLimit
+        {
             try? FileManager.default.removeItem(at: fileURL)
         }
 
