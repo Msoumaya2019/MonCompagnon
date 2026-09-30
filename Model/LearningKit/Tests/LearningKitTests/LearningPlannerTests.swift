@@ -28,7 +28,7 @@ final class LearningPlannerTests: XCTestCase {
     ///
     /// Elle sert d'oracle : réutiliser la table interne du planificateur ne prouverait rien,
     /// puisque la même erreur se retrouverait des deux côtés.
-    private var verseOffsets: [AyahNumber: Int] = [:]
+    private var offsetsByVerse: [AyahNumber: Int] = [:]
 
     override func setUp() {
         super.setUp()
@@ -36,14 +36,14 @@ final class LearningPlannerTests: XCTestCase {
         for (offset, verse) in quran.verses.enumerated() {
             offsets[verse] = offset
         }
-        verseOffsets = offsets
+        offsetsByVerse = offsets
     }
 
     private func verseOffsets(of range: QuranRange) -> ClosedRange<Int>? {
         guard
             let bounds = range.bounds(in: quran),
-            let first = verseOffsets[bounds.first],
-            let last = verseOffsets[bounds.last]
+            let first = offsetsByVerse[bounds.first],
+            let last = offsetsByVerse[bounds.last]
         else {
             return nil
         }
@@ -54,7 +54,11 @@ final class LearningPlannerTests: XCTestCase {
         LearningPlanner(quran: quran, calendar: calendar)
     }
 
-    private func profile(
+    /// Construit un profil d'essai.
+    ///
+    /// Le nom porte `make` : nommer la variable locale comme la méthode la masquerait dans son
+    /// propre initialiseur, ce que Swift refuse.
+    private func makeProfile(
         goals: [QuranRange],
         known: [KnownRange] = [],
         pace: LearningPace = .regulier,
@@ -95,7 +99,7 @@ final class LearningPlannerTests: XCTestCase {
 
     func test_program_coversTheGoalExactlyOnce() {
         let goal = QuranRange(quran.juzs[29])
-        let program = planner().makeProgram(for: profile(goals: [goal]), from: day0)
+        let program = planner().makeProgram(for: makeProfile(goals: [goal]), from: day0)
 
         let covered = coveredOffsets(of: program)
         XCTAssertFalse(covered.isEmpty)
@@ -110,7 +114,7 @@ final class LearningPlannerTests: XCTestCase {
         guard let bounds = verseOffsets(of: goal) else {
             return XCTFail("Le juz' 'Amma doit avoir des bornes dans ce mushaf")
         }
-        let program = planner().makeProgram(for: profile(goals: [goal]), from: day0)
+        let program = planner().makeProgram(for: makeProfile(goals: [goal]), from: day0)
         let covered = coveredOffsets(of: program)
 
         XCTAssertEqual(covered.first?.lowerBound, bounds.lowerBound)
@@ -119,7 +123,7 @@ final class LearningPlannerTests: XCTestCase {
 
     func test_wholeQuranGoal_coversEveryVerseExactlyOnce() {
         let whole = QuranRange(firstSura: 1, firstAyah: 1, lastSura: 114, lastAyah: 6)
-        let program = planner().makeProgram(for: profile(goals: [whole], pace: .soutenu), from: day0)
+        let program = planner().makeProgram(for: makeProfile(goals: [whole], pace: .soutenu), from: day0)
         let covered = coveredOffsets(of: program)
 
         XCTAssertEqual(covered.first?.lowerBound, 0)
@@ -132,7 +136,7 @@ final class LearningPlannerTests: XCTestCase {
         // Al-Fatiha est comprise dans le premier juz' : l'union ne doit pas se répéter.
         let sura = QuranRange(quran.suras[0])
         let juz = QuranRange(quran.juzs[0])
-        let program = planner().makeProgram(for: profile(goals: [sura, juz]), from: day0)
+        let program = planner().makeProgram(for: makeProfile(goals: [sura, juz]), from: day0)
         let covered = coveredOffsets(of: program)
 
         XCTAssertEqual(program.totalVerses(in: quran), juz.verseCount(in: quran))
@@ -144,7 +148,7 @@ final class LearningPlannerTests: XCTestCase {
     func test_sessions_neverExceedTwiceTheTarget() {
         // Le découpage cherche une fin de page : il peut dépasser la cible, mais jamais du double.
         for pace in LearningPace.allCases {
-            let program = planner().makeProgram(for: profile(goals: [QuranRange(quran.juzs[29])], pace: pace), from: day0)
+            let program = planner().makeProgram(for: makeProfile(goals: [QuranRange(quran.juzs[29])], pace: pace), from: day0)
             for item in program.items {
                 XCTAssertLessThanOrEqual(
                     item.verseCount(in: quran),
@@ -156,7 +160,7 @@ final class LearningPlannerTests: XCTestCase {
     }
 
     func test_sessions_endOnAPageBoundaryOrOnTheExactTarget() {
-        let program = planner().makeProgram(for: profile(goals: [QuranRange(quran.juzs[29])], pace: .regulier), from: day0)
+        let program = planner().makeProgram(for: makeProfile(goals: [QuranRange(quran.juzs[29])], pace: .regulier), from: day0)
         let pageEnds = Set(quran.pages.compactMap { verseOffsets(of: QuranRange($0))?.upperBound })
         let target = LearningPace.regulier.targetVersesPerSession
 
@@ -189,7 +193,7 @@ final class LearningPlannerTests: XCTestCase {
         }
 
         let range = QuranRange(page)
-        let program = planner().makeProgram(for: profile(goals: [range], pace: .soutenu), from: day0)
+        let program = planner().makeProgram(for: makeProfile(goals: [range], pace: .soutenu), from: day0)
 
         XCTAssertEqual(program.items.count, 1, "Une page entière doit former une seule séance")
         XCTAssertEqual(program.items.first?.range, range)
@@ -206,7 +210,7 @@ final class LearningPlannerTests: XCTestCase {
         }
 
         let program = planner().makeProgram(
-            for: profile(
+            for: makeProfile(
                 goals: [juz],
                 known: [KnownRange(range: solid, label: "An-Naba", solidity: .solide)]
             ),
@@ -225,9 +229,9 @@ final class LearningPlannerTests: XCTestCase {
         let juz = QuranRange(quran.juzs[29])
         let solid = QuranRange(quran.suras[77])
 
-        let full = planner().makeProgram(for: profile(goals: [juz]), from: day0)
+        let full = planner().makeProgram(for: makeProfile(goals: [juz]), from: day0)
         let reduced = planner().makeProgram(
-            for: profile(goals: [juz], known: [KnownRange(range: solid, label: nil, solidity: .solide)]),
+            for: makeProfile(goals: [juz], known: [KnownRange(range: solid, label: nil, solidity: .solide)]),
             from: day0
         )
 
@@ -242,7 +246,7 @@ final class LearningPlannerTests: XCTestCase {
     func test_goalEntirelyKnownSolid_yieldsAnEmptyProgram() {
         let sura = QuranRange(quran.suras[0])
         let program = planner().makeProgram(
-            for: profile(goals: [sura], known: [KnownRange(range: sura, label: nil, solidity: .solide)]),
+            for: makeProfile(goals: [sura], known: [KnownRange(range: sura, label: nil, solidity: .solide)]),
             from: day0
         )
 
@@ -259,7 +263,7 @@ final class LearningPlannerTests: XCTestCase {
         }
 
         let program = planner().makeProgram(
-            for: profile(
+            for: makeProfile(
                 goals: [juz],
                 known: [KnownRange(range: fragile, label: "An-Naba", solidity: .fragile)]
             ),
@@ -289,7 +293,7 @@ final class LearningPlannerTests: XCTestCase {
 
     func test_fragileRange_doesNotCountAsADayOfWorked() {
         let program = planner().makeProgram(
-            for: profile(
+            for: makeProfile(
                 goals: [QuranRange(quran.juzs[29])],
                 known: [KnownRange(range: QuranRange(quran.suras[77]), label: nil, solidity: .fragile)]
             ),
@@ -311,7 +315,7 @@ final class LearningPlannerTests: XCTestCase {
     // MARK: - Profils sans matière
 
     func test_noGoal_yieldsAnEmptyProgram() {
-        XCTAssertTrue(planner().makeProgram(for: profile(goals: []), from: day0).isEmpty)
+        XCTAssertTrue(planner().makeProgram(for: makeProfile(goals: []), from: day0).isEmpty)
     }
 
     func test_emptyProfile_yieldsAnEmptyProgram() {
@@ -321,7 +325,7 @@ final class LearningPlannerTests: XCTestCase {
     // MARK: - Déterminisme
 
     func test_sameProfileAndDate_produceTheSamePassages() {
-        let profile = profile(goals: [QuranRange(quran.juzs[29])], pace: .soutenu)
+        let profile = makeProfile(goals: [QuranRange(quran.juzs[29])], pace: .soutenu)
         let first = planner().makeProgram(for: profile, from: day0)
         let second = planner().makeProgram(for: profile, from: day0)
 
@@ -333,13 +337,13 @@ final class LearningPlannerTests: XCTestCase {
     }
 
     func test_positions_areConsecutiveFromZero() {
-        let program = planner().makeProgram(for: profile(goals: [QuranRange(quran.juzs[29])]), from: day0)
+        let program = planner().makeProgram(for: makeProfile(goals: [QuranRange(quran.juzs[29])]), from: day0)
 
         XCTAssertEqual(program.items.map(\.position), Array(0 ..< program.items.count))
     }
 
     func test_program_survivesEncodingRoundTrip() throws {
-        let program = planner().makeProgram(for: profile(goals: [QuranRange(quran.juzs[29])]), from: day0)
+        let program = planner().makeProgram(for: makeProfile(goals: [QuranRange(quran.juzs[29])]), from: day0)
 
         let data = try JSONEncoder().encode(program)
         let decoded = try JSONDecoder().decode(LearningProgram.self, from: data)
@@ -350,7 +354,7 @@ final class LearningPlannerTests: XCTestCase {
     // MARK: - Date de fin estimée
 
     func test_estimatedEndDate_withEveryDayWorked_landsOnTheSessionCount() {
-        let profile = profile(goals: [QuranRange(quran.juzs[29])], pace: .regulier)
+        let profile = makeProfile(goals: [QuranRange(quran.juzs[29])], pace: .regulier)
         let program = planner().makeProgram(for: profile, from: day0)
         let perSession = LearningPace.regulier.targetVersesPerSession
         let sessions = (program.totalVerses(in: quran) + perSession - 1) / perSession
@@ -363,7 +367,7 @@ final class LearningPlannerTests: XCTestCase {
     }
 
     func test_estimatedEndDate_withOneWorkingDayPerWeek_countsOnlyThatDay() {
-        let profile = profile(goals: [QuranRange(quran.suras[1])], pace: .regulier, days: [.lundi])
+        let profile = makeProfile(goals: [QuranRange(quran.suras[1])], pace: .regulier, days: [.lundi])
         let program = planner().makeProgram(for: profile, from: day0)
         let perSession = LearningPace.regulier.targetVersesPerSession
         let sessions = (program.totalVerses(in: quran) + perSession - 1) / perSession
@@ -386,7 +390,7 @@ final class LearningPlannerTests: XCTestCase {
     }
 
     func test_estimatedEndDate_ofAFinishedProgram_isToday() {
-        let profile = profile(goals: [QuranRange(quran.suras[0])])
+        let profile = makeProfile(goals: [QuranRange(quran.suras[0])])
         var program = planner().makeProgram(for: profile, from: day0)
         for id in program.items.map(\.id) {
             program.markLearned(id: id, at: day0, calendar: calendar)
@@ -399,7 +403,7 @@ final class LearningPlannerTests: XCTestCase {
     }
 
     func test_estimatedEndDate_isNilWithoutWorkingDay() {
-        let profile = profile(goals: [QuranRange(quran.suras[0])], days: [])
+        let profile = makeProfile(goals: [QuranRange(quran.suras[0])], days: [])
         let program = planner().makeProgram(for: profile, from: day0)
 
         XCTAssertNil(

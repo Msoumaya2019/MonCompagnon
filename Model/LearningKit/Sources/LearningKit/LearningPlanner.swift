@@ -87,7 +87,7 @@ public struct LearningPlanner {
         let perSession = max(1, profile.pace.targetVersesPerSession)
         // Arrondi au supérieur : une séance entamée est une séance à faire.
         let sessions = (remaining + perSession - 1) / perSession
-        return date(ofSession: sessions, workingDays: profile.days, from: date)
+        return dateOfSession(sessions, workingDays: profile.days, from: date)
     }
 
     // MARK: Private
@@ -188,12 +188,15 @@ public struct LearningPlanner {
     ///
     /// La première séance peut avoir lieu aujourd'hui : si le jour courant est un jour de travail,
     /// `sessions == 1` rend aujourd'hui.
-    private func date(ofSession sessions: Int, workingDays: Set<LearningDay>, from date: Date) -> Date? {
+    ///
+    /// - Note: le nom porte `OfSession` et non `date` seul : un paramètre nommé `date` masquerait
+    ///   la méthode dans `estimatedEndDate`, et l'appel se lirait comme celui d'un `Date`.
+    private func dateOfSession(_ sessions: Int, workingDays: Set<LearningDay>, from start: Date) -> Date? {
         let weekdays = Set(workingDays.map(\.calendarWeekday))
         guard !weekdays.isEmpty else { return nil }
 
         var remaining = sessions
-        var cursor = calendar.startOfDay(for: date)
+        var cursor = calendar.startOfDay(for: start)
         // Borne explicite. La boucle s'arrête d'elle-même dès que les jours se répètent — une
         // semaine au plus — mais une borne rend la terminaison vérifiable sans raisonner sur le
         // calendrier.
