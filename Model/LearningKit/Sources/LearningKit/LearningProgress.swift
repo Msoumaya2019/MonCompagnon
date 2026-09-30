@@ -252,7 +252,9 @@ public struct LearningProgress: Codable, Equatable, Sendable {
         // rebours, n'apprend pas un début. Le repère reste alors à 0, et c'est la reprise verset par
         // verset qui porte le travail fait.
         var watermark = 0
-        while covered.contains(watermark + 1) { watermark += 1 }
+        while covered.contains(watermark + 1) {
+            watermark += 1
+        }
 
         // Les dates ne portent que sur ce qui est appris. Y compter un passage jamais travaillé
         // ferait passer pour un jour de travail le jour où le programme a été régénéré — et la
