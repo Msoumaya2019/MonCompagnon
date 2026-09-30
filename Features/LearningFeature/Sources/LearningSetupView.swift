@@ -2,7 +2,7 @@
 //  LearningSetupView.swift
 //  LearningFeature
 //
-//  La configuration guidée, en cinq étapes.
+//  La configuration d'un programme d'apprentissage, en une page.
 //
 
 import LearningKit
@@ -11,13 +11,15 @@ import NoorUI
 import SwiftUI
 import UIx
 
-/// La configuration guidée, en cinq étapes : ce que je connais, ce que je veux apprendre, à quel
-/// rythme, quels jours, et le récapitulatif avant de commencer.
+/// La configuration d'un programme d'apprentissage.
 ///
-/// L'écran ne décide de rien : le brouillon porte les règles — ce qui est valide, ce qui reste à
-/// faire — et lui seul autorise le passage d'une étape à l'autre.
+/// Une **page unique**, et non un assistant : trois sections — ce que je connais, mon objectif, mon
+/// rythme — puis ce que le programme contiendra, et un bouton. L'utilisateur voit donc toujours
+/// l'ensemble de ce qu'il a composé, et peut corriger n'importe quel choix sans revenir en arrière.
 ///
-/// `@MainActor` comme la vue d'accueil : ses étapes interrogent le modèle de vue, qui est isolé sur
+/// L'écran ne décide de rien : le brouillon porte les règles, et lui seul autorise la création.
+///
+/// `@MainActor` comme la vue d'accueil : ses sections interrogent le modèle de vue, qui est isolé sur
 /// l'acteur principal.
 @MainActor
 struct LearningSetupView: View {
@@ -28,94 +30,84 @@ struct LearningSetupView: View {
 
     var body: some View {
         NoorList {
-            switch viewModel.draft.step {
-            case .known:
-                knownStep
-            case .goals:
-                goalsStep
-            case .pace:
-                paceStep
-            case .days:
-                daysStep
-            case .summary:
-                summaryStep
-            }
+            knownSection
+            goalsSection
+            rhythmSection
+            summarySection
         }
         .safeAreaInset(edge: .bottom) {
-            navigationBar
+            createBar
         }
     }
 
     // MARK: Private
 
-    // MARK: - Ce que je connais
+    // MARK: - Ce que je connais déjà
 
-    private var knownStep: some View {
+    private var knownSection: some View {
         NoorBasicSection(
             title: l("learning.known.title", table: .learning),
             footer: l("learning.known.detail", table: .learning)
         ) {
-            juzItems
+            unitPicker(selection: knownUnitBinding)
+            pills(viewModel.knownPills, in: .known)
+            ForEach(viewModel.knownRows()) { row in
+                NoorListItem(
+                    title: .text(row.title),
+                    subtitle: .init(text: .text(row.subtitle), location: .bottom),
+                    accessory: knownAccessory(for: row),
+                    action: .sync { viewModel.cycleSolidity(of: row) }
+                )
+            }
+            NoorListItem(
+                title: .text(l("learning.known.scratch", table: .learning)),
+                action: .sync { viewModel.startFromScratch() }
+            )
         }
     }
 
-    // MARK: - Ce que je veux apprendre
+    /// L'état d'un morceau déclaré connu.
+    ///
+    /// La coche pleine dit « je le récite sans hésiter », la coche barrée « je l'oublie », et
+    /// l'absence de coche « je ne me suis pas prononcé ». Les trois états se suivent au toucher, dans
+    /// cet ordre : on ne saute pas de « rien » à « je l'oublie » sans passer par « je le connais ».
+    private func knownAccessory(for row: LearningSetupViewModel.PieceRow) -> NoorListItem.Accessory? {
+        switch row.solidity {
+        case .none: return nil
+        case .some(.solide): return .image(.checkmark_checked, color: .accentColor)
+        case .some(.fragile): return .image(.checkmark_indeterminate, color: .orange)
+        }
+    }
 
-    private var goalsStep: some View {
+    // MARK: - Mon objectif
+
+    private var goalsSection: some View {
         NoorBasicSection(
             title: l("learning.goals.title", table: .learning),
             footer: l("learning.goals.detail", table: .learning)
         ) {
-            juzItems
-        }
-    }
-
-    /// Les Juz' du mushaf, avec leur état.
-    ///
-    /// Les deux premières étapes partagent la même liste : un Juz' se déclare connu et se choisit
-    /// comme objectif au même endroit, ce qui évite de parcourir deux fois le mushaf.
-    @ViewBuilder
-    private var juzItems: some View {
-        ForEach(viewModel.juzRows()) { row in
+            unitPicker(selection: goalUnitBinding)
+            pills(viewModel.goalPills, in: .goal)
+            ForEach(viewModel.goalRows()) { row in
+                NoorListItem(
+                    title: .text(row.title),
+                    subtitle: .init(text: .text(row.subtitle), location: .bottom),
+                    accessory: checkmark(isOn: row.isGoal),
+                    action: .sync { viewModel.toggleGoal(row) }
+                )
+            }
             NoorListItem(
-                title: .text(row.title),
-                subtitle: .init(text: .text(row.amount), location: .bottom),
-                accessory: accessory(for: row),
-                action: .sync { select(row) }
+                title: .text(l("learning.goals.continue", table: .learning)),
+                subtitle: .init(text: .text(l("learning.goals.continue.detail", table: .learning)), location: .bottom),
+                accessory: .disclosureIndicator,
+                action: .sync { viewModel.continueThroughTheQuran() }
             )
         }
     }
 
-    /// L'état d'un Juz' : sa solidité à l'étape « ce que je connais », son objectif à l'étape
-    /// « ce que je veux apprendre ».
-    private func accessory(for row: LearningSetupViewModel.JuzRow) -> NoorListItem.Accessory? {
-        switch viewModel.draft.step {
-        case .known:
-            return viewModel.solidityTitle(row.solidity).map { NoorListItem.Accessory.text($0) }
-        case .goals:
-            return .image(
-                row.isGoal ? .checkmark_checked : .checkmark_unchecked,
-                color: row.isGoal ? .accentColor : nil
-            )
-        case .pace, .days, .summary:
-            return nil
-        }
-    }
+    // MARK: - Mon rythme
 
-    private func select(_ row: LearningSetupViewModel.JuzRow) {
-        switch viewModel.draft.step {
-        case .known:
-            viewModel.cycleSolidity(of: row)
-        case .goals:
-            viewModel.toggleGoal(row)
-        case .pace, .days, .summary:
-            break
-        }
-    }
-
-    // MARK: - Le rythme
-
-    private var paceStep: some View {
+    private var rhythmSection: some View {
         NoorBasicSection(
             title: l("learning.pace.title", table: .learning),
             footer: l("learning.pace.detail", table: .learning)
@@ -128,17 +120,19 @@ struct LearningSetupView: View {
                     action: .sync { viewModel.select(pace: pace) }
                 )
             }
+
+            if viewModel.isCustomPace {
+                ForEach(viewModel.customVersesChoices, id: \.self) { verses in
+                    NoorListItem(
+                        title: .text(lFormat("verses", table: .android, verses)),
+                        accessory: checkmark(isOn: viewModel.isVersesPerSession(verses)),
+                        action: .sync { viewModel.setVersesPerSession(verses) }
+                    )
+                }
+            }
         }
-    }
 
-    // MARK: - Les jours
-
-    @ViewBuilder
-    private var daysStep: some View {
-        NoorBasicSection(
-            title: l("learning.days.title", table: .learning),
-            footer: l("learning.days.detail", table: .learning)
-        ) {
+        NoorBasicSection(title: l("learning.days.title", table: .learning), footer: l("learning.days.detail", table: .learning)) {
             ForEach(viewModel.days, id: \.rawValue) { day in
                 NoorListItem(
                     title: .text(viewModel.dayTitle(day)),
@@ -157,37 +151,71 @@ struct LearningSetupView: View {
                 )
             }
         }
+
+        NoorBasicSection(title: l("learning.goals.deadline", table: .learning), footer: l("learning.deadline.detail", table: .learning)) {
+            deadlineRows
+        }
     }
 
-    // MARK: - Le récapitulatif
+    /// L'échéance : la poser, ce qu'elle impose, et l'effacer.
+    ///
+    /// Le sélecteur de date n'apparaît qu'une fois l'échéance posée : une date vide à l'écran ne dit
+    /// rien, et occuperait la place d'une question qui n'a pas encore été posée.
+    @ViewBuilder
+    private var deadlineRows: some View {
+        if viewModel.deadline == nil {
+            NoorListItem(
+                title: .text(l("learning.deadline.set", table: .learning)),
+                accessory: .disclosureIndicator,
+                action: .sync { viewModel.setDeadline(viewModel.defaultDeadline) }
+            )
+        } else {
+            DatePicker(
+                l("learning.goals.deadline.date", table: .learning),
+                selection: deadlineBinding,
+                displayedComponents: .date
+            )
+            deadlineAdvice
+            NoorListItem(
+                title: .text(l("learning.deadline.clear", table: .learning)),
+                action: .sync { viewModel.setDeadline(nil) }
+            )
+        }
+    }
 
-    private var summaryStep: some View {
-        NoorBasicSection(
-            title: l("learning.summary.title", table: .learning),
-            footer: summaryFooter
-        ) {
-            if viewModel.summary.isEmpty {
-                NoorListItem(title: .text(l("learning.summary.empty", table: .learning)))
+    /// Ce que l'échéance impose, et le geste qui l'applique.
+    @ViewBuilder
+    private var deadlineAdvice: some View {
+        if let advice = viewModel.deadlineHint {
+            if viewModel.holdsDeadline {
+                NoorListItem(title: .text(advice))
             } else {
                 NoorListItem(
-                    title: .text(l("learning.summary.sessions", table: .learning)),
-                    accessory: .text("\(viewModel.summary.sessionCount)")
-                )
-                NoorListItem(
-                    title: .text(l("learning.summary.perSession", table: .learning)),
-                    accessory: .text(viewModel.paceAmount(viewModel.pace))
-                )
-                NoorListItem(
-                    title: .text(l("learning.summary.end", table: .learning)),
-                    accessory: .text(endDateTitle)
+                    title: .text(advice),
+                    subtitle: .init(text: .text(l("learning.deadline.apply", table: .learning)), location: .bottom),
+                    action: .sync { viewModel.applyRequiredPace() }
                 )
             }
         }
     }
 
-    /// Ce qu'il faut lire quand la dernière étape ne peut pas mener au programme.
-    private var summaryFooter: String? {
-        viewModel.draft.days.isEmpty ? l("learning.summary.noDays", table: .learning) : nil
+    // MARK: - Ce que le programme contiendra
+
+    private var summarySection: some View {
+        NoorBasicSection(title: l("learning.summary.title", table: .learning)) {
+            NoorListItem(
+                title: .text(l("learning.summary.sessions", table: .learning)),
+                accessory: .text("\(viewModel.summary.sessionCount)")
+            )
+            NoorListItem(
+                title: .text(l("learning.summary.perSession", table: .learning)),
+                accessory: .text(viewModel.paceAmount(viewModel.pace))
+            )
+            NoorListItem(
+                title: .text(l("learning.summary.end", table: .learning)),
+                accessory: .text(endDateTitle)
+            )
+        }
     }
 
     private var endDateTitle: String {
@@ -197,45 +225,139 @@ struct LearningSetupView: View {
         return viewModel.endDateTitle(date)
     }
 
-    // MARK: - La barre de navigation
+    // MARK: - Les morceaux
 
-    private var navigationBar: some View {
-        VStack(spacing: 8) {
-            Text(viewModel.stepText)
-                .font(.footnote)
-                .foregroundColor(.secondaryLabel)
+    /// Le sélecteur d'unité, commun aux deux sections qui désignent des morceaux.
+    ///
+    /// Le libellé est passé en **fonction libre**, et non en méthode du modèle de vue :
+    /// `SegmentedChoicesPicker` prend un `(Item) -> String` non isolé, et une méthode d'un objet
+    /// `@MainActor` ne s'y prêterait pas. Rien n'est lu ici que le nom de l'unité : il n'y a donc
+    /// rien à isoler, et la fermeture ne capture rien du tout.
+    private func unitPicker(selection: Binding<LearningUnit>) -> some View {
+        SegmentedChoicesPicker(
+            title: l("learning.unit.title", table: .learning),
+            items: viewModel.units,
+            selection: selection,
+            label: unitTitle
+        )
+        .padding(.vertical, 4)
+    }
 
-            HStack(spacing: 12) {
-                if !viewModel.isFirstStep {
-                    Button {
-                        viewModel.back()
-                    } label: {
-                        Text(l("learning.setup.previous", table: .learning))
+    /// Les morceaux déjà désignés, en pastilles retirables.
+    ///
+    /// Une grille adaptative plutôt qu'une pile : les pastilles se répartissent sur la largeur
+    /// disponible et passent à la ligne toutes seules, quel que soit le nombre de morceaux déclarés
+    /// et la taille de l'écran.
+    @ViewBuilder
+    private func pills(_ pills: [LearningSetupViewModel.Pill], in section: PillSection) -> some View {
+        if !pills.isEmpty {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 120), spacing: 8)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(pills) { pill in
+                    LearningPill(title: pill.title, tone: pill.tone(in: section)) {
+                        viewModel.remove(pill)
                     }
-                    .buttonStyle(.bordered)
                 }
-
-                Button {
-                    if viewModel.isLastStep {
-                        finish()
-                    } else {
-                        viewModel.advance()
-                    }
-                } label: {
-                    Text(viewModel.isLastStep
-                        ? l("learning.setup.start", table: .learning)
-                        : l("learning.setup.next", table: .learning))
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!viewModel.canGoForward)
             }
+            .padding(.vertical, 4)
+        }
+    }
+
+    // MARK: - Les liaisons
+
+    private var knownUnitBinding: Binding<LearningUnit> {
+        Binding(get: { viewModel.knownUnit }, set: { viewModel.select(knownUnit: $0) })
+    }
+
+    private var goalUnitBinding: Binding<LearningUnit> {
+        Binding(get: { viewModel.goalUnit }, set: { viewModel.select(goalUnit: $0) })
+    }
+
+    /// L'échéance telle que le sélecteur la manipule.
+    ///
+    /// Le sélecteur n'accepte pas de date absente ; il en faut donc toujours une. Celle par défaut
+    /// n'est écrite qu'au premier changement, et non à l'ouverture de l'écran : tant que
+    /// l'utilisateur n'a pas touché la date, il n'a pas dit qu'il voulait une échéance.
+    private var deadlineBinding: Binding<Date> {
+        Binding(
+            get: { viewModel.deadline ?? viewModel.defaultDeadline },
+            set: { viewModel.setDeadline($0) }
+        )
+    }
+
+    // MARK: - La barre de création
+
+    private var createBar: some View {
+        VStack(spacing: 8) {
+            if let footer = createFooter {
+                Text(footer)
+                    .font(.footnote)
+                    .foregroundColor(.secondaryLabel)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button(action: finish) {
+                Text(l("learning.setup.create", table: .learning))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!viewModel.canStart)
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(.bar)
+        .background(.thinMaterial)
+    }
+
+    /// Ce qu'il faut lire quand le bouton est éteint.
+    ///
+    /// Deux raisons distinctes, et deux phrases distinctes : « aucun jour » se corrige dans la
+    /// section du rythme, « rien à apprendre » dans celle des objectifs. Les confondre enverrait
+    /// l'utilisateur au mauvais endroit.
+    private var createFooter: String? {
+        guard !viewModel.canStart else { return nil }
+        if !viewModel.hasWorkingDays {
+            return l("learning.summary.noDays", table: .learning)
+        }
+        return l("learning.summary.empty", table: .learning)
     }
 
     private func checkmark(isOn: Bool) -> NoorListItem.Accessory {
-        .image(isOn ? .checkmark_checked : .checkmark_unchecked, color: isOn ? .accentColor : nil)
+        .image(isOn ? .checkmark_checked : .checkmark_unchecked, color: isOn ? Color.accentColor : nil)
     }
+}
+
+/// La section d'où une pastille est montrée.
+///
+/// Elle ne dit pas ce que la pastille **défait** — c'est son type qui le porte — mais à quoi elle
+/// sert ici, et donc de quelle couleur elle doit être.
+private enum PillSection {
+    case known
+    case goal
+}
+
+private extension LearningSetupViewModel.Pill {
+    /// La couleur d'une pastille, selon la section où elle est posée.
+    ///
+    /// Le type de la pastille dit ce qu'elle défait ; la section, elle, dit à quoi elle sert ici.
+    /// Un même morceau déclaré fragile apparaît donc en jaune dans « je connais déjà », et en accent
+    /// dans « mon objectif » s'il y est aussi visé — ce qui est exactement la différence à voir.
+    func tone(in section: PillSection) -> LearningPill.Tone {
+        switch (section, kind) {
+        case (.goal, _): return .goal
+        case (.known, .solide): return .solide
+        case (.known, .fragile): return .fragile
+        case (.known, .goal): return .goal
+        }
+    }
+}
+
+/// Le nom d'une unité de choix, dans la langue de l'utilisateur.
+///
+/// Fonction libre, et non méthode du modèle de vue : c'est ce qui permet de la passer telle quelle
+/// à `SegmentedChoicesPicker`, dont le libellé est un `(Item) -> String` non isolé.
+private func unitTitle(_ unit: LearningUnit) -> String {
+    l("learning.unit.\(unit.rawValue)", table: .learning)
 }

@@ -2,17 +2,17 @@
 //  LearningSetupDraft.swift
 //  LearningKit
 //
-//  L'état de la configuration guidée, avant qu'il ne devienne un profil.
+//  L'état de la configuration d'apprentissage, avant qu'il ne devienne un profil.
 //
 
 import Foundation
 import QuranKit
 
-/// Le brouillon d'une configuration guidée.
+/// Le brouillon d'une configuration d'apprentissage.
 ///
-/// La configuration se corrige : on revient sur l'étape précédente, on décoche un juz', on change
-/// d'allure. Ce type porte cet état intermédiaire et n'engendre le profil qu'une fois la dernière
-/// étape validée.
+/// La configuration se corrige : on décoche un juz', on change d'allure, on repart de zéro. Ce type
+/// porte cet état intermédiaire — une page, sans étapes à franchir — et n'engendre le profil qu'au
+/// moment où l'utilisateur crée son programme.
 ///
 /// Tout ce qui décide ici se vérifie sans interface — les choix, leur validité, le nombre de
 /// séances, la date de fin estimée, et son calcul inverse. La vue ne fait que rendre
@@ -42,6 +42,10 @@ public struct LearningSetupDraft: Equatable {
         self.init(quran: quran, calendar: calendar, createdAt: profile.createdAt)
         known = profile.knownRanges
         goals = profile.goals
+        // La plus proche, s'il y en avait plusieurs : `makeProfile()` les pose toutes à la même
+        // date, mais un profil venu d'ailleurs peut les porter différentes, et c'est alors la plus
+        // exigeante qui doit décider.
+        deadline = profile.goals.compactMap(\.targetDate).min()
         pace = profile.pace
         customVersesPerSession = profile.customVersesPerSession
         days = profile.days
@@ -49,20 +53,6 @@ public struct LearningSetupDraft: Equatable {
     }
 
     // MARK: Public
-
-    /// Les étapes de la configuration, dans l'ordre où elles se présentent.
-    public enum Step: Int, CaseIterable, Equatable {
-        /// Ce que l'utilisateur connaît déjà — étape que l'on peut passer.
-        case known
-        /// Ce qu'il veut apprendre.
-        case goals
-        /// À quel rythme.
-        case pace
-        /// Quels jours, et combien de temps par séance.
-        case days
-        /// Le récapitulatif, avant de commencer.
-        case summary
-    }
 
     /// Un choix proposé aux sections « je connais déjà » et « mon objectif ».
     ///
@@ -116,21 +106,23 @@ public struct LearningSetupDraft: Equatable {
     /// Date de création du profil — celle de l'appelant, jamais réécrite par la configuration.
     public let createdAt: Date
 
-    /// L'étape affichée.
-    public private(set) var step: Step = .known
-
     /// Les intervalles déclarés connus, triés par position dans le mushaf.
     public private(set) var known: [KnownRange] = []
 
     /// Les intervalles déclarés à apprendre, triés par position dans le mushaf.
     public private(set) var goals: [LearningGoal] = []
 
-    /// L'unité dans laquelle l'utilisateur désigne les morceaux du Coran.
+    /// L'unité dans laquelle l'utilisateur déclare ce qu'il connaît déjà.
     ///
-    /// Elle ne vaut que pour **désigner** : ce qui est déjà déclaré reste, quelle que soit l'unité
-    /// affichée. Changer d'unité ne défait donc rien, et c'est ce qui permet de déclarer une sourate
-    /// connue puis un juz' à apprendre sans repasser par le début.
-    public var unit: LearningUnit = .juz
+    /// Deux unités, et non une : celle dont on dit « je connais cette sourate » n'est pas forcément
+    /// celle dont on dit « je veux apprendre ce juz' ». Les partager obligerait à revenir en arrière
+    /// entre les deux sections, pour un état qui ne concerne qu'une liste à la fois.
+    ///
+    /// Une unité ne vaut que pour **désigner** : ce qui est déjà déclaré reste, quelle qu'elle soit.
+    public var knownUnit: LearningUnit = .juz
+
+    /// L'unité dans laquelle l'utilisateur choisit ce qu'il veut apprendre.
+    public var goalUnit: LearningUnit = .juz
 
     /// L'allure choisie.
     ///
@@ -148,64 +140,31 @@ public struct LearningSetupDraft: Equatable {
     /// Durée annoncée d'une séance, en minutes.
     public var sessionMinutes: Int = 15
 
-    /// Vrai sur la première étape : « Précédent » n'y mène nulle part.
-    public var isFirstStep: Bool { step == Step.allCases.first }
-
-    /// Vrai sur la dernière étape : le bouton dit « Commencer » plutôt que « Suivant ».
-    public var isLastStep: Bool { step == Step.allCases.last }
-
-    /// Vrai si l'étape courante permet d'aller plus loin.
+    /// L'échéance visée pour l'ensemble du programme, ou `nil` s'il n'y en a pas.
     ///
-    /// Le brouillon **refuse** d'avancer tant que c'est faux. L'interface désactive le bouton, mais
-    /// une vue fautive ne doit pas pouvoir sauter un choix obligatoire.
-    public var canAdvance: Bool {
-        switch step {
-        case .known, .pace:
-            return true
-        case .goals:
-            return !goals.isEmpty
-        case .days, .summary:
-            return !days.isEmpty
-        }
+    /// Une seule pour tout le programme, et non une par objectif : l'utilisateur n'a qu'une date en
+    /// tête, et lui en demander plusieurs pour un seul chiffre à retenir serait une question de
+    /// trop. C'est `makeProfile()` qui la pose sur chaque objectif.
+    public var deadline: Date?
+
+    /// Vrai si le programme annoncé peut être créé.
+    ///
+    /// Prend le récapitulatif **déjà calculé** : l'écran l'a en main, et le régénérer pour répondre
+    /// reviendrait à engendrer le programme une seconde fois à chaque rafraîchissement.
+    public func canStart(with summary: Summary) -> Bool {
+        !days.isEmpty && !summary.isEmpty
     }
 
     /// Vrai si le programme proposé contient au moins un passage à travailler.
     ///
-    /// Distinct de `canAdvance` : la navigation exige un jour de travail, le démarrage exige en
-    /// plus qu'il reste quelque chose à apprendre. Un objectif entièrement déclaré connu passe donc
-    /// l'étape des jours sans permettre de commencer.
-    ///
-    /// - Note: cette question **génère le programme** pour y répondre. Une vue ne doit donc pas
-    ///   l'appeler à chaque rafraîchissement : elle calcule `summary(from:)` une fois et interroge
-    ///   `isEmpty`, qui répond à la même question sur le résultat déjà obtenu.
+    /// C'est la condition du bouton « Créer mon programme », et elle est **nécessaire mais pas
+    /// suffisante** : la configuration n'a de sens que si l'utilisateur a aussi dit quand il
+    /// travaille, sans quoi aucune fin n'est estimable et le programme ne serait jamais tenu.
     public func canStart(from date: Date = Date()) -> Bool {
-        canAdvance && !summary(from: date).isEmpty
+        canStart(with: summary(from: date))
     }
 
-    // MARK: - Navigation
-
-    /// Avance d'une étape, sauf si l'étape courante est incomplète ou si c'est la dernière.
-    @discardableResult
-    public mutating func advance() -> Bool {
-        guard canAdvance, let next = Step(rawValue: step.rawValue + 1) else { return false }
-        step = next
-        return true
-    }
-
-    /// Recule d'une étape, sans jamais descendre sous la première.
-    @discardableResult
-    public mutating func back() -> Bool {
-        guard let previous = Step(rawValue: step.rawValue - 1) else { return false }
-        step = previous
-        return true
-    }
-
-    /// Va directement à une étape, dans les deux sens.
-    public mutating func go(to step: Step) {
-        self.step = step
-    }
-
-    // MARK: - Étape « ce que je connais »
+    // MARK: - Ce que je connais
 
     /// L'état déclaré pour un intervalle, ou `nil` s'il n'a pas été déclaré.
     public func solidity(of range: QuranRange) -> KnownRange.Solidity? {
@@ -252,7 +211,7 @@ public struct LearningSetupDraft: Equatable {
         cycleSolidity(for: QuranRange(group), label: label)
     }
 
-    // MARK: - Étape « ce que je veux apprendre »
+    // MARK: - Ce que je veux apprendre
 
     /// Vrai si l'intervalle est un objectif.
     public func isGoal(_ range: QuranRange) -> Bool {
@@ -272,26 +231,6 @@ public struct LearningSetupDraft: Equatable {
     /// Ajoute ou retire un objectif désigné par un groupe du Coran.
     public mutating func toggleGoal(of group: some QuranGroup, label: String? = nil) {
         toggleGoal(QuranRange(group), label: label)
-    }
-
-    /// L'échéance fixée pour un objectif, ou `nil` s'il n'y en a pas.
-    public func deadline(for range: QuranRange) -> Date? {
-        goals.first { $0.range == range }?.targetDate
-    }
-
-    /// Fixe — ou efface — l'échéance d'un objectif.
-    ///
-    /// Sans effet si l'intervalle n'est pas un objectif : une échéance orpheline serait invisible
-    /// et survivrait au retrait de l'objectif.
-    public mutating func setDeadline(_ date: Date?, for range: QuranRange) {
-        guard let position = goals.firstIndex(where: { $0.range == range }) else { return }
-        let goal = goals[position]
-        goals[position] = LearningGoal(
-            id: goal.id,
-            range: goal.range,
-            label: goal.label,
-            targetDate: date
-        )
     }
 
     // MARK: - Repartir de zéro
@@ -325,9 +264,8 @@ public struct LearningSetupDraft: Equatable {
 
     /// Les morceaux d'une unité, avec l'état du brouillon pour chacun.
     ///
-    /// L'unité est un paramètre, et non une lecture de `self.unit` : l'écran doit pouvoir préparer
-    /// la liste d'une autre unité que celle affichée — c'est ce qui lui permet de ne pas faire
-    /// clignoter les pastilles au moment du changement.
+    /// L'unité est un paramètre, et non une lecture de `knownUnit` ou `goalUnit` : les deux
+    /// sections ont la leur, et c'est ce qui leur permet de ne pas se commander l'une l'autre.
     public func choices(for unit: LearningUnit) -> [Choice] {
         switch unit {
         case .sourate:
@@ -345,9 +283,14 @@ public struct LearningSetupDraft: Equatable {
         }
     }
 
-    /// Les morceaux de l'unité affichée.
-    public func choices() -> [Choice] {
-        choices(for: unit)
+    /// Les morceaux de l'unité affichée dans la section « je connais déjà ».
+    public func knownChoices() -> [Choice] {
+        choices(for: knownUnit)
+    }
+
+    /// Les morceaux de l'unité affichée dans la section « mon objectif ».
+    public func goalChoices() -> [Choice] {
+        choices(for: goalUnit)
     }
 
     // MARK: - Le rythme
@@ -407,10 +350,15 @@ public struct LearningSetupDraft: Equatable {
     // MARK: - Résultat
 
     /// Le profil correspondant au brouillon, marqué comme configuré.
+    ///
+    /// L'échéance du programme est posée sur **chaque** objectif : c'est le seul endroit où elle
+    /// devient réelle, et `LearningGoal` est le type qui sait la porter jusqu'au disque.
     public func makeProfile() -> LearningProfile {
         LearningProfile(
             knownRanges: known,
-            goals: goals,
+            goals: goals.map { goal in
+                LearningGoal(id: goal.id, range: goal.range, label: goal.label, targetDate: deadline)
+            },
             pace: pace,
             customVersesPerSession: customVersesPerSession,
             days: days,

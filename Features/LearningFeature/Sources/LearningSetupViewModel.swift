@@ -2,7 +2,7 @@
 //  LearningSetupViewModel.swift
 //  LearningFeature
 //
-//  La configuration guidée d'un programme d'apprentissage.
+//  La configuration d'un programme d'apprentissage, en une page.
 //
 
 import Combine
@@ -13,17 +13,22 @@ import Localization
 import QuranKit
 import QuranLocalization
 
-/// La configuration guidée d'un programme d'apprentissage.
+/// La configuration d'un programme d'apprentissage.
 ///
 /// Le modèle de vue ne tient pas les règles : il porte le **brouillon**, qui sait seul ce qui est
-/// valide, ce qu'un Juz' est devenu, et ce que le programme contiendra. L'écran ne fait que rendre
-/// ce que le brouillon propose et lui transmettre les gestes.
+/// valide, ce qu'un morceau du Coran est devenu, et ce que le programme contiendra. L'écran ne fait
+/// que rendre ce que le brouillon propose et lui transmettre les gestes.
+///
+/// La configuration est une **page unique** — trois sections et un bouton — et non plus un
+/// assistant : il n'y a donc plus d'étape à franchir, ni de navigation à tenir. Ce qui reste à
+/// tenir, c'est la condition du bouton, et elle seule.
 @MainActor
 final class LearningSetupViewModel: ObservableObject {
     // MARK: Lifecycle
 
     init(persistence: LearningPersistence, calendar: Calendar = .current, now: Date = Date()) {
         self.persistence = persistence
+        self.calendar = calendar
         // Conservé : l'annonce du récapitulatif et la génération du programme doivent partir de la
         // **même** date. Les recalculer chacune à l'heure courante les ferait diverger — un
         // franchissement de minuit suffit — et l'utilisateur verrait une fin estimée que le
@@ -42,16 +47,38 @@ final class LearningSetupViewModel: ObservableObject {
 
     // MARK: Internal
 
-    /// Une ligne de la liste des Juz' : ce que l'écran affiche, déjà composé.
+    /// Une ligne de la liste des morceaux : ce que l'écran affiche, déjà composé.
     ///
     /// L'écran ne connaît ni les libellés, ni les unités : il rend cette ligne telle quelle.
-    struct JuzRow: Identifiable {
-        let id: Int
+    struct PieceRow: Identifiable {
+        let id: String
         let range: QuranRange
         let title: String
-        let amount: String
+        /// Ce que la ligne annonce sous son titre : l'état déclaré, ou la taille du morceau.
+        ///
+        /// Un seul texte pour les deux sections : un morceau dont l'état est déclaré l'annonce, et
+        /// un morceau muet annonce sa taille — l'information qui manque pour le choisir.
+        let subtitle: String
         let solidity: KnownRange.Solidity?
         let isGoal: Bool
+    }
+
+    /// Un morceau déjà désigné, montré en pastille et retirable d'un geste.
+    struct Pill: Identifiable {
+        /// Ce que la pastille désigne — et donc ce que la retirer défait.
+        enum Kind: String {
+            /// Un objectif, à retirer des objectifs.
+            case goal
+            /// Un acquis solide, à effacer des acquis.
+            case solide
+            /// Un acquis fragile, à effacer des acquis.
+            case fragile
+        }
+
+        let id: String
+        let range: QuranRange
+        let title: String
+        let kind: Kind
     }
 
     @Published private(set) var draft: LearningSetupDraft
@@ -59,69 +86,59 @@ final class LearningSetupViewModel: ObservableObject {
     /// Le récapitulatif du programme tel qu'il serait engendré.
     ///
     /// Stocké plutôt que calculé à l'affichage : le calcul engendre le programme, et l'écran
-    /// l'interroge à deux endroits — la dernière étape et l'état du bouton.
+    /// l'interroge à deux endroits — le récapitulatif et l'état du bouton.
     @Published private(set) var summary: LearningSetupDraft.Summary
 
-    // MARK: - Navigation
-
-    var isFirstStep: Bool { draft.isFirstStep }
-    var isLastStep: Bool { draft.isLastStep }
-
-    /// Vrai si le bouton mène quelque part : l'étape suivante, ou le début du programme.
-    var canGoForward: Bool {
-        draft.isLastStep ? !summary.isEmpty : draft.canAdvance
-    }
-
-    func advance() {
-        update { $0.advance() }
-    }
-
-    func back() {
-        update { $0.back() }
-    }
-
-    /// « Étape 3 sur 5 », dans la langue de l'utilisateur.
-    var stepText: String {
-        let number = draft.step.rawValue + 1
-        let total = LearningSetupDraft.Step.allCases.count
-        return lFormat("learning.setup.step", table: .learning, number, total)
-    }
-
-    // MARK: - Ce que je connais, et ce que je veux apprendre
-
-    /// Les Juz' du mushaf, avec l'état du brouillon pour chacun.
+    /// Vrai si le bouton « Créer mon programme » mène quelque part.
     ///
-    /// Une seule liste pour les deux étapes : un Juz' se déclare connu et se choisit comme objectif
-    /// au même endroit, ce qui évite à l'utilisateur de parcourir deux fois le mushaf.
-    func juzRows() -> [JuzRow] {
-        draft.choices(for: .juz).map { choice in
-            JuzRow(
-                id: choice.number,
-                range: choice.range,
-                title: juzName(choice.number),
-                amount: lFormat("verses", table: .android, choice.verseCount),
-                solidity: choice.solidity,
-                isGoal: choice.isGoal
-            )
-        }
+    /// La règle vit dans le brouillon, qui la tient pour les deux : l'écran lui passe le
+    /// récapitulatif qu'il a déjà en main, sans quoi le programme serait engendré une seconde fois
+    /// à chaque rafraîchissement.
+    var canStart: Bool { draft.canStart(with: summary) }
+
+    // MARK: - L'unité des choix
+
+    var units: [LearningUnit] { LearningUnit.allCases }
+
+    /// L'unité de la section « je connais déjà ».
+    var knownUnit: LearningUnit { draft.knownUnit }
+
+    /// L'unité de la section « mon objectif ».
+    var goalUnit: LearningUnit { draft.goalUnit }
+
+    func select(knownUnit unit: LearningUnit) {
+        update { $0.knownUnit = unit }
     }
 
-    /// Le nom du Juz', « Juz' 30 » compris.
-    func juzName(_ number: Int) -> String {
-        let juzs = quran.juzs
-        guard number >= 1, number <= juzs.count else {
-            return lFormat("juz2_description", table: .android, number)
-        }
-        return juzs[number - 1].localizedName
+    func select(goalUnit unit: LearningUnit) {
+        update { $0.goalUnit = unit }
     }
 
-    /// Fait tourner l'état d'un Juz' : rien → solide → fragile → rien.
-    func cycleSolidity(of row: JuzRow) {
+    /// Vrai si au moins un jour de travail est choisi.
+    ///
+    /// L'écran s'en sert pour dire **pourquoi** le bouton est éteint : « aucun jour » se corrige
+    /// dans la section du rythme, « rien à apprendre » dans celle des objectifs.
+    var hasWorkingDays: Bool { !draft.days.isEmpty }
+
+    // MARK: - Les morceaux
+
+    /// Les morceaux de l'unité affichée dans la section « je connais déjà ».
+    func knownRows() -> [PieceRow] {
+        rows(of: draft.knownChoices())
+    }
+
+    /// Les morceaux de l'unité affichée dans la section « mon objectif ».
+    func goalRows() -> [PieceRow] {
+        rows(of: draft.goalChoices())
+    }
+
+    /// Fait tourner l'état d'un morceau : rien → solide → fragile → rien.
+    func cycleSolidity(of row: PieceRow) {
         update { $0.cycleSolidity(for: row.range) }
     }
 
-    /// Ajoute ou retire un Juz' des objectifs.
-    func toggleGoal(_ row: JuzRow) {
+    /// Ajoute ou retire un morceau des objectifs.
+    func toggleGoal(_ row: PieceRow) {
         update { $0.toggleGoal(row.range) }
     }
 
@@ -135,6 +152,63 @@ final class LearningSetupViewModel: ObservableObject {
         case .some(.fragile):
             return l("learning.known.fragile", table: .learning)
         }
+    }
+
+    /// Le nom d'un morceau, dans la langue de l'utilisateur.
+    ///
+    /// L'intervalle est d'abord rapproché d'un morceau **nommé** — une sourate, un juz', un hizb —
+    /// parce que c'est ainsi qu'on l'a désigné. À défaut, il s'écrit en coordonnées : « 78:1 → 114:6 ».
+    func title(of range: QuranRange) -> String {
+        if let sura = quran.suras.first(where: { QuranRange($0) == range }) {
+            return sura.localizedName()
+        }
+        if let juz = quran.juzs.first(where: { QuranRange($0) == range }) {
+            return juz.localizedName
+        }
+        if let hizb = quran.hizbs.first(where: { QuranRange($0) == range }) {
+            return hizb.localizedName
+        }
+        guard let bounds = range.bounds(in: quran) else { return "" }
+        return "\(bounds.first.localizedCoordinate()) → \(bounds.last.localizedCoordinate())"
+    }
+
+    // MARK: - Les pastilles
+
+    /// Les morceaux déclarés objectifs, dans l'ordre du mushaf.
+    var goalPills: [Pill] { pills(of: draft.goals.map(\.range), kind: .goal) }
+
+    /// Les morceaux déclarés connus : d'abord ceux qu'on récite sans hésiter, puis ceux qu'on oublie.
+    var knownPills: [Pill] {
+        pills(of: draft.known.filter { $0.solidity == .solide }.map(\.range), kind: .solide)
+            + pills(of: draft.known.filter { $0.solidity == .fragile }.map(\.range), kind: .fragile)
+    }
+
+    /// Retire ce que la pastille désigne.
+    ///
+    /// C'est le **type** de la pastille qui décide, et non la section où elle est posée : une
+    /// pastille d'objectif retire un objectif, une pastille d'acquis efface une déclaration. Le
+    /// geste ne peut donc pas se tromper de cible, même si l'écran les montrait ailleurs.
+    func remove(_ pill: Pill) {
+        update { draft in
+            switch pill.kind {
+            case .goal:
+                draft.toggleGoal(pill.range)
+            case .solide, .fragile:
+                draft.setSolidity(nil, for: pill.range)
+            }
+        }
+    }
+
+    // MARK: - Repartir de zéro, continuer le Coran
+
+    /// Efface les déclarations — sans toucher au rythme, qui n'a pas été remis en question.
+    func startFromScratch() {
+        update { $0.startFromScratch() }
+    }
+
+    /// Prend le Coran entier comme objectif, pour le reprendre là où l'on s'est arrêté.
+    func continueThroughTheQuran() {
+        update { $0.continueThroughTheQuran() }
     }
 
     // MARK: - Le rythme
@@ -162,6 +236,23 @@ final class LearningSetupViewModel: ObservableObject {
     func paceAmount(_ pace: LearningPace) -> String {
         let verses = pace.versesPerSession ?? draft.versesPerSession
         return lFormat("verses", table: .android, verses)
+    }
+
+    /// Vrai si l'allure choisie est celle que l'utilisateur chiffre lui-même.
+    var isCustomPace: Bool { draft.pace == .personnalise }
+
+    /// Les valeurs proposées quand l'utilisateur chiffre son rythme.
+    ///
+    /// Une liste de valeurs plutôt qu'un compteur : c'est déjà ainsi que la durée d'une séance est
+    /// choisie, et une valeur qu'on ne peut pas viser du doigt se règle mal d'un pouce.
+    var customVersesChoices: [Int] { [2, 3, 5, 8, 12, 20] }
+
+    var versesPerSession: Int { draft.versesPerSession }
+
+    func isVersesPerSession(_ verses: Int) -> Bool { draft.customVersesPerSession == verses }
+
+    func setVersesPerSession(_ verses: Int) {
+        update { $0.setVersesPerSession(verses) }
     }
 
     // MARK: - Les jours
@@ -198,7 +289,49 @@ final class LearningSetupViewModel: ObservableObject {
         lFormat("learning.days.session-minutes", table: .learning, minutes)
     }
 
-    // MARK: - Le récapitulatif
+    // MARK: - L'échéance
+
+    /// L'échéance visée pour le programme entier, ou `nil`.
+    var deadline: Date? { draft.deadline }
+
+    /// L'échéance proposée à l'ouverture du sélecteur : dans un mois.
+    var defaultDeadline: Date {
+        calendar.date(byAdding: .day, value: 30, to: now) ?? now
+    }
+
+    func setDeadline(_ date: Date?) {
+        update { $0.deadline = date }
+    }
+
+    /// Le rythme qu'exige l'échéance, ou `nil` s'il n'y a rien à tenir.
+    var requiredVersesPerSession: Int? {
+        guard let deadline else { return nil }
+        return draft.requiredVersesPerSession(by: deadline, from: now)
+    }
+
+    /// Ce que l'échéance impose, en clair, ou `nil` s'il n'y a rien à annoncer.
+    var deadlineHint: String? {
+        guard let required = requiredVersesPerSession else { return nil }
+        return lFormat("learning.deadline.required", table: .learning, required)
+    }
+
+    /// Vrai si le rythme choisi tient déjà l'échéance — il n'y a alors rien à appliquer.
+    var holdsDeadline: Bool {
+        guard let required = requiredVersesPerSession else { return true }
+        return required <= versesPerSession
+    }
+
+    /// Applique le rythme qu'exige l'échéance.
+    ///
+    /// C'est ce qui fait d'une date de fin un rythme : l'utilisateur dit quand il veut finir, et
+    /// c'est le programme qui en déduit combien il doit faire chaque jour.
+    func applyRequiredPace() {
+        guard let required = requiredVersesPerSession else { return }
+        update { draft in
+            draft.select(pace: .personnalise)
+            draft.setVersesPerSession(required)
+        }
+    }
 
     /// La fin estimée, dans la langue de l'utilisateur.
     func endDateTitle(_ date: Date) -> String {
@@ -229,9 +362,43 @@ final class LearningSetupViewModel: ObservableObject {
 
     private let persistence: LearningPersistence
     private let quran: Quran
+    private let calendar: Calendar
 
     /// Le moment où l'écran s'est ouvert — la même date pour l'annonce et pour le programme.
     private let now: Date
+
+    /// Compose les lignes d'une liste de choix.
+    ///
+    /// L'état déclaré prime sur la taille : quand l'utilisateur s'est prononcé, c'est ce qu'il a dit
+    /// qu'il faut lui rappeler, et non le nombre de versets qu'il connaît déjà.
+    private func rows(of choices: [LearningSetupDraft.Choice]) -> [PieceRow] {
+        choices.map { choice in
+            PieceRow(
+                id: choice.id,
+                range: choice.range,
+                title: title(of: choice.range),
+                subtitle: solidityTitle(choice.solidity) ?? lFormat("verses", table: .android, choice.verseCount),
+                solidity: choice.solidity,
+                isGoal: choice.isGoal
+            )
+        }
+    }
+
+    /// Compose les pastilles d'une liste d'intervalles.
+    ///
+    /// L'identité combine le type et les bornes : deux pastilles ne peuvent donc pas se confondre,
+    /// même si le même morceau est à la fois un objectif et un acquis — ce qui arrive dès qu'on
+    /// déclare fragile ce qu'on vient de se donner comme objectif.
+    private func pills(of ranges: [QuranRange], kind: Pill.Kind) -> [Pill] {
+        ranges.map { range in
+            Pill(
+                id: "\(kind.rawValue)-\(range.firstSura):\(range.firstAyah)-\(range.lastSura):\(range.lastAyah)",
+                range: range,
+                title: title(of: range),
+                kind: kind
+            )
+        }
+    }
 
     /// Applique une modification au brouillon, et remet le récapitulatif à jour.
     ///

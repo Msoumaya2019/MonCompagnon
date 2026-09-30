@@ -6,8 +6,8 @@
 //
 //  Le planificateur a déjà ses propres tests — couverture exacte, découpage en séances, acquis
 //  solides et fragiles, date de fin. Ceux-ci portent sur ce que le brouillon décide **avant** de
-//  les lui confier : les choix proposés et leurs trois unités, la validité de chaque étape, le
-//  rangement des déclarations, la reprise du Coran entier, et ce qu'on annonce à l'utilisateur
+//  les lui confier : les choix proposés et leurs trois unités, ce qui autorise à créer le programme,
+//  le rangement des déclarations, la reprise du Coran entier, et ce qu'on annonce à l'utilisateur
 //  avant qu'il commence.
 //
 
@@ -60,7 +60,7 @@ final class LearningSetupDraftTests: XCTestCase {
     // MARK: - Les choix proposés
 
     /// Trente juz', dans l'ordre du mushaf, qui le couvrent exactement.
-    func test_juzChoices_coverTheWholeMushafInOrder() {
+    func test_theJuzChoices_coverTheWholeMushafInOrder() {
         let choices = makeDraft().choices(for: .juz)
         XCTAssertEqual(choices.count, 30)
         XCTAssertEqual(choices.map(\.number), Array(1 ... 30))
@@ -79,7 +79,7 @@ final class LearningSetupDraftTests: XCTestCase {
     }
 
     /// Chaque choix porte l'état du brouillon : ni l'un ni l'autre ne ment.
-    func test_juzChoices_reflectTheDraft() {
+    func test_theJuzChoices_reflectTheDraft() {
         var draft = makeDraft()
         draft.setSolidity(.solide, for: juz30)
         draft.toggleGoal(QuranRange(quran.juzs[0]))
@@ -91,53 +91,41 @@ final class LearningSetupDraftTests: XCTestCase {
         XCTAssertEqual(choices.last?.isGoal, false)
     }
 
-    // MARK: - La navigation
+    // MARK: - Ce qui autorise à créer le programme
 
-    /// Une étape incomplète ne se passe pas : le brouillon refuse d'avancer.
+    /// Sans jour de travail, il n'y a pas de programme à créer — et aucune fin n'est estimable.
     ///
-    /// L'interface désactive son bouton, mais une vue fautive ne doit pas pouvoir sauter un choix
-    /// obligatoire — c'est le brouillon qui tient la règle.
-    func test_advance_refusesWhenTheStepIsIncomplete() {
-        var draft = makeDraft()
-        XCTAssertTrue(draft.isFirstStep)
-        XCTAssertTrue(draft.advance(), "l'étape « ce que je connais » se passe")
-        XCTAssertEqual(draft.step, .goals)
-
-        XCTAssertFalse(draft.canAdvance, "aucun objectif : l'étape n'est pas remplie")
-        XCTAssertFalse(draft.advance(), "le brouillon refuse d'avancer")
-        XCTAssertEqual(draft.step, .goals, "et l'étape n'a pas bougé")
-    }
-
-    func test_back_stopsAtTheFirstStep() {
-        var draft = makeDraft()
-        XCTAssertFalse(draft.back())
-        XCTAssertTrue(draft.isFirstStep)
-    }
-
-    /// On peut aller directement à une étape, dans les deux sens.
-    func test_go_reachesAnyStepAndTheLastOneIsFinal() {
-        var draft = makeDraft()
-        draft.go(to: .summary)
-        XCTAssertEqual(draft.step, .summary)
-        XCTAssertTrue(draft.isLastStep)
-        XCTAssertFalse(draft.advance(), "il n'y a pas d'étape après la dernière")
-
-        draft.go(to: .known)
-        XCTAssertTrue(draft.isFirstStep)
-    }
-
-    /// Sans jour de travail, l'étape des jours bloque — et aucune fin n'est estimable.
-    func test_noWorkingDay_blocksTheDaysStepAndTheEstimate() {
+    /// La configuration est une page unique : il n'y a plus d'étape à franchir, donc plus rien à
+    /// refuser en chemin. Ce qui reste à tenir, c'est la condition du bouton — et elle est
+    /// **nécessaire mais pas suffisante**, d'où les deux assertions.
+    func test_noWorkingDay_blocksTheStartAndTheEstimate() {
         var draft = makeDraft()
         // Un objectif est nécessaire : sans lui le programme est vide, et une estimation de fin
         // « déjà terminé » court-circuite la question des jours. C'est bien « aucun jour » que ce
         // test interroge, pas « rien à apprendre ».
         draft.toggleGoal(juz30)
-        draft.go(to: .days)
         draft.days = []
 
-        XCTAssertFalse(draft.canAdvance, "sans jour de travail, l'étape ne se franchit pas")
+        XCTAssertFalse(draft.canStart(from: day0), "sans jour de travail, rien ne se crée")
         XCTAssertNil(draft.summary(from: day0).estimatedEndDate, "et il n'y a alors pas de fin")
+    }
+
+    /// Un objectif sans jour de travail n'est pas non plus un programme à créer, et l'inverse non plus.
+    ///
+    /// Les deux conditions sont indépendantes : les éprouver séparément est ce qui garantit qu'aucune
+    /// des deux ne se fait passer pour l'autre.
+    func test_canStart_requiresBothAGoalAndAWorkingDay() {
+        let noGoal = makeDraft()
+        XCTAssertFalse(noGoal.canStart(from: day0), "des jours, mais rien à apprendre")
+
+        var noDay = makeDraft()
+        noDay.toggleGoal(juz30)
+        noDay.days = []
+        XCTAssertFalse(noDay.canStart(from: day0), "quelque chose à apprendre, mais aucun jour")
+
+        var complete = makeDraft()
+        complete.toggleGoal(juz30)
+        XCTAssertTrue(complete.canStart(from: day0), "les deux ensemble : le programme se crée")
     }
 
     // MARK: - Ce que je connais
@@ -229,22 +217,37 @@ final class LearningSetupDraftTests: XCTestCase {
         XCTAssertEqual(ascending.known.map(\.range.firstSura), [2, 78], "les acquis sont rangés")
     }
 
-    /// Une échéance ne s'accroche qu'à un objectif, et le laisse intact.
-    func test_setDeadline_onlyAppliesToAGoalAndKeepsIt() {
+    /// Une échéance vaut pour le programme entier, et se pose sur chaque objectif du profil.
+    ///
+    /// Le brouillon n'en porte qu'une : l'utilisateur n'a qu'une date en tête. C'est
+    /// `makeProfile()` qui la répartit, parce que `LearningGoal` est le seul type qui sait la porter
+    /// jusqu'au disque.
+    func test_theDeadline_landsOnEveryGoalOfTheProfile() {
         var draft = makeDraft()
-        draft.setDeadline(day0, for: juz30)
-        XCTAssertNil(draft.deadline(for: juz30), "sans objectif, pas d'échéance")
-        XCTAssertTrue(draft.goals.isEmpty)
-
         draft.toggleGoal(juz30)
-        let identity = draft.goals.first?.id
-        draft.setDeadline(day0, for: juz30)
-        XCTAssertEqual(draft.deadline(for: juz30), day0)
-        XCTAssertEqual(draft.goals.first?.id, identity, "l'objectif reste le même")
+        draft.toggleGoal(QuranRange(quran.suras[0]))
 
-        draft.setDeadline(nil, for: juz30)
-        XCTAssertNil(draft.deadline(for: juz30), "l'échéance s'efface")
-        XCTAssertTrue(draft.isGoal(juz30), "l'effacer ne retire pas l'objectif")
+        XCTAssertNil(draft.deadline, "aucune échéance au départ")
+        XCTAssertTrue(
+            draft.makeProfile().goals.allSatisfy { $0.targetDate == nil },
+            "sans échéance, aucun objectif n'en porte"
+        )
+
+        draft.deadline = day0
+        let profile = draft.makeProfile()
+        XCTAssertEqual(profile.goals.count, 2)
+        XCTAssertTrue(
+            profile.goals.allSatisfy { $0.targetDate == day0 },
+            "l'échéance est celle du programme, pas d'un objectif"
+        )
+
+        // Et le brouillon la retrouve tel quel quand on rouvre la configuration.
+        let edition = LearningSetupDraft(editing: profile, quran: quran, calendar: calendar)
+        XCTAssertEqual(edition.deadline, day0)
+
+        draft.deadline = nil
+        XCTAssertTrue(draft.makeProfile().goals.allSatisfy { $0.targetDate == nil }, "et elle s'efface")
+        XCTAssertTrue(draft.isGoal(juz30), "l'effacer ne retire aucun objectif")
     }
 
     // MARK: - Le profil
@@ -284,7 +287,6 @@ final class LearningSetupDraftTests: XCTestCase {
         XCTAssertEqual(edition.pace, .soutenu)
         XCTAssertEqual(edition.days, [.samedi])
         XCTAssertEqual(edition.sessionMinutes, 30)
-        XCTAssertEqual(edition.step, .known, "une modification repart de la première étape")
 
         edition.toggleGoal(juz30)
         XCTAssertEqual(profile.goals.count, 1, "le profil d'origine n'est pas modifié")
@@ -393,15 +395,22 @@ final class LearningSetupDraftTests: XCTestCase {
         XCTAssertEqual(draft.choices(for: .juz).first?.range, QuranRange(quran.juzs[0]))
     }
 
-    /// La liste de l'unité affichée suit `unit`.
-    func test_choices_followsTheDisplayedUnit() {
+    /// Les deux sections ont chacune la leur, et elles ne se commandent pas l'une l'autre.
+    ///
+    /// Celle dont on dit « je connais cette sourate » n'est pas forcément celle dont on dit « je
+    /// veux apprendre ce juz' » : les partager obligerait à revenir en arrière entre les sections.
+    func test_eachSectionHasItsOwnUnit() {
         var draft = makeDraft()
-        XCTAssertEqual(draft.unit, .juz, "le juz' est l'unité par défaut")
+        XCTAssertEqual(draft.knownUnit, .juz, "le juz' est l'unité par défaut des deux sections")
+        XCTAssertEqual(draft.goalUnit, .juz)
 
-        draft.unit = .hizb
-        XCTAssertEqual(draft.choices().count, 60)
-        draft.unit = .sourate
-        XCTAssertEqual(draft.choices().count, 114)
+        draft.knownUnit = .hizb
+        XCTAssertEqual(draft.knownChoices().count, 60)
+        XCTAssertEqual(draft.goalChoices().count, 30, "changer une unité ne change pas l'autre")
+
+        draft.goalUnit = .sourate
+        XCTAssertEqual(draft.knownChoices().count, 60)
+        XCTAssertEqual(draft.goalChoices().count, 114)
     }
 
     /// Chaque choix a une identité qui distingue les unités.
@@ -424,7 +433,7 @@ final class LearningSetupDraftTests: XCTestCase {
         draft.toggleGoal(QuranRange(quran.suras[0]), label: "Al-Fatiha")
         draft.setSolidity(.solide, for: juz30)
 
-        draft.unit = .sourate
+        draft.goalUnit = .sourate
         XCTAssertTrue(draft.isGoal(QuranRange(quran.suras[0])))
         XCTAssertEqual(draft.choices(for: .sourate).first?.isGoal, true, "l'objectif se voit dans l'unité sourate")
         XCTAssertEqual(draft.choices(for: .juz).last?.solidity, .solide, "et l'acquis dans l'unité juz'")
