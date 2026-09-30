@@ -40,6 +40,19 @@ extension Reading {
         isBundled || isDownloaded
     }
 
+    /// Vrai si cette lecture peut être obtenue sur cet appareil.
+    ///
+    /// Embarquée, déjà téléchargée, ou téléchargeable : dans les trois cas elle a une raison
+    /// d'être proposée. Une lecture téléchargeable mais pas encore téléchargée doit rester dans
+    /// la liste, car c'est en la choisissant qu'on déclenche son téléchargement ; la masquer la
+    /// rendrait définitivement inaccessible.
+    ///
+    /// `isAvailable`, elle, répond à une autre question — « y a-t-il des images à afficher
+    /// maintenant ? » — et sert à choisir la lecture de repli, pas à composer la liste.
+    public func isObtainable(remoteResources: ReadingRemoteResources?) -> Bool {
+        isAvailable || remoteResources?.resource(for: self) != nil
+    }
+
     /// La lecture à utiliser pour l'affichage, en partant de celle qui est enregistrée.
     ///
     /// Renvoie la lecture demandée si elle est utilisable, sinon la première lecture disponible

@@ -21,7 +21,10 @@ public struct ReadingSelectorBuilder {
     // MARK: Public
 
     public func build() -> UIViewController {
-        let viewModel = ReadingSelectorViewModel(resources: container.readingResources)
+        let viewModel = ReadingSelectorViewModel(
+            resources: container.readingResources,
+            remoteResources: container.remoteResources
+        )
         return ReadingSelectorViewController(viewModel: viewModel)
     }
 

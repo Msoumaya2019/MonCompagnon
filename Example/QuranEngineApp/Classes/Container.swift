@@ -35,8 +35,22 @@ class Container: AppDependencies {
 
     static let shared = Container()
 
-    let remoteResources: ReadingRemoteResources? = nil
-    private(set) lazy var readingResources = ReadingResourcesService(downloader: downloadManager, remoteResources: remoteResources)
+    /// Les mushafs que l'application n'embarque pas, servis par l'hôte qu'elle utilise déjà pour
+    /// l'audio des récitateurs. Sans cela, aucun mushaf autre que celui du paquet ne pouvait être
+    /// obtenu, et le sélecteur en proposait qui ne pouvaient pas s'afficher.
+    let remoteResources: ReadingRemoteResources? = QuranAppReadingRemoteResources(
+        baseURL: Constant.filesAppHost
+    )
+
+    /// `removeOtherReadings: false` : changer de mushaf ne doit pas effacer celui que l'on vient
+    /// de télécharger. Avec deux mushafs seulement, les garder tous les deux coûte au plus la
+    /// taille du Tajweed, alors que l'effacement obligerait à le retélécharger — 137 Mo — à chaque
+    /// retour sur le mushaf du paquet.
+    private(set) lazy var readingResources = ReadingResourcesService(
+        downloader: downloadManager,
+        remoteResources: remoteResources,
+        removeOtherReadings: false
+    )
 
     let analytics: AnalyticsLibrary = LoggingAnalyticsLibrary()
 

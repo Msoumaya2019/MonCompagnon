@@ -16,8 +16,9 @@ import ReadingService
 class ReadingSelectorViewModel: ObservableObject {
     // MARK: Lifecycle
 
-    init(resources: ReadingResourcesService) {
+    init(resources: ReadingResourcesService, remoteResources: ReadingRemoteResources?) {
         self.resources = resources
+        self.remoteResources = remoteResources
     }
 
     // MARK: Internal
@@ -50,10 +51,11 @@ class ReadingSelectorViewModel: ObservableObject {
                 readings: [Reading.indoPak].map(ReadingInfo.init)
             ),
         ]
-        // Seuls les mushafs dont les images sont réellement sur l'appareil sont proposés.
-        // Proposer les autres laissait choisir un mushaf qui ne pouvait pas s'afficher.
+        // Seuls les mushafs que l'appareil peut réellement obtenir sont proposés : ceux du
+        // paquet, ceux déjà téléchargés, et ceux que l'application sait télécharger. Proposer
+        // les autres laissait choisir un mushaf qui ne pouvait pas s'afficher.
         .compactMap { group in
-            let readings = group.readings.filter(\.value.isAvailable)
+            let readings = group.readings.filter(isObtainable)
             guard !readings.isEmpty else { return nil }
             return ReadingGroup(id: group.id, title: group.title, readings: readings)
         }
@@ -73,15 +75,28 @@ class ReadingSelectorViewModel: ObservableObject {
 
     private let preferences = ReadingPreferences.shared
     private let resources: ReadingResourcesService
+    private let remoteResources: ReadingRemoteResources?
+
+    /// Une lecture proposée est une lecture que l'appareil peut obtenir : du paquet, déjà
+    /// téléchargée, ou téléchargeable. Voir `Reading.isObtainable(remoteResources:)`.
+    private func isObtainable(_ reading: ReadingInfo<Reading>) -> Bool {
+        reading.value.isObtainable(remoteResources: remoteResources)
+    }
 
     private func listenToReadingChanges() async {
         let readingsSequence = preferences.$reading
             .prepend(preferences.reading)
             .values()
         for await reading in readingsSequence {
-            // On coche la lecture réellement affichée. Une lecture enregistrée mais absente de
-            // l'appareil n'apparaît plus dans la liste : sans cela, aucune ligne ne serait cochée.
-            selectedReading = Reading.available(reading)
+            // On coche la lecture choisie dès lors qu'elle est proposée — y compris pendant son
+            // téléchargement, sinon la coche reviendrait sur un autre mushaf le temps du
+            // transfert. Une lecture enregistrée qui n'est plus proposée retombe sur la première
+            // lecture affichable : sans cela, aucune ligne ne serait cochée.
+            if reading.isObtainable(remoteResources: remoteResources) {
+                selectedReading = reading
+            } else {
+                selectedReading = Reading.available(reading)
+            }
         }
     }
 
