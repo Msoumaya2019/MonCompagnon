@@ -293,6 +293,44 @@ final class LearningSetupDraftTests: XCTestCase {
         XCTAssertEqual(edition.makeProfile().createdAt, day0)
     }
 
+    // MARK: - Le sens d'apprentissage
+
+    /// Le sens traverse le brouillon : c'est par lui qu'il atteint le profil, donc le planificateur.
+    func test_theDraftCarriesTheDirection() {
+        var draft = makeDraft()
+        XCTAssertEqual(draft.direction, .depuisLeDebut, "l'ordre du mushaf est le défaut")
+        XCTAssertEqual(draft.makeProfile().direction, .depuisLeDebut)
+
+        draft.direction = .depuisLaFin
+        XCTAssertEqual(draft.makeProfile().direction, .depuisLaFin, "le choix doit atteindre le profil")
+    }
+
+    /// Modifier un programme à rebours le rouvre à rebours, et non dans l'ordre du mushaf.
+    func test_editingAProfile_restoresTheDirection() {
+        var configured = makeDraft()
+        configured.toggleGoal(juz30)
+        configured.direction = .depuisLaFin
+        let profile = configured.makeProfile()
+
+        let edition = LearningSetupDraft(editing: profile, quran: quran, calendar: calendar)
+        XCTAssertEqual(edition.direction, .depuisLaFin, "un programme à rebours se rouvre à rebours")
+        XCTAssertEqual(edition.makeProfile().direction, .depuisLaFin)
+    }
+
+    /// Le sens change **par quel bout** on commence, pas **combien** il reste à faire : ni le nombre
+    /// de séances, ni l'échéance annoncée ne bougent.
+    ///
+    /// C'est ce que le commentaire de `direction` affirme. Une affirmation non éprouvée dérive —
+    /// surtout ici, où le récapitulatif engendre réellement le programme pour l'annoncer.
+    func test_theDirection_doesNotChangeWhatTheSummaryAnnounces() {
+        var forward = makeDraft()
+        forward.toggleGoal(juz30)
+        var backward = forward
+        backward.direction = .depuisLaFin
+
+        XCTAssertEqual(backward.summary(from: day0), forward.summary(from: day0))
+    }
+
     // MARK: - Le récapitulatif
 
     /// Sans objectif, il n'y a rien à programmer.

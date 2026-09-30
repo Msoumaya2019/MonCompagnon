@@ -50,6 +50,7 @@ public struct LearningSetupDraft: Equatable {
         customVersesPerSession = profile.customVersesPerSession
         days = profile.days
         sessionMinutes = profile.sessionMinutes
+        direction = profile.direction
     }
 
     // MARK: Public
@@ -146,6 +147,15 @@ public struct LearningSetupDraft: Equatable {
     /// tête, et lui en demander plusieurs pour un seul chiffre à retenir serait une question de
     /// trop. C'est `makeProfile()` qui la pose sur chaque objectif.
     public var deadline: Date?
+
+    /// Le sens dans lequel l'objectif est parcouru : depuis An-Nas, ou depuis Al-Baqarah.
+    ///
+    /// Il ne change pas **ce qui** sera appris, seulement **par quel bout** on commence — et c'est
+    /// une question réelle : qui connaît déjà les petites sourates de la fin ne commence pas par le
+    /// début. `LearningPlanner` en tient compte, donc le récapitulatif suit tout seul, sans que
+    /// l'écran ait à s'en occuper. L'échéance estimée, elle, ne bouge pas : le nombre de séances ne
+    /// dépend pas de leur ordre.
+    public var direction: LearningDirection = .depuisLeDebut
 
     /// Vrai si le programme annoncé peut être créé.
     ///
@@ -363,6 +373,7 @@ public struct LearningSetupDraft: Equatable {
             customVersesPerSession: customVersesPerSession,
             days: days,
             sessionMinutes: sessionMinutes,
+            direction: direction,
             createdAt: createdAt,
             isConfigured: true
         )
