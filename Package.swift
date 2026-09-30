@@ -767,6 +767,7 @@ private func featuresTargets() -> [[Target]] {
         target(type, name: "QuranImageFeature", dependencies: [
             "AppDependencies",
             "QuranGeometry",
+            "Localization",
             "NoorUI",
             "ImageService",
             "LinePagePersistence",

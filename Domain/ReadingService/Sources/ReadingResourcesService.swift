@@ -127,7 +127,11 @@ public actor ReadingResourcesService {
 
         logger.info("Resources: Start loading reading resources of: \(reading)")
         guard let remoteResource = remoteResources?.resource(for: reading) else {
-            logger.info("Resources: Reading \(reading) is bundled with the app.")
+            // Sans ressource distante, la lecture doit être embarquée dans l'application. On le
+            // vérifie au lieu de le supposer : supposer que toute lecture sans téléchargement
+            // était forcément embarquée avait conduit à proposer des mushafs dont les images
+            // étaient absentes, ce qui fermait l'application à l'ouverture.
+            logger.info("Resources: No remote resource for \(reading); bundled: \(reading.isBundled)")
             return .ready
         }
 

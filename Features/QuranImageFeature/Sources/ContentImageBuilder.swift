@@ -35,56 +35,68 @@ public struct ContentImageBuilder {
         at page: Page,
         onAnnotatedAyahTap: @escaping (AyahNumber, CGPoint) -> Void
     ) -> some View {
-        let reading = ReadingPreferences.shared.reading
+        let reading = Self.reading()
         if reading.usesLinePages {
-            let linePageAssetService = Self.buildLinePageAssetService(reading: reading, container: container)
-            let viewModel = ContentLineViewModel(
-                reading: reading,
-                page: page,
-                linePageAssetService: linePageAssetService,
-                overlayService: overlayService
-            )
-            ContentLineView(
-                viewModel: viewModel,
-                onAnnotatedAyahTap: onAnnotatedAyahTap
-            )
+            if let linePageAssetService = Self.buildLinePageAssetService(reading: reading, container: container) {
+                let viewModel = ContentLineViewModel(
+                    reading: reading,
+                    page: page,
+                    linePageAssetService: linePageAssetService,
+                    overlayService: overlayService
+                )
+                ContentLineView(
+                    viewModel: viewModel,
+                    onAnnotatedAyahTap: onAnnotatedAyahTap
+                )
+            } else {
+                MissingReadingResourcesView(reading: reading)
+            }
         } else {
-            let imageService = Self.buildImageDataService(reading: reading, container: container)
-            let viewModel = ContentImageViewModel(
-                reading: reading,
-                page: page,
-                imageDataService: imageService,
-                overlayService: overlayService
-            )
-            ContentImageView(
-                viewModel: viewModel,
-                onAnnotatedAyahTap: onAnnotatedAyahTap
-            )
+            if let imageService = Self.buildImageDataService(reading: reading, container: container) {
+                let viewModel = ContentImageViewModel(
+                    reading: reading,
+                    page: page,
+                    imageDataService: imageService,
+                    overlayService: overlayService
+                )
+                ContentImageView(
+                    viewModel: viewModel,
+                    onAnnotatedAyahTap: onAnnotatedAyahTap
+                )
+            } else {
+                MissingReadingResourcesView(reading: reading)
+            }
         }
     }
 
     #else
     @ViewBuilder
     public func build(at page: Page) -> some View {
-        let reading = ReadingPreferences.shared.reading
+        let reading = Self.reading()
         if reading.usesLinePages {
-            let linePageAssetService = Self.buildLinePageAssetService(reading: reading, container: container)
-            let viewModel = ContentLineViewModel(
-                reading: reading,
-                page: page,
-                linePageAssetService: linePageAssetService,
-                overlayService: overlayService
-            )
-            ContentLineView(viewModel: viewModel)
+            if let linePageAssetService = Self.buildLinePageAssetService(reading: reading, container: container) {
+                let viewModel = ContentLineViewModel(
+                    reading: reading,
+                    page: page,
+                    linePageAssetService: linePageAssetService,
+                    overlayService: overlayService
+                )
+                ContentLineView(viewModel: viewModel)
+            } else {
+                MissingReadingResourcesView(reading: reading)
+            }
         } else {
-            let imageService = Self.buildImageDataService(reading: reading, container: container)
-            let viewModel = ContentImageViewModel(
-                reading: reading,
-                page: page,
-                imageDataService: imageService,
-                overlayService: overlayService
-            )
-            ContentImageView(viewModel: viewModel)
+            if let imageService = Self.buildImageDataService(reading: reading, container: container) {
+                let viewModel = ContentImageViewModel(
+                    reading: reading,
+                    page: page,
+                    imageDataService: imageService,
+                    overlayService: overlayService
+                )
+                ContentImageView(viewModel: viewModel)
+            } else {
+                MissingReadingResourcesView(reading: reading)
+            }
         }
     }
 
@@ -92,8 +104,25 @@ public struct ContentImageBuilder {
 
     // MARK: Internal
 
-    static func buildImageDataService(reading: Reading, container: AppDependencies) -> ImageDataService {
-        let readingDirectory = Self.readingDirectory(reading, container: container)
+    /// La lecture à afficher : celle qui est enregistrée, ou à défaut une lecture réellement
+    /// présente sur l'appareil.
+    ///
+    /// Une lecture choisie dans le sélecteur peut n'avoir ni images embarquées ni images
+    /// téléchargées. Sans ce repli, ouvrir le Mushaf demandait un dossier d'images absent et
+    /// fermait l'application. Le réglage enregistré n'est pas modifié : seul l'affichage s'adapte.
+    static func reading() -> Reading {
+        let preferred = ReadingPreferences.shared.reading
+        let resolved = Reading.available(preferred)
+        if resolved != preferred {
+            logger.error("Images: Reading \(preferred) has no images on this device; using \(resolved)")
+        }
+        return resolved
+    }
+
+    static func buildImageDataService(reading: Reading, container: AppDependencies) -> ImageDataService? {
+        guard let readingDirectory = Self.readingDirectory(reading, container: container) else {
+            return nil
+        }
         return ImageDataService(
             ayahInfoDatabase: reading.ayahInfoDatabase(in: readingDirectory),
             imagesURL: reading.imagesDirectory(in: readingDirectory),
@@ -101,24 +130,36 @@ public struct ContentImageBuilder {
         )
     }
 
-    static func buildLinePageAssetService(reading: Reading, container: AppDependencies) -> LinePageAssetService {
+    static func buildLinePageAssetService(reading: Reading, container: AppDependencies) -> LinePageAssetService? {
         guard let metrics = reading.linePageMetrics else {
-            preconditionFailure("Attempted to build line-page assets for non-line-page reading \(reading)")
+            logger.error("Images: Attempted to build line-page assets for non-line-page reading \(reading)")
+            return nil
+        }
+        guard let readingDirectory = Self.readingDirectory(reading, container: container) else {
+            return nil
         }
         return LinePageAssetService(
-            readingDirectory: Self.readingDirectory(reading, container: container),
+            readingDirectory: readingDirectory,
             metrics: metrics,
             quran: reading.quran,
             ayahMarkerURL: container.remoteResources?.resource(for: reading)?.ayahMarkerURL
         )
     }
 
-    static func readingDirectory(_ reading: Reading, container: AppDependencies) -> URL {
+    /// Le dossier d'images d'une lecture, ou `nil` si l'appareil n'en possède aucune.
+    ///
+    /// Ne force plus l'ouverture d'un dossier absent : une lecture non disponible renvoie `nil`,
+    /// que les appelants traduisent par un message au lieu d'un arrêt de l'application.
+    static func readingDirectory(_ reading: Reading, container: AppDependencies) -> URL? {
         let remoteResource = container.remoteResources?.resource(for: reading)
         let remotePath = remoteResource?.downloadDestination.url
-        let bundlePath = { Bundle.main.url(forResource: reading.localPath, withExtension: nil) }
-        logger.info("Images: Use \(remoteResource != nil ? "remote" : "bundle") For reading \(reading)")
-        return remotePath ?? bundlePath()!
+        let bundlePath = Bundle.main.url(forResource: reading.localPath, withExtension: nil)
+        logger.info("Images: Use \(remotePath != nil ? "remote" : "bundle") For reading \(reading)")
+        guard let directory = remotePath ?? bundlePath else {
+            logger.error("Images: No images for reading \(reading); neither downloaded nor bundled")
+            return nil
+        }
+        return directory
     }
 
     // MARK: Private

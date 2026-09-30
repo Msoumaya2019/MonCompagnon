@@ -50,6 +50,13 @@ class ReadingSelectorViewModel: ObservableObject {
                 readings: [Reading.indoPak].map(ReadingInfo.init)
             ),
         ]
+        // Seuls les mushafs dont les images sont réellement sur l'appareil sont proposés.
+        // Proposer les autres laissait choisir un mushaf qui ne pouvait pas s'afficher.
+        .compactMap { group in
+            let readings = group.readings.filter(\.value.isAvailable)
+            guard !readings.isEmpty else { return nil }
+            return ReadingGroup(id: group.id, title: group.title, readings: readings)
+        }
     }
 
     func start() async {
@@ -72,7 +79,9 @@ class ReadingSelectorViewModel: ObservableObject {
             .prepend(preferences.reading)
             .values()
         for await reading in readingsSequence {
-            selectedReading = reading
+            // On coche la lecture réellement affichée. Une lecture enregistrée mais absente de
+            // l'appareil n'apparaît plus dans la liste : sans cela, aucune ligne ne serait cochée.
+            selectedReading = Reading.available(reading)
         }
     }
 

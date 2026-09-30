@@ -92,7 +92,7 @@ public struct RemoteResource {
     }
 }
 
-private extension Reading {
+extension Reading {
     static let readingsPath = RelativeFilePath("readings", isDirectory: true)
 }
 
