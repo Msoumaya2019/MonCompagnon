@@ -7,6 +7,7 @@
 
 import Foundation
 import LearningKit
+import QuranKit
 
 /// La mémoire du module Apprentissage.
 ///
@@ -18,6 +19,13 @@ import LearningKit
 /// bloquante pour quelques kilo-octets : une signature `async` n'apporterait ici qu'une propagation
 /// de `await` dans les écrans, sans rien rendre plus sûr.
 public protocol LearningPersistence: Sendable {
+    /// Le mushaf de référence du magasin.
+    ///
+    /// L'interface en a besoin pour compter les versets et composer les libellés. Le lui faire
+    /// deviner — un mushaf par défaut écrit dans la vue — laisserait deux mushafs coexister, et
+    /// l'écran annoncerait alors des tailles qui ne seraient pas celles du programme.
+    var quran: Quran { get }
+
     /// Le profil enregistré, ou un profil vierge si rien n'a encore été configuré.
     func loadProfile() -> LearningProfile
 

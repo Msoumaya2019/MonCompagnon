@@ -9,6 +9,7 @@
 import AnnotationsService
 import AppDependencies
 import FeaturesSupport
+import LearningFeature
 import QuranTextKit
 import ReadingSelectorFeature
 import UIKit
@@ -54,7 +55,8 @@ public struct HomeBuilder {
         #endif
         let viewController = HomeViewController(
             viewModel: viewModel,
-            readingSelectorBuilder: ReadingSelectorBuilder(container: container)
+            readingSelectorBuilder: ReadingSelectorBuilder(container: container),
+            learningBuilder: LearningBuilder(container: container)
         )
         return viewController
     }

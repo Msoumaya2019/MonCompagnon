@@ -5,6 +5,7 @@
 //  Created by Mohamed Afifi on 2023-07-16.
 //
 
+import LearningFeature
 import Localization
 import ReadingSelectorFeature
 import SwiftUI
@@ -13,10 +14,19 @@ import UIx
 final class HomeViewController: UIHostingController<HomeView> {
     // MARK: Lifecycle
 
-    init(viewModel: HomeViewModel, readingSelectorBuilder: ReadingSelectorBuilder) {
+    init(
+        viewModel: HomeViewModel,
+        readingSelectorBuilder: ReadingSelectorBuilder,
+        learningBuilder: LearningBuilder
+    ) {
         self.viewModel = viewModel
         self.readingSelectorBuilder = readingSelectorBuilder
+        self.learningBuilder = learningBuilder
         super.init(rootView: HomeView(viewModel: viewModel))
+
+        // `self` n'existe qu'après `super.init`, et la vue est construite avant : on lui donne
+        // son action ici. La capturer dans l'initialiseur serait refusé par Swift.
+        rootView.openLearning = { [weak self] in self?.openLearning() }
 
         initialize()
     }
@@ -43,6 +53,7 @@ final class HomeViewController: UIHostingController<HomeView> {
 
     private let viewModel: HomeViewModel
     private let readingSelectorBuilder: ReadingSelectorBuilder
+    private let learningBuilder: LearningBuilder
     private lazy var segmentedControl = UISegmentedControl(frame: .zero)
 
     private func initialize() {
@@ -100,6 +111,12 @@ final class HomeViewController: UIHostingController<HomeView> {
     private func openReadingSelectors() {
         let readingSelector = readingSelectorBuilder.build()
         navigationController?.pushViewController(readingSelector, animated: true)
+    }
+
+    /// Ouvre l'espace d'apprentissage, depuis la première section de la liste d'accueil.
+    private func openLearning() {
+        let learning = learningBuilder.build()
+        navigationController?.pushViewController(learning, animated: true)
     }
 
     @objc

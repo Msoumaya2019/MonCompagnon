@@ -12,6 +12,7 @@ import CoreDataModel
 import CoreDataPersistence
 import Foundation
 import LastPagePersistence
+import LearningPersistence
 #if QURAN_SYNC
 import AuthenticationClient
 import LegacyDataMigration
@@ -54,6 +55,13 @@ class Container: AppDependencies {
     private(set) lazy var pageBookmarkPersistence: PageBookmarkPersistence = CoreDataPageBookmarkPersistence(stack: coreDataStack)
 
     private(set) lazy var notePersistence: NotePersistence = CoreDataNotePersistence(stack: coreDataStack)
+
+    /// Le profil et le programme d'apprentissage, rangés dans les préférences de l'appareil.
+    ///
+    /// Le mushaf de référence est celui par défaut : les passages sont désignés par leurs
+    /// coordonnées — sourate et verset — qui ne dépendent pas du mushaf. Seul le découpage des
+    /// séances suit les fins de page, et changer de mushaf le recalcule sans perdre la progression.
+    let learningPersistence: LearningPersistence = UserDefaultsLearningPersistence()
 
     let appIconCatalog = AppIconCatalog.example
 

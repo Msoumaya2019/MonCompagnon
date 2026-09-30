@@ -5,6 +5,7 @@
 "learning.dashboard.next" = "À apprendre ensuite";
 "learning.dashboard.none" = "Rien à réviser aujourd’hui.";
 "learning.dashboard.progress" = "Avancement";
+"learning.dashboard.progress.value" = "%d %%";
 "learning.dashboard.reviews" = "Révisions dues aujourd’hui";
 "learning.dashboard.streak" = "Jours d’affilée";
 "learning.day.dimanche" = "Dimanche";
@@ -16,6 +17,7 @@
 "learning.day.vendredi" = "Vendredi";
 "learning.days.detail" = "Le programme se répartit sur ces jours-là.";
 "learning.days.session" = "Durée d’une séance";
+"learning.days.session-minutes" = "%d min";
 "learning.days.title" = "Quels jours travaillez-vous ?";
 "learning.goals.deadline" = "Me fixer une échéance";
 "learning.goals.deadline.date" = "Échéance";

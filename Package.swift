@@ -610,6 +610,7 @@ private func featuresTargets() -> [[Target]] {
             "AnnotationsService",
             "BatchDownloader",
             "LastPagePersistence",
+            "LearningPersistence",
             "NoorUI",
             "ReadingService",
             "QuranResources",
@@ -794,6 +795,20 @@ private func featuresTargets() -> [[Target]] {
             "NoorUI",
         ]),
 
+        // Pas de tests ici : la cible ne porte que du rendu et du câblage. Ce qui décide — les
+        // choix, la validité des étapes, le programme, les échéances — vit dans `LearningKit`, où
+        // il est éprouvé sans interface.
+        target(type, name: "LearningFeature", hasTests: false, dependencies: [
+            "AppDependencies",
+            "FeaturesSupport",
+            "LearningKit",
+            "LearningPersistence",
+            "Localization",
+            "NoorUI",
+            "QuranLocalization",
+            "UIx",
+        ]),
+
         target(type, name: "QuranTranslationFeature", dependencies: [
             "AppDependencies",
             "NoorUI",
@@ -864,6 +879,7 @@ private func featuresTargets() -> [[Target]] {
         target(type, name: "HomeFeature", hasTests: false, dependencies: [
             "AppDependencies",
             "ReadingSelectorFeature",
+            "LearningFeature",
             "ReadingService",
             "AnnotationsService",
             "FeaturesSupport",

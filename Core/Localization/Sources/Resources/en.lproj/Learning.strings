@@ -5,6 +5,7 @@
 "learning.dashboard.next" = "Next to learn";
 "learning.dashboard.none" = "Nothing to review today.";
 "learning.dashboard.progress" = "Progress";
+"learning.dashboard.progress.value" = "%d%%";
 "learning.dashboard.reviews" = "Reviews due today";
 "learning.dashboard.streak" = "Days in a row";
 "learning.day.dimanche" = "Sunday";
@@ -16,6 +17,7 @@
 "learning.day.vendredi" = "Friday";
 "learning.days.detail" = "The programme is spread over these days.";
 "learning.days.session" = "Session length";
+"learning.days.session-minutes" = "%d min";
 "learning.days.title" = "Which days do you work?";
 "learning.goals.deadline" = "Set a deadline";
 "learning.goals.deadline.date" = "Deadline";

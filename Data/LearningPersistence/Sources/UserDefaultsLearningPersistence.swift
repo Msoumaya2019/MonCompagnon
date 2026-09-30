@@ -30,6 +30,9 @@ public struct UserDefaultsLearningPersistence: LearningPersistence {
 
     // MARK: Public
 
+    /// Le mushaf de référence, qui fixe les bornes des passages et le découpage des séances.
+    public let quran: Quran
+
     public func loadProfile() -> LearningProfile {
         preferences.profile
     }
@@ -60,9 +63,6 @@ public struct UserDefaultsLearningPersistence: LearningPersistence {
     }
 
     // MARK: Private
-
-    /// Le mushaf de référence.
-    private let quran: Quran
 
     /// Le calendrier qui définit « un jour ».
     private let calendar: Calendar

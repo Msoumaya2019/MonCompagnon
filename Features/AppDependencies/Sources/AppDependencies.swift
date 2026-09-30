@@ -11,6 +11,7 @@ import AuthenticationClient
 import BatchDownloader
 import Foundation
 import LastPagePersistence
+import LearningPersistence
 #if QURAN_SYNC
 import LegacyDataMigration
 import MobileSync
@@ -43,6 +44,9 @@ public protocol AppDependencies {
     var lastPagePersistence: LastPagePersistence { get }
     var notePersistence: NotePersistence { get }
     var pageBookmarkPersistence: PageBookmarkPersistence { get }
+
+    /// Le profil et le programme d'apprentissage, tels qu'ils sont conservés sur l'appareil.
+    var learningPersistence: LearningPersistence { get }
 
     /// The Home Screen icons the app offers.
     var appIconCatalog: AppIconCatalog { get }
