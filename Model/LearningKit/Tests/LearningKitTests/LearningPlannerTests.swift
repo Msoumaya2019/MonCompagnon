@@ -574,7 +574,7 @@ final class LearningPlannerTests: XCTestCase {
 
         XCTAssertEqual(program.items.count, 1, "Il ne reste qu'un morceau à revoir")
         XCTAssertEqual(program.items.first?.range.firstAyah, 21)
-        XCTAssertEqual(program.items.first?.range.lastAyah, sura.lastAyah)
+        XCTAssertEqual(program.items.first?.range.lastAyah, fragile.lastAyah)
     }
 
     /// Le relevé obtenu après avoir appris les passages désignés d'un programme neuf.
