@@ -199,6 +199,18 @@ final class LearningProgramTests: XCTestCase {
 
     // MARK: - Par où commencer
 
+    /// Un programme neuf **a** quelque chose à commencer : tout reste à apprendre. C'est le premier
+    /// passage, et c'est ce que « Commencer maintenant » doit proposer dès la configuration.
+    func test_nextToWork_onAFreshProgram_startsAtTheFirstPassage() {
+        let (program, id) = program()
+
+        XCTAssertEqual(
+            program.nextToWork(now: day0, calendar: calendar)?.id,
+            id,
+            "Tout reste à apprendre : la première séance est le premier passage"
+        )
+    }
+
     /// Le cas qui tranche : à J+1 la révision du premier est due, **et** il reste une séance à
     /// apprendre. Les deux sont possibles, et le programme doit choisir l'apprentissage.
     func test_nextToWork_prefersTheNextSessionOverADueReview() {
@@ -238,17 +250,17 @@ final class LearningProgramTests: XCTestCase {
     }
 
     func test_nextToWork_isNilWhenThereIsNothingToDo() {
-        var (program, id) = program()
-
         XCTAssertNil(
-            program.nextToWork(now: day0, calendar: calendar),
-            "Un programme neuf n'a rien à commencer : rien n'est appris, rien n'est dû"
+            LearningProgram.empty.nextToWork(now: day0, calendar: calendar),
+            "Un programme vide n'a rien à commencer"
         )
 
+        var (program, id) = program()
         program.markLearned(id: id, at: day0, calendar: calendar)
+
         XCTAssertNil(
             program.nextToWork(now: day0, calendar: calendar),
-            "Le jour même de l'apprentissage, la révision n'est pas encore due"
+            "Tout est appris et la révision n'est pas encore due : il n'y a rien à faire"
         )
     }
 
