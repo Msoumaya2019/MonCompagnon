@@ -197,6 +197,61 @@ final class LearningProgramTests: XCTestCase {
         XCTAssertEqual(program.nextToLearn()?.id, second.id)
     }
 
+    // MARK: - Par où commencer
+
+    /// Le cas qui tranche : à J+1 la révision du premier est due, **et** il reste une séance à
+    /// apprendre. Les deux sont possibles, et le programme doit choisir l'apprentissage.
+    func test_nextToWork_prefersTheNextSessionOverADueReview() {
+        let quran = Quran.hafsMadani1405
+        let first = LearningItem(range: QuranRange(quran.suras[0]), label: nil, position: 0)
+        let second = LearningItem(range: QuranRange(quran.suras[1]), label: nil, position: 1)
+        var program = LearningProgram(items: [first, second], generatedAt: day0)
+        program.markLearned(id: first.id, at: day0, calendar: calendar)
+
+        let day1 = date(daysAfter: day0, 1)
+        XCTAssertEqual(
+            program.dueReviews(now: day1, calendar: calendar).map(\.id),
+            [first.id],
+            "La révision est bien due : le test porte donc sur la priorité, pas sur l'échéance"
+        )
+        XCTAssertEqual(
+            program.nextToWork(now: day1, calendar: calendar)?.id,
+            second.id,
+            "Tant qu'il reste une séance à apprendre, c'est elle qui commence"
+        )
+    }
+
+    func test_nextToWork_fallsBackToTheFirstDueReview() {
+        let quran = Quran.hafsMadani1405
+        let first = LearningItem(range: QuranRange(quran.suras[0]), label: nil, position: 0)
+        let second = LearningItem(range: QuranRange(quran.suras[1]), label: nil, position: 1)
+        var program = LearningProgram(items: [first, second], generatedAt: day0)
+        program.markLearned(id: first.id, at: day0, calendar: calendar)
+        program.markLearned(id: second.id, at: day0, calendar: calendar)
+
+        // Plus rien à apprendre : la première révision due prend la suite, dans l'ordre du programme.
+        XCTAssertNil(program.nextToLearn())
+        XCTAssertEqual(
+            program.nextToWork(now: date(daysAfter: day0, 1), calendar: calendar)?.id,
+            first.id
+        )
+    }
+
+    func test_nextToWork_isNilWhenThereIsNothingToDo() {
+        var (program, id) = program()
+
+        XCTAssertNil(
+            program.nextToWork(now: day0, calendar: calendar),
+            "Un programme neuf n'a rien à commencer : rien n'est appris, rien n'est dû"
+        )
+
+        program.markLearned(id: id, at: day0, calendar: calendar)
+        XCTAssertNil(
+            program.nextToWork(now: day0, calendar: calendar),
+            "Le jour même de l'apprentissage, la révision n'est pas encore due"
+        )
+    }
+
     func test_streak_countsConsecutiveDaysIncludingYesterday() {
         let quran = Quran.hafsMadani1405
         // Trois passages travaillés respectivement à J-2, J-1 et aujourd'hui.

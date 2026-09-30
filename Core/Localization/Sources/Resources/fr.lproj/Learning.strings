@@ -12,6 +12,7 @@
 "learning.dashboard.progress.value" = "%d %%";
 "learning.dashboard.review" = "Révision";
 "learning.dashboard.reviews" = "Révisions dues aujourd’hui";
+"learning.dashboard.start" = "Commencer maintenant";
 "learning.dashboard.streak" = "Jours d’affilée";
 "learning.dashboard.toLearn" = "À apprendre";
 "learning.dashboard.today" = "Aujourd’hui";

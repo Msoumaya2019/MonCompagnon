@@ -6,6 +6,7 @@
 //
 
 import AppDependencies
+import FeaturesSupport
 import UIKit
 
 /// Ouvre l'espace d'apprentissage.
@@ -25,10 +26,17 @@ public struct LearningBuilder {
 
     /// L'écran d'apprentissage : la configuration guidée si rien n'a encore été configuré, le
     /// récapitulatif du programme sinon.
-    public func build() -> UIViewController {
+    ///
+    /// - Parameter listener: le navigateur du Coran, qui n'existe que dans l'onglet. C'est lui qui
+    ///   ouvre le mushaf sur le passage à travailler, sans repasser par l'accueil.
+    public func build(withListener listener: QuranNavigator) -> UIViewController {
         let persistence = container.learningPersistence
         let viewModel = LearningHomeViewModel(persistence: persistence)
-        return LearningHomeViewController(viewModel: viewModel, persistence: persistence)
+        return LearningHomeViewController(
+            viewModel: viewModel,
+            persistence: persistence,
+            listener: listener
+        )
     }
 
     // MARK: Private

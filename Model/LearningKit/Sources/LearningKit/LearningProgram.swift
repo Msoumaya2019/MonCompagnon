@@ -53,6 +53,18 @@ public struct LearningProgram: Codable, Equatable, Sendable {
         items.first { $0.storedStatus == .notLearned }
     }
 
+    /// Le passage par lequel commencer : la prochaine séance, ou la première révision due.
+    ///
+    /// **L'apprentissage passe avant la révision.** C'est un choix, pas un hasard : reculer
+    /// indéfiniment devant les révisions dues ferait stagner le programme, et c'est précisément la
+    /// sensation d'échec que le programme adaptatif doit éviter. Quand il n'y a plus rien à
+    /// apprendre, les révisions prennent la suite — jamais l'inverse.
+    ///
+    /// Rend `nil` quand il n'y a plus rien à faire : tout est appris, et rien n'est encore dû.
+    public func nextToWork(now: Date, calendar: Calendar = .current) -> LearningItem? {
+        nextToLearn() ?? dueReviews(now: now, calendar: calendar).first
+    }
+
     /// Nombre total de versets du programme.
     public func totalVerses(in quran: Quran) -> Int {
         items.reduce(0) { $0 + $1.verseCount(in: quran) }

@@ -33,6 +33,15 @@ struct LearningHomeView: View {
     /// l'initialiseur du contrôleur serait refusé par Swift.
     var editProgram: Action = {}
 
+    /// Ouvre le Coran sur un passage.
+    ///
+    /// Renseignée par le contrôleur, comme `editProgram` : la vue ne sait pas naviguer, et ne doit
+    /// pas le savoir. Le navigateur appartient à l'onglet, pas à l'écran.
+    ///
+    /// Une seule porte vers le lecteur : « Commencer maintenant » lui donne le passage choisi par
+    /// le programme, les lignes de « À consolider » et de « Révision » lui donnent le leur.
+    var open: ItemAction<LearningItem> = { _ in }
+
     var body: some View {
         NoorList {
             if !viewModel.isConfigured {
@@ -75,6 +84,14 @@ struct LearningHomeView: View {
                 )
             } else {
                 NoorListItem(title: .text(l("learning.dashboard.finished", table: .learning)))
+            }
+
+            if let next = viewModel.nextToWork {
+                NoorListItem(
+                    title: .text(l("learning.dashboard.start", table: .learning)),
+                    accessory: .disclosureIndicator,
+                    action: .sync { open(next) }
+                )
             }
 
             if viewModel.dueReviewCount() > 0 {
@@ -134,11 +151,18 @@ struct LearningHomeView: View {
     ///
     /// Le libellé est composé par le modèle de vue — sourate, puis page — parce que le libellé du
     /// modèle, lui, est un repère technique : « page 582 » ou « 78:1-78:40 » ne se lisent pas.
+    ///
+    /// Chaque ligne ouvre le Coran sur son passage : c'est tout l'intérêt de la section — voir ce
+    /// qui est fragile ou dû, et le travailler sans avoir à le retrouver dans le mushaf.
     @ViewBuilder
     private func rows(for items: [LearningItem]) -> some View {
         ForEach(items) { item in
             if let label = viewModel.label(of: item) {
-                NoorListItem(title: .text(label))
+                NoorListItem(
+                    title: .text(label),
+                    accessory: .disclosureIndicator,
+                    action: .sync { open(item) }
+                )
             }
         }
     }

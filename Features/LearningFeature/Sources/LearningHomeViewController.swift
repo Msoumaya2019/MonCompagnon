@@ -3,6 +3,8 @@
 //  LearningFeature
 //
 
+import FeaturesSupport
+import LearningKit
 import LearningPersistence
 import Localization
 import SwiftUI
@@ -12,16 +14,20 @@ import SwiftUI
 final class LearningHomeViewController: UIHostingController<LearningHomeView> {
     // MARK: Lifecycle
 
-    init(viewModel: LearningHomeViewModel, persistence: LearningPersistence) {
+    /// - Parameter listener: le navigateur du Coran, qui appartient à l'onglet. L'écran ne sait pas
+    ///   naviguer : il demande, et l'onglet ouvre.
+    init(viewModel: LearningHomeViewModel, persistence: LearningPersistence, listener: QuranNavigator?) {
         self.viewModel = viewModel
         self.persistence = persistence
+        self.listener = listener
         super.init(rootView: LearningHomeView(viewModel: viewModel))
 
         navigationItem.title = l("learning.title", table: .learning)
 
-        // `self` n'existe qu'après `super.init`, et la vue est construite avant : on lui donne
-        // son action ici. La capturer dans l'initialiseur serait refusé par Swift.
+        // `self` n'existe qu'après `super.init`, et la vue est construite avant : on lui donne ses
+        // actions ici. Les capturer dans l'initialiseur serait refusé par Swift.
         rootView.editProgram = { [weak self] in self?.openProgramSetup() }
+        rootView.open = { [weak self] item in self?.openLearning(item) }
     }
 
     @available(*, unavailable)
@@ -41,9 +47,21 @@ final class LearningHomeViewController: UIHostingController<LearningHomeView> {
 
     private let viewModel: LearningHomeViewModel
     private let persistence: LearningPersistence
+    private let listener: QuranNavigator?
 
     private func openProgramSetup() {
         let setup = LearningSetupViewController(persistence: persistence)
         navigationController?.pushViewController(setup, animated: true)
+    }
+
+    /// Ouvre le Coran sur un passage.
+    ///
+    /// On passe par le **verset** et non par la page : c'est ce que fait déjà l'accueil, et c'est
+    /// plus précis — le mushaf se place sur le verset, pas seulement sur la page qui le contient.
+    private func openLearning(_ item: LearningItem) {
+        guard let verse = viewModel.firstVerse(of: item) else {
+            return
+        }
+        listener?.navigateTo(ayah: verse, lastPage: nil)
     }
 }

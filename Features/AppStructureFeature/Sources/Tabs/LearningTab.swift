@@ -26,8 +26,9 @@ struct LearningTabBuilder: TabBuildable {
 
 /// L'onglet d'apprentissage.
 ///
-/// Il hérite de `TabInteractor` comme les autres onglets : il **est** donc un `QuranNavigator`.
-/// C'est ce qui lui permettra d'ouvrir le Coran sur la portion du jour sans passer par l'accueil.
+/// Il hérite de `TabInteractor` comme les autres onglets : il **est** donc un `QuranNavigator`, et
+/// se passe à lui-même comme navigateur de l'écran. C'est ce qui lui permet d'ouvrir le Coran sur
+/// la portion du jour sans repasser par l'accueil.
 private final class LearningTabInteractor: TabInteractor {
     // MARK: Lifecycle
 
@@ -42,7 +43,7 @@ private final class LearningTabInteractor: TabInteractor {
         guard let presenter else {
             return
         }
-        presenter.setViewControllers([learningBuilder.build()], animated: false)
+        presenter.setViewControllers([learningBuilder.build(withListener: self)], animated: false)
     }
 
     // MARK: Private

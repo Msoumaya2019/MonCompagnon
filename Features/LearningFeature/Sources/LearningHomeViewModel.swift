@@ -89,6 +89,23 @@ final class LearningHomeViewModel: ObservableObject {
     /// Le prochain passage à apprendre, ou `nil` si tout est appris.
     var nextToLearn: LearningItem? { program.nextToLearn() }
 
+    /// Le passage par lequel commencer, ou `nil` s'il n'y a plus rien à faire.
+    ///
+    /// La règle de priorité — apprendre d'abord, réviser ensuite — vit dans `LearningKit`, où elle
+    /// est éprouvée. C'est une décision de produit, pas une affaire d'affichage : le modèle de vue
+    /// se contente de la lire.
+    var nextToWork: LearningItem? {
+        program.nextToWork(now: Date(), calendar: calendar)
+    }
+
+    /// Le premier verset d'un passage : là où ouvrir le Coran.
+    ///
+    /// `LearningItem.bounds(in:)` est interne à `LearningKit` — c'est `QuranRange` qui porte la
+    /// conversion, et elle est publique.
+    func firstVerse(of item: LearningItem) -> AyahNumber? {
+        item.range.bounds(in: quran)?.first
+    }
+
     /// Le libellé d'un passage : sa sourate, puis la page où il commence.
     ///
     /// Le libellé du modèle — « page 582 », « 78:1-78:40 » — est un repère technique, pas du texte
