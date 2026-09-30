@@ -31,6 +31,21 @@ public enum LearningStatus: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// Le verdict de fin de séance sur un passage.
+///
+/// Trois verdicts, et **aucun état de plus** : la difficulté n'est pas un état à stocker, c'est un
+/// **raccourcissement de l'intervalle**. Un passage jugé difficile repart à J+1 au lieu de J+3 ou
+/// J+7 — ce que `LearningConsolidation.nextReview(afterSuccessAt:)` sait déjà exprimer. Un
+/// quatrième `LearningStatus` vieillirait mal : `toReview` est *déduit* d'une date, pas stocké.
+public enum LearningOutcome: String, Codable, CaseIterable, Sendable {
+    /// « Bien appris » — le passage franchit une étape : J+1, puis J+3, puis J+7, puis consolidé.
+    case bienAppris
+    /// « À consolider » — le passage ne franchit pas d'étape et reste dû, donc « à revoir ».
+    case aConsolider
+    /// « Difficile » — le passage repart du bas de l'échelle, avec une révision à J+1.
+    case difficile
+}
+
 /// Un passage du programme.
 public struct LearningItem: Codable, Equatable, Identifiable, Sendable {
     // MARK: Lifecycle
@@ -102,6 +117,33 @@ public struct LearningItem: Codable, Equatable, Identifiable, Sendable {
     /// Les bornes, ou `nil` si l'intervalle n'est pas valide dans ce mushaf.
     func bounds(in quran: Quran) -> (first: AyahNumber, last: AyahNumber)? {
         range.bounds(in: quran)
+    }
+
+    /// Applique le verdict d'une séance à ce passage — la règle, en un seul endroit.
+    ///
+    /// Le verdict porte sur un passage **déjà appris** : les trois nombres du plan supposent une
+    /// échelle entamée. C'est `markLearned` qui ouvre cette échelle, et lui seul sait que la
+    /// première révision tombe à J+1. Un passage jamais appris est donc laissé intact, comme
+    /// `LearningProgram.markReviewed` le refuse déjà.
+    mutating func apply(_ outcome: LearningOutcome, at date: Date, calendar: Calendar) {
+        guard storedStatus != .notLearned else { return }
+
+        // Travailler le passage compte comme une journée de travail, quel que soit le verdict :
+        // c'est ce que lit la série.
+        lastWorkedAt = date
+
+        switch outcome {
+        case .bienAppris:
+            let nextStage = reviewStage + 1
+            reviewStage = nextStage
+            nextReview = LearningConsolidation.nextReview(afterSuccessAt: nextStage, from: date, calendar: calendar)
+        case .aConsolider:
+            // Ni l'étape ni l'échéance ne bougent : le passage reste dû, donc toujours « à revoir ».
+            break
+        case .difficile:
+            reviewStage = 0
+            nextReview = LearningConsolidation.nextReview(afterSuccessAt: 0, from: date, calendar: calendar)
+        }
     }
 }
 

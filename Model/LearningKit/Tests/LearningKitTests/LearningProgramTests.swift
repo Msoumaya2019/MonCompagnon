@@ -120,6 +120,125 @@ final class LearningProgramTests: XCTestCase {
         XCTAssertEqual(program, before, "Un identifiant inconnu ne doit rien modifier")
     }
 
+    // MARK: - Le verdict de fin de séance
+
+    /// « Bien appris » fait monter l'échelle d'une marche — et doit tomber **sur les mêmes dates**
+    /// que `markReviewed` : les deux enregistrent le même succès.
+    func test_bienAppris_climbsTheWholeLadder() {
+        var (program, id) = program()
+        program.markLearned(id: id, at: day0, calendar: calendar)
+
+        program.apply(.bienAppris, toItem: id, at: date(daysAfter: day0, 1), calendar: calendar)
+        XCTAssertEqual(program.items[0].reviewStage, 1)
+        XCTAssertEqual(program.items[0].nextReview, expectedReview(offsetDays: 4), "Après un succès : J+3")
+
+        program.apply(.bienAppris, toItem: id, at: date(daysAfter: day0, 4), calendar: calendar)
+        XCTAssertEqual(program.items[0].reviewStage, 2)
+        XCTAssertEqual(program.items[0].nextReview, expectedReview(offsetDays: 11), "Après deux succès : J+7")
+
+        program.apply(.bienAppris, toItem: id, at: date(daysAfter: day0, 11), calendar: calendar)
+        XCTAssertEqual(program.items[0].reviewStage, 3)
+        XCTAssertNil(program.items[0].nextReview, "Après trois succès, le passage est consolidé")
+        XCTAssertTrue(program.items[0].isConsolidated)
+    }
+
+    /// « À consolider » ne touche ni l'étape ni l'échéance : le passage reste dû, donc à revoir.
+    func test_aConsolider_leavesTheStepAndTheDueDateUntouched() {
+        var (program, id) = program()
+        program.markLearned(id: id, at: day0, calendar: calendar)
+
+        let day1 = date(daysAfter: day0, 1)
+        program.apply(.aConsolider, toItem: id, at: day1, calendar: calendar)
+
+        let item = program.items[0]
+        XCTAssertEqual(item.reviewStage, 0, "Un passage à consolider ne franchit pas d'étape")
+        XCTAssertEqual(item.nextReview, expectedReview(offsetDays: 1), "Et ne repousse pas son échéance")
+        XCTAssertEqual(item.status(now: day1, calendar: calendar), .toReview, "Il reste donc à revoir")
+    }
+
+    /// « Difficile » ramène l'échelle à zéro : la prochaine révision tombe à J+1, même si le
+    /// passage avait déjà un succès derrière lui.
+    func test_difficile_sendsThePassageBackToJPlus1() {
+        var (program, id) = program()
+        program.markLearned(id: id, at: day0, calendar: calendar)
+        program.markReviewed(id: id, at: date(daysAfter: day0, 1), calendar: calendar)
+        XCTAssertEqual(program.items[0].reviewStage, 1, "Le passage a bien un succès derrière lui")
+
+        program.apply(.difficile, toItem: id, at: date(daysAfter: day0, 4), calendar: calendar)
+
+        XCTAssertEqual(program.items[0].reviewStage, 0, "L'échelle repart du bas")
+        XCTAssertEqual(program.items[0].nextReview, expectedReview(offsetDays: 5), "J+1 après le jour du verdict")
+    }
+
+    /// Un passage consolidé n'est pas hors d'atteinte : le juger difficile le rouvre.
+    func test_difficile_reopensAConsolidatedPassage() {
+        var (program, id) = program()
+        program.markLearned(id: id, at: day0, calendar: calendar)
+        program.markReviewed(id: id, at: date(daysAfter: day0, 1), calendar: calendar)
+        program.markReviewed(id: id, at: date(daysAfter: day0, 4), calendar: calendar)
+        program.markReviewed(id: id, at: date(daysAfter: day0, 11), calendar: calendar)
+        XCTAssertTrue(program.items[0].isConsolidated)
+
+        program.apply(.difficile, toItem: id, at: date(daysAfter: day0, 12), calendar: calendar)
+
+        XCTAssertFalse(program.items[0].isConsolidated, "Ce qu'on croyait su revient dans le programme")
+        XCTAssertEqual(program.items[0].nextReview, expectedReview(offsetDays: 13))
+    }
+
+    /// Les trois verdicts doivent donner trois résultats **différents**, depuis le même état :
+    /// sinon ce serait trois boutons pour une seule action.
+    func test_theThreeVerdicts_divergeFromTheSameState() {
+        func verdict(_ outcome: LearningOutcome) -> (stage: Int, review: Date?) {
+            var (program, id) = program()
+            program.markLearned(id: id, at: day0, calendar: calendar)
+            program.markReviewed(id: id, at: date(daysAfter: day0, 1), calendar: calendar)
+            program.apply(outcome, toItem: id, at: date(daysAfter: day0, 4), calendar: calendar)
+            return (program.items[0].reviewStage, program.items[0].nextReview)
+        }
+
+        let bienAppris = verdict(.bienAppris)
+        XCTAssertEqual(bienAppris.stage, 2, "« Bien appris » monte d'une marche")
+        XCTAssertEqual(bienAppris.review, expectedReview(offsetDays: 11))
+
+        let aConsolider = verdict(.aConsolider)
+        XCTAssertEqual(aConsolider.stage, 1, "« À consolider » laisse la marche où elle est")
+        XCTAssertEqual(aConsolider.review, expectedReview(offsetDays: 4))
+
+        let difficile = verdict(.difficile)
+        XCTAssertEqual(difficile.stage, 0, "« Difficile » ramène au bas de l'échelle")
+        XCTAssertEqual(difficile.review, expectedReview(offsetDays: 5))
+    }
+
+    /// Travailler un passage compte comme une journée de travail, **quel que soit** le verdict :
+    /// sinon la série ignorerait une séance réellement faite.
+    func test_aVerdict_recordsTheDayAsWorked() {
+        let day1 = date(daysAfter: day0, 1)
+        for outcome in LearningOutcome.allCases {
+            var (program, id) = program()
+            program.markLearned(id: id, at: day0, calendar: calendar)
+
+            program.apply(outcome, toItem: id, at: day1, calendar: calendar)
+
+            XCTAssertEqual(program.items[0].lastWorkedAt, day1, "« \(outcome.rawValue) » compte le jour du verdict")
+            XCTAssertEqual(program.streak(now: day1, calendar: calendar), 2, "« \(outcome.rawValue) » : les deux jours comptent")
+        }
+    }
+
+    /// Un verdict porte sur un passage **déjà appris** : sur un passage neuf il n'y a pas d'échelle
+    /// à faire monter ni à raccourcir. C'est `markLearned` qui ouvre l'échelle, et lui seul sait que
+    /// la première révision tombe à J+1.
+    func test_aVerdict_isIgnoredForANeverLearnedPassage() {
+        for outcome in LearningOutcome.allCases {
+            var (program, id) = program()
+            let before = program
+
+            program.apply(outcome, toItem: id, at: day0, calendar: calendar)
+
+            XCTAssertEqual(program, before, "« \(outcome.rawValue) » ne change rien sur un passage jamais appris")
+            XCTAssertEqual(program.streak(now: day0, calendar: calendar), 0, "Et ne compte pas comme un jour travaillé")
+        }
+    }
+
     // MARK: - Consolidation déduite
 
     func test_status_becomesToReviewWhenRevisionIsDue() {

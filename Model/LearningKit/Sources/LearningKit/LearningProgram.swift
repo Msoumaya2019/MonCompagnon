@@ -154,6 +154,23 @@ public struct LearningProgram: Codable, Equatable, Sendable {
         }
     }
 
+    /// Applique le verdict de fin de séance à un passage : « bien appris », « à consolider »,
+    /// « difficile ».
+    ///
+    /// C'est la porte unique de la difficulté. Elle ne stocke **aucun état de plus** : elle ne
+    /// fait que raccourcir ou allonger l'échéance (voir `LearningOutcome`). Sans effet sur un
+    /// passage jamais appris, comme `markReviewed`.
+    public mutating func apply(
+        _ outcome: LearningOutcome,
+        toItem id: UUID,
+        at date: Date,
+        calendar: Calendar = .current
+    ) {
+        update(id: id) { item in
+            item.apply(outcome, at: date, calendar: calendar)
+        }
+    }
+
     /// Marque un passage comme non appris, et efface sa consolidation.
     ///
     /// C'est l'action « je ne le connais finalement pas » : elle doit vraiment remettre à zéro,
