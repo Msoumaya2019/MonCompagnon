@@ -11,9 +11,9 @@ import QuranKit
 
 /// La mémoire du module Apprentissage.
 ///
-/// Deux objets seulement : le **profil** — ce que l'utilisateur veut apprendre, et à quel rythme —
-/// et le **programme** — les passages, avec l'état de chacun. L'historique des séances viendra s'y
-/// ajouter.
+/// Trois objets : le **profil** — ce que l'utilisateur veut apprendre, et à quel rythme —, le
+/// **programme** — les passages, avec l'état de chacun — et le **relevé de progression** — ce qui a
+/// réellement été appris, sourate par sourate. L'historique des séances viendra s'y ajouter.
 ///
 /// Toutes les méthodes sont synchrones. Le magasin est `UserDefaults`, qui répond sans entrée-sortie
 /// bloquante pour quelques kilo-octets : une signature `async` n'apporterait ici qu'une propagation
@@ -41,7 +41,20 @@ public protocol LearningPersistence: Sendable {
     func loadProgram() -> LearningProgram
 
     /// Enregistre un programme — c'est ce qu'appelle le marquage d'un passage, appris ou à revoir.
+    ///
+    /// Met aussi à jour le relevé de progression, qui est le reflet de ce que le programme porte.
     func saveProgram(_ program: LearningProgram)
+
+    /// Le relevé de progression enregistré, vide tant que rien n'a été appris.
+    func loadProgress() -> LearningProgress
+
+    /// Enregistre un relevé de progression.
+    ///
+    /// Le relevé **fusionne** avec celui déjà enregistré : la progression ne recule jamais. C'est ce
+    /// qui fait survivre l'avancement d'un objectif qui quitte le programme, et qui permet de le
+    /// rajouter plus tard sans repartir de zéro — la seule perte silencieuse que ce module puisse
+    /// causer.
+    func saveProgress(_ progress: LearningProgress)
 
     /// Régénère le programme du profil en reportant la progression déjà acquise, l'enregistre, et
     /// le rend.
@@ -52,6 +65,6 @@ public protocol LearningPersistence: Sendable {
     @discardableResult
     func regenerateProgram(for profile: LearningProfile, from date: Date) -> LearningProgram
 
-    /// Efface le profil et le programme — l'utilisateur repart de la configuration guidée.
+    /// Efface le profil, le programme et le relevé — l'utilisateur repart de la configuration guidée.
     func reset()
 }

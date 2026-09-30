@@ -48,6 +48,10 @@ final class UserDefaultsLearningPersistenceTests: XCTestCase {
         XCTAssertNil(program.generatedAt)
     }
 
+    func testMissingProgressIsEmpty() {
+        XCTAssertTrue(persistence.loadProgress().isEmpty)
+    }
+
     // MARK: - Aller-retour
 
     func testProfileSurvivesARoundTrip() {
@@ -101,12 +105,88 @@ final class UserDefaultsLearningPersistenceTests: XCTestCase {
 
     // MARK: - Effacement
 
-    func testResetClearsProfileAndProgram() {
+    func testResetClearsProfileProgramAndProgress() {
         persistence.saveProfile(learningProfile(pace: .doux))
         persistence.saveProgram(learnedProgram())
         persistence.reset()
         XCTAssertFalse(persistence.loadProfile().isConfigured)
         XCTAssertTrue(persistence.loadProgram().isEmpty)
+        XCTAssertTrue(persistence.loadProgress().isEmpty)
+    }
+
+    // MARK: - Progression
+
+    func testSavingAProgramRecordsTheProgress() {
+        var program = persistence.regenerateProgram(for: learningProfile(pace: .doux), from: day(0))
+        let id = program.items[0].id
+        program.markLearned(id: id, at: day(0), calendar: calendar)
+        persistence.saveProgram(program)
+
+        let progress = persistence.loadProgress()
+        XCTAssertEqual(progress, LearningProgress(of: program, in: quran))
+        XCTAssertGreaterThan(progress.lastMemorizedVerse(inSurah: 78), 0)
+    }
+
+    func testProgressSurvivesARoundTrip() {
+        let progress = LearningProgress(surahs: [
+            SurahLearningProgress(
+                surahId: 78,
+                lastMemorizedVerse: 40,
+                targetVerse: 40,
+                startedAt: day(0),
+                updatedAt: day(1)
+            ),
+            SurahLearningProgress(
+                surahId: 2,
+                lastMemorizedVerse: 12,
+                targetVerse: 286,
+                startedAt: day(0),
+                updatedAt: day(2)
+            ),
+        ])
+        persistence.saveProgress(progress)
+
+        XCTAssertEqual(persistence.loadProgress(), progress)
+        XCTAssertEqual(persistence.loadProgress().surahs.map(\.surahId), [2, 78])
+    }
+
+    /// La seule perte silencieuse que ce module puisse causer, et celle que le relevé empêche.
+    ///
+    /// Un objectif retiré quitte le programme : déduit du seul programme courant, son avancement
+    /// disparaîtrait avec lui. Conservé à part et fusionné, il attend qu'on le rajoute.
+    func testProgressSurvivesAProgramThatNoLongerCoversTheSurah() {
+        var program = persistence.regenerateProgram(for: learningProfile(pace: .doux), from: day(0))
+        for item in program.items.prefix(2) {
+            program.markLearned(id: item.id, at: day(0), calendar: calendar)
+        }
+        persistence.saveProgram(program)
+        let acquired = persistence.loadProgress().lastMemorizedVerse(inSurah: 78)
+        XCTAssertGreaterThan(acquired, 0)
+
+        // Le programme ne porte plus la sourate — comme après le retrait de l'objectif.
+        persistence.saveProgram(LearningProgram(items: [], generatedAt: day(1)))
+
+        XCTAssertEqual(persistence.loadProgress().lastMemorizedVerse(inSurah: 78), acquired)
+    }
+
+    func testAGoalAddedBackResumesWhereItStopped() {
+        var program = persistence.regenerateProgram(for: learningProfile(pace: .doux), from: day(0))
+        for item in program.items.prefix(2) {
+            program.markLearned(id: item.id, at: day(0), calendar: calendar)
+        }
+        persistence.saveProgram(program)
+        let acquired = persistence.loadProgress().lastMemorizedVerse(inSurah: 78)
+
+        persistence.saveProgram(LearningProgram(items: [], generatedAt: day(1)))
+        let regenerated = persistence.regenerateProgram(for: learningProfile(pace: .doux), from: day(2))
+
+        XCTAssertEqual(persistence.loadProgress().lastMemorizedVerse(inSurah: 78), acquired)
+        XCTAssertEqual(
+            regenerated.nextToLearn()?.range.firstAyah,
+            acquired + 1,
+            "Le programme reprend au verset qui suit le repère, sans rien recompter"
+        )
+        XCTAssertEqual(regenerated.items.prefix(2).map(\.storedStatus), [.learned, .learned])
     }
 
     // MARK: - Régénération
@@ -151,9 +231,9 @@ final class UserDefaultsLearningPersistenceTests: XCTestCase {
 
     // MARK: Private
 
-    /// Les deux clés du module, écrites en dur : une clé renommée doit faire échouer ce test, sans
+    /// Les trois clés du module, écrites en dur : une clé renommée doit faire échouer ce test, sans
     /// quoi l'application perdrait silencieusement les données des utilisateurs déjà installés.
-    private let keys = ["learningProfile", "learningProgram"]
+    private let keys = ["learningProfile", "learningProgram", "learningProgress"]
 
     private let quran = Quran.hafsMadani1405
 

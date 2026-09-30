@@ -24,6 +24,10 @@ final class LearningPlannerTests: XCTestCase {
         DateComponents(calendar: calendar, year: 2026, month: 9, day: 30, hour: 12).date!
     }
 
+    private func day(_ offset: Int) -> Date {
+        calendar.date(byAdding: .day, value: offset, to: day0)!
+    }
+
     /// Table verset → rang, reconstruite **ici** à partir du mushaf.
     ///
     /// Elle sert d'oracle : réutiliser la table interne du planificateur ne prouverait rien,
@@ -436,5 +440,153 @@ final class LearningPlannerTests: XCTestCase {
             planner().estimatedEndDate(for: program, profile: profile, from: day0),
             "Sans jour de travail, il n'y a pas de fin estimable"
         )
+    }
+
+    // MARK: - Reprise de la progression
+
+    /// Le socle de tout le module : reprendre ne **retire** rien du programme.
+    ///
+    /// Un programme qui se raccourcirait à mesure qu'on apprend ferait retomber l'avancement à zéro
+    /// à chaque reprise — l'utilisateur verrait sa progression s'effondrer après chaque séance.
+    /// Le programme reste donc l'objectif entier ; c'est l'état des passages qui change.
+    func test_progress_doesNotChangeTheShapeOfTheProgram() {
+        let profile = makeProfile(goals: [QuranRange(quran.suras[77])], pace: .doux)
+        let fresh = planner().makeProgram(for: profile, from: day0)
+        let progress = progressAfter(learning: [0, 1], of: profile)
+
+        let resumed = planner().makeProgram(for: profile, progress: progress, from: day0)
+
+        XCTAssertEqual(resumed.items.map(\.range), fresh.items.map(\.range))
+        XCTAssertEqual(resumed.items.map(\.position), fresh.items.map(\.position))
+        XCTAssertEqual(resumed.items.map(\.label), fresh.items.map(\.label))
+        XCTAssertEqual(resumed.totalVerses(in: quran), fresh.totalVerses(in: quran))
+    }
+
+    func test_progress_marksTheLearnedPassagesAndLeavesTheRestToLearn() {
+        let profile = makeProfile(goals: [QuranRange(quran.suras[77])], pace: .doux)
+        let fresh = planner().makeProgram(for: profile, from: day0)
+        let progress = progressAfter(learning: [0, 1], of: profile)
+
+        let resumed = planner().makeProgram(for: profile, progress: progress, from: day0)
+
+        XCTAssertEqual(Array(resumed.items.prefix(2).map(\.storedStatus)), [.learned, .learned])
+        XCTAssertEqual(
+            resumed.items.dropFirst(2).map(\.storedStatus),
+            Array(repeating: .notLearned, count: resumed.items.count - 2)
+        )
+        XCTAssertEqual(
+            resumed.nextToLearn()?.range,
+            fresh.items[2].range,
+            "La reprise se fait au passage qui suit le repère, et à lui seul"
+        )
+        XCTAssertGreaterThan(resumed.learnedVerses(in: quran), 0)
+    }
+
+    /// La demande centrale : **aucun retard**.
+    ///
+    /// Trois jours passent sans rien faire. Le programme doit proposer exactement le même passage,
+    /// et non « les trois séances manquées ».
+    func test_missedDays_addNoBacklog() {
+        let profile = makeProfile(goals: [QuranRange(quran.suras[77])], pace: .doux)
+        let progress = progressAfter(learning: [0, 1], of: profile)
+
+        let today = planner().makeProgram(for: profile, progress: progress, from: day0)
+        let threeDaysLater = planner().makeProgram(for: profile, progress: progress, from: day(3))
+
+        XCTAssertEqual(today.items.count, threeDaysLater.items.count)
+        XCTAssertEqual(today.nextToLearn()?.range, threeDaysLater.nextToLearn()?.range)
+        XCTAssertEqual(today.learnedVerses(in: quran), threeDaysLater.learnedVerses(in: quran))
+    }
+
+    /// La progression ne recule jamais : apprendre un passage de plus ne peut pas en faire
+    /// disparaître un déjà appris.
+    func test_learningAPassageNeverReducesTheProgress() {
+        let profile = makeProfile(goals: [QuranRange(quran.suras[77])], pace: .doux)
+        let progress = progressAfter(learning: [0, 1], of: profile)
+
+        var resumed = planner().makeProgram(for: profile, progress: progress, from: day0)
+        let before = resumed.learnedVerses(in: quran)
+        let next = resumed.items[2].id
+        resumed.markLearned(id: next, at: day(1), calendar: calendar)
+
+        let after = LearningProgress(of: resumed, in: quran)
+        XCTAssertGreaterThan(resumed.learnedVerses(in: quran), before)
+        XCTAssertGreaterThanOrEqual(
+            after.lastMemorizedVerse(inSurah: 78),
+            progress.lastMemorizedVerse(inSurah: 78)
+        )
+    }
+
+    func test_aProgramRegeneratedFromItsOwnProgress_isUnchanged() {
+        let profile = makeProfile(goals: [QuranRange(quran.suras[77])], pace: .doux)
+        let progress = progressAfter(learning: [0, 1, 2], of: profile)
+
+        let once = planner().makeProgram(for: profile, progress: progress, from: day0)
+        let twice = planner().makeProgram(for: profile, progress: LearningProgress(of: once, in: quran), from: day0)
+
+        XCTAssertEqual(once.items.map(\.storedStatus), twice.items.map(\.storedStatus))
+        XCTAssertEqual(once.nextToLearn()?.range, twice.nextToLearn()?.range)
+    }
+
+    func test_anEmptyProgress_leavesTheProgramUntouched() {
+        let profile = makeProfile(goals: [QuranRange(quran.juzs[29])])
+        let plain = planner().makeProgram(for: profile, from: day0)
+        let explicit = planner().makeProgram(for: profile, progress: .empty, from: day0)
+
+        XCTAssertEqual(plain.items.map(\.storedStatus), explicit.items.map(\.storedStatus))
+        XCTAssertEqual(plain.items.map(\.range), explicit.items.map(\.range))
+    }
+
+    // MARK: - Un verset déclaré deux fois
+
+    /// Les deux déclarations se contredisent, et c'est la plus forte qui décide.
+    ///
+    /// Sans ce retranchement, le verset serait proposé à revoir alors que l'utilisateur vient
+    /// d'affirmer qu'il le récite sans hésiter — et le compte des révisions mentirait.
+    func test_aSuraDeclaredBothSolidAndFragile_isNotReviewed() {
+        let sura = QuranRange(quran.suras[77])
+        let profile = makeProfile(
+            goals: [sura],
+            known: [
+                KnownRange(range: sura, label: nil, solidity: .solide),
+                KnownRange(range: sura, label: nil, solidity: .fragile),
+            ]
+        )
+
+        XCTAssertTrue(
+            planner().makeProgram(for: profile, from: day0).isEmpty,
+            "Rien à apprendre, et rien à revoir : le solide l'emporte sur le fragile"
+        )
+    }
+
+    func test_aSolidPartInsideAFragileRange_isNotReviewed() {
+        let fragile = QuranRange(quran.suras[77])
+        let solid = QuranRange(firstSura: 78, firstAyah: 1, lastSura: 78, lastAyah: 20)
+        let profile = makeProfile(
+            goals: [fragile],
+            known: [
+                KnownRange(range: fragile, label: nil, solidity: .fragile),
+                KnownRange(range: solid, label: nil, solidity: .solide),
+            ]
+        )
+
+        let program = planner().makeProgram(for: profile, from: day0)
+
+        XCTAssertEqual(program.items.count, 1, "Il ne reste qu'un morceau à revoir")
+        XCTAssertEqual(program.items.first?.range.firstAyah, 21)
+        XCTAssertEqual(program.items.first?.range.lastAyah, sura.lastAyah)
+    }
+
+    /// Le relevé obtenu après avoir appris les passages désignés d'un programme neuf.
+    ///
+    /// L'allure n'est pas un paramètre : c'est celle du profil qui décide du découpage, et la
+    /// répéter ici laisserait croire qu'elle peut en différer.
+    private func progressAfter(learning indices: [Int], of profile: LearningProfile) -> LearningProgress {
+        var program = planner().makeProgram(for: profile, from: day0)
+        for index in indices {
+            let id = program.items[index].id
+            program.markLearned(id: id, at: day0, calendar: calendar)
+        }
+        return LearningProgress(of: program, in: quran)
     }
 }

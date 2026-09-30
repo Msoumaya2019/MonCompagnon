@@ -47,11 +47,26 @@ public struct UserDefaultsLearningPersistence: LearningPersistence {
 
     public func saveProgram(_ program: LearningProgram) {
         preferences.program = program
+        // Le relevé suit le programme : c'est lui qui porte l'état de chaque passage, et donc la
+        // seule source dont on puisse déduire ce qui est appris.
+        saveProgress(LearningProgress(of: program, in: quran))
+    }
+
+    public func loadProgress() -> LearningProgress {
+        preferences.progress
+    }
+
+    public func saveProgress(_ progress: LearningProgress) {
+        preferences.progress = loadProgress().merging(progress)
     }
 
     @discardableResult
     public func regenerateProgram(for profile: LearningProfile, from date: Date) -> LearningProgram {
-        let planned = LearningPlanner(quran: quran, calendar: calendar).makeProgram(for: profile, from: date)
+        // Le relevé est passé à la génération, et non appliqué après coup : c'est lui qui décide
+        // quels passages naissent déjà appris, donc où le programme reprend. L'appliquer après
+        // reviendrait à recalculer un état que le planificateur vient de poser.
+        let planned = LearningPlanner(quran: quran, calendar: calendar)
+            .makeProgram(for: profile, progress: loadProgress(), from: date)
         let program = LearningProgressTransfer.transfer(progressFrom: loadProgram(), to: planned, in: quran)
         saveProgram(program)
         return program
@@ -60,6 +75,7 @@ public struct UserDefaultsLearningPersistence: LearningPersistence {
     public func reset() {
         preferences.profile = .empty
         preferences.program = .empty
+        preferences.progress = .empty
     }
 
     // MARK: Private

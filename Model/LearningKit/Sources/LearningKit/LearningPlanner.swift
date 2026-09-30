@@ -30,7 +30,22 @@ public struct LearningPlanner {
     /// Le calendrier qui définit ce qu'est « un jour » — et donc les échéances de révision.
     public let calendar: Calendar
 
-    /// Construit le programme correspondant au profil.
+    /// Construit le programme correspondant au profil, sans reprise.
+    ///
+    /// Équivalent à `makeProgram(for:progress:from:)` avec un relevé vierge. Réservé à l'aperçu
+    /// d'une configuration et aux tests : l'application, elle, passe toujours le relevé enregistré,
+    /// sans quoi un programme régénéré reproposerait à neuf ce qui est déjà appris.
+    public func makeProgram(for profile: LearningProfile, from date: Date = Date()) -> LearningProgram {
+        makeProgram(for: profile, progress: .empty, from: date)
+    }
+
+    /// Construit le programme correspondant au profil, en reprenant au repère atteint.
+    ///
+    /// Le programme **couvre toujours l'objectif entier** : la reprise ne retire aucun passage, elle
+    /// marque comme appris ceux qui le sont déjà. C'est ce qui rend la progression monotone — elle
+    /// ne retombe jamais à zéro parce que le programme se serait raccourci — et ce qui fait qu'un
+    /// jour manqué n'ajoute aucun retard : le programme est le même, seul le nombre de passages
+    /// appris a changé.
     ///
     /// Trois temps, dans cet ordre :
     ///
@@ -38,19 +53,24 @@ public struct LearningPlanner {
     ///    comme fragile. On ne programme jamais ce que l'utilisateur récite sans hésiter, et on ne
     ///    repropose pas comme « à apprendre » ce qu'il connaît déjà ;
     /// 2. chaque morceau restant est **découpé en séances** de la taille de l'allure choisie,
-    ///    une séance s'arrêtant de préférence sur une fin de page ;
+    ///    une séance s'arrêtant de préférence sur une fin de page ; celles que le relevé couvre
+    ///    sont marquées apprises ;
     /// 3. les intervalles **fragiles** sont ajoutés en fin de programme, déjà marqués appris et
     ///    dus en révision : l'utilisateur les connaît mais les oublie, donc ils doivent revenir.
     ///
     /// Les passages portent des identifiants neufs à chaque génération. Reporter la progression
     /// antérieure sur un programme régénéré est le rôle de `LearningProgressTransfer`, qui compare
-    /// les intervalles verset par verset ; le planificateur, lui, ne connaît que le profil, et
-    /// rend toujours des passages neufs.
+    /// les intervalles verset par verset ; le planificateur, lui, ne connaît que le profil et le
+    /// relevé, et rend toujours des passages neufs.
     ///
     /// - Returns: un programme vide si le profil n'a aucun objectif, ou si tout ce qu'il vise est
     ///   déjà connu **et solide**. Un acquis fragile reste un passage à revoir : il suffit
     ///   donc à rendre le programme non vide.
-    public func makeProgram(for profile: LearningProfile, from date: Date = Date()) -> LearningProgram {
+    public func makeProgram(
+        for profile: LearningProfile,
+        progress: LearningProgress,
+        from date: Date = Date()
+    ) -> LearningProgram {
         let targets = QuranRangeAlgebra.merged(profile.goals.compactMap { $0.range.offsets(in: index) })
         guard !targets.isEmpty else { return .empty }
 
@@ -66,13 +86,15 @@ public struct LearningPlanner {
         for interval in remaining {
             for chunk in sessions(in: interval, targetVerses: profile.pace.targetVersesPerSession) {
                 guard let range = QuranRange(offsets: chunk, in: index) else { continue }
-                items.append(
-                    LearningItem(
-                        range: range,
-                        label: LearningLabel.label(for: chunk, in: index),
-                        position: items.count
-                    )
+                var item = LearningItem(
+                    range: range,
+                    label: LearningLabel.label(for: chunk, in: index),
+                    position: items.count
                 )
+                if let learnedAt = progress.learnedAt(chunk, in: index) {
+                    markLearned(&item, at: learnedAt)
+                }
+                items.append(item)
             }
         }
         items.append(contentsOf: reviewItems(for: profile, at: date, startingAt: items.count))
@@ -146,25 +168,47 @@ public struct LearningPlanner {
         return best
     }
 
+    /// Marque un passage comme déjà appris, à la date où il l'a été.
+    ///
+    /// Reproduit ici la transition de `LearningProgram.markLearned`, et pour la même raison : un
+    /// passage appris reçoit sa première révision à J+1. La date est celle du **dernier jour de
+    /// travail de la sourate**, et non celle du jour : reprendre un programme ne doit pas repousser
+    /// une révision due, ni en faire naître une le jour même pour un travail de la veille.
+    private func markLearned(_ item: inout LearningItem, at date: Date) {
+        item.storedStatus = .learned
+        item.reviewStage = 0
+        item.lastWorkedAt = date
+        item.nextReview = LearningConsolidation.nextReview(afterSuccessAt: 0, from: date, calendar: calendar)
+    }
+
     /// Les acquis fragiles, ajoutés au programme en révision.
     ///
     /// Ils ne sont pas marqués comme travaillés : déclarer « je le connais mais je l'oublie » n'est
     /// pas un jour de travail, et le compter fausserait la série.
     private func reviewItems(for profile: LearningProfile, at date: Date, startingAt position: Int) -> [LearningItem] {
+        let solid = QuranRangeAlgebra.merged(profile.solidRanges.compactMap { $0.offsets(in: index) })
         var items: [LearningItem] = []
+
         for range in profile.fragileRanges {
             guard let offsets = range.offsets(in: index) else { continue }
-            var item = LearningItem(
-                range: range,
-                label: LearningLabel.label(for: offsets, in: index),
-                position: position + items.count
-            )
-            // Déjà connu : jamais « à apprendre ». Dû dès aujourd'hui, puisque l'utilisateur a
-            // précisément déclaré qu'il l'oublie.
-            item.storedStatus = .learned
-            item.reviewStage = 0
-            item.nextReview = calendar.startOfDay(for: date)
-            items.append(item)
+            // Ce qui est déclaré solide ne revient pas en révision, même si le même verset a aussi
+            // été déclaré fragile : les deux déclarations se contredisent, et c'est la plus forte
+            // qui doit décider. Sans ce retranchement, un verset que l'utilisateur récite sans
+            // hésiter lui serait proposé à revoir — et le compte des révisions mentirait.
+            for piece in QuranRangeAlgebra.subtracting(solid, from: offsets) {
+                guard let range = QuranRange(offsets: piece, in: index) else { continue }
+                var item = LearningItem(
+                    range: range,
+                    label: LearningLabel.label(for: piece, in: index),
+                    position: position + items.count
+                )
+                // Déjà connu : jamais « à apprendre ». Dû dès aujourd'hui, puisque l'utilisateur a
+                // précisément déclaré qu'il l'oublie.
+                item.storedStatus = .learned
+                item.reviewStage = 0
+                item.nextReview = calendar.startOfDay(for: date)
+                items.append(item)
+            }
         }
         return items
     }
