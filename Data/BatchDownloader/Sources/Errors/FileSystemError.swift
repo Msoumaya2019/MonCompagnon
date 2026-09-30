@@ -22,12 +22,13 @@ import Foundation
 import Localization
 
 public enum FileSystemError: Error {
-    /// L'écriture a été refusée faute de place.
+    /// Le disque est plein — le système l'a dit lui-même, par `ENOSPC` ou `fileWriteOutOfSpace`.
     ///
-    /// `availableBytes` porte l'espace encore libre au moment de l'échec. Sans ce chiffre, « le
-    /// disque est plein » et « l'écriture a été refusée pour une autre raison » ne se distinguent
-    /// pas dans une capture d'écran — or c'est exactement la question à trancher.
-    case noDiskSpace(availableBytes: Int64?)
+    /// Ce cas est réservé à ce que le système **nomme**. Un « Impossible de créer le fichier » —
+    /// `NSURLErrorCannotCreateFile`, code `-3000` — n'en fait pas partie : il dit qu'écrire a
+    /// échoué, sans dire pourquoi. L'y ranger a fait annoncer « pas d'espace disque » sur un
+    /// appareil qui avait 17 Go de libre, et a donc envoyé la recherche du côté du disque.
+    case noDiskSpace
     case unknown(Error)
 
     // MARK: Lifecycle
@@ -35,13 +36,7 @@ public enum FileSystemError: Error {
     public init(error: Error) {
         switch error {
         case let cocoaError as CocoaError where cocoaError.code == .fileWriteOutOfSpace:
-            self = .noDiskSpace(availableBytes: nil)
-        case let urlError as URLError where urlError.code == .cannotCreateFile:
-            // iOS dit « Impossible de créer le fichier » — `NSURLErrorCannotCreateFile`, code
-            // `-3000` — là où le disque est plein. Ce code n'était reconnu nulle part : il tombait
-            // dans `.unknown`, et le message qui nomme la cause restait hors d'atteinte. C'est
-            // pourtant celui que le gestionnaire de téléchargement remonte réellement.
-            self = .noDiskSpace(availableBytes: nil)
+            self = .noDiskSpace
         default:
             self = .unknown(error)
         }
@@ -59,24 +54,10 @@ extension FileSystemError: LocalizedError {
         let text: String = switch self {
         case .unknown(let underlying):
             "\(l("error.message.general")) (\(Self.identify(underlying)))"
-        case .noDiskSpace(let availableBytes):
-            Self.describeNoDiskSpace(availableBytes)
+        case .noDiskSpace:
+            l("error.message.no_disk_space")
         }
         return text
-    }
-
-    /// « Pas d'espace disque disponible… (1,2 Go libres) ».
-    ///
-    /// Le chiffre rend le message vérifiable : sans lui, on ne peut pas dire depuis une capture
-    /// d'écran si l'appareil était réellement à court de place.
-    private static func describeNoDiskSpace(_ availableBytes: Int64?) -> String {
-        let message = l("error.message.no_disk_space")
-        guard let availableBytes else {
-            return message
-        }
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return "\(message) (\(formatter.string(fromByteCount: availableBytes)))"
     }
 
     /// « NSCocoaErrorDomain 4 », pour nommer l'erreur au lieu de la taire.

@@ -157,27 +157,36 @@ actor DownloadSessionDelegate: NetworkSessionDelegate {
 
         crasher.recordError(error, reason: "Download network error occurred")
 
-        // Un disque plein se dit de deux façons selon la couche qui le signale : `ENOSPC` — « no
-        // space left on device » — du côté du système de fichiers, et `NSURLErrorCannotCreateFile`
-        // — code `-3000`, « Impossible de créer le fichier » — du côté d'iOS. Seul le premier était
-        // reconnu, et le code testé était même `ENOENT`, qui veut dire « fichier introuvable » : le
-        // message qui annonce la panne — « Pas d'espace disque disponible pour enregistrer les
-        // téléchargements » — restait donc hors d'atteinte. On traite les deux, et on y accole
-        // l'espace encore libre, seul chiffre qui tranche entre un disque plein et un autre refus.
+        // `-3000` — « Impossible de créer le fichier » — dit qu'écrire a échoué, sans dire
+        // pourquoi. On ne peut donc pas en conclure que le disque est plein : c'est l'espace encore
+        // libre, mesuré ici, qui tranche. Il va au journal et non dans l'alerte, car une alerte qui
+        // affiche un nombre de gigaoctets se lit comme une taille de téléchargement — ce qui a
+        // envoyé la recherche du côté du disque, alors qu'il restait 17 Go.
+        if Self.cannotCreateFile(error) {
+            logger.error("Cannot create the downloaded file. Free space: \(availableDiskSpaceDescription())")
+        }
+
         let finalError: Error = if Self.isOutOfSpace(error) {
-            FileSystemError.noDiskSpace(availableBytes: availableDiskSpace())
+            FileSystemError.noDiskSpace
         } else {
             NetworkError(error: error)
         }
         return finalError
     }
 
-    /// Un disque plein, dit de deux façons selon la couche qui le signale.
+    /// Un disque plein, dit par le système lui-même : `ENOSPC`, « no space left on device ».
+    ///
+    /// Le code testé ici était auparavant `ENOENT`, qui veut dire « fichier introuvable », sous un
+    /// commentaire parlant de disque plein : il ne pouvait donc jamais être vrai pour la bonne
+    /// raison, et le message qui annonce la panne restait hors d'atteinte.
     private static func isOutOfSpace(_ error: Error) -> Bool {
-        if let error = error as? POSIXError, error.code == .ENOSPC {
-            return true
-        }
-        return (error as? URLError)?.code == .cannotCreateFile
+        (error as? POSIXError)?.code == .ENOSPC
+    }
+
+    /// `NSURLErrorCannotCreateFile`, code `-3000` : iOS a reçu les octets mais n'a pas pu créer le
+    /// fichier. Un disque plein en est une cause possible, pas la seule — et pas celle-ci.
+    private static func cannotCreateFile(_ error: Error) -> Bool {
+        (error as? URLError)?.code == .cannotCreateFile
     }
 
     /// L'espace encore disponible pour l'application, en octets, ou `nil` s'il est illisible.
@@ -187,6 +196,16 @@ actor DownloadSessionDelegate: NetworkSessionDelegate {
             forKeys: [.volumeAvailableCapacityForImportantUsageKey]
         )
         return values?.availableCapacity
+    }
+
+    /// Le même chiffre, en clair, pour le journal.
+    private func availableDiskSpaceDescription() -> String {
+        guard let availableBytes = availableDiskSpace() else {
+            return "unknown"
+        }
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: availableBytes)
     }
 
     private func validate(task: NetworkSessionTask) -> Error? {
