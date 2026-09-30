@@ -10,8 +10,10 @@ on:
       - main
   workflow_dispatch:
 
+# `contents: write` est indispensable pour publier une release : `read` suffisait tant que le flux
+# se contentait d'attacher l'IPA au run, mais pas pour ecrire dans les releases du depot.
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -94,3 +96,48 @@ jobs:
           path: .build/DerivedData/no-sync/unsigned-ipa/MonCompagnon-unsigned.ipa
           if-no-files-found: error
           retention-days: 30
+
+      # Une release par commit, et non un simple artefact : l'artefact disparait au bout de trente
+      # jours, la release reste. L'adresse devient donc stable et partageable, et le tag dit de quel
+      # commit l'IPA provient.
+      #
+      # Le depot ne garde que les cinq dernieres : chaque IPA pese environ 260 Mo.
+      - name: Publish the IPA as a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          IPA=".build/DerivedData/no-sync/unsigned-ipa/MonCompagnon-unsigned.ipa"
+          SHORT="$(git rev-parse --short HEAD)"
+          TAG="ipa-$SHORT"
+          SUBJECT="$(git log -1 --pretty=%s)"
+
+          NOTES="$(printf '%s\n' \
+            "IPA **non signé** de $SHORT — $SUBJECT" \
+            "" \
+            "Cet IPA n'est ni signé ni accompagné d'un profil d'approvisionnement :" \
+            "il faut le re-signer sur l'appareil (eSign, AltStore, Sideloadly…)." \
+            "" \
+            "Identifiant : com.moncompagnon.quran" \
+            "Construit le $(date -u '+%Y-%m-%d %H:%M UTC') par le run $GITHUB_RUN_NUMBER." \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID")"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$IPA" --clobber
+            gh release edit "$TAG" --notes "$NOTES"
+          else
+            gh release create "$TAG" "$IPA" \
+              --prerelease \
+              --target "$GITHUB_SHA" \
+              --title "IPA $SHORT" \
+              --notes "$NOTES"
+          fi
+
+          # On retire les plus anciennes, en ne touchant qu'aux tags `ipa-`.
+          gh release list --limit 100 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | startswith("ipa-"))] | sort_by(.createdAt) | reverse | .[5:] | .[].tagName' \
+            | while read -r ancien; do
+                [ -n "$ancien" ] || continue
+                echo "Retrait de la release $ancien"
+                gh release delete "$ancien" --yes --cleanup-tag
+              done
