@@ -1,0 +1,161 @@
+//
+//  QuranTextDataServiceTests.swift
+//
+//
+//  Created by Mohamed Afifi on 2021-12-18.
+//
+
+import QuranKit
+import QuranText
+import TranslationServiceFake
+import VerseTextPersistence
+import XCTest
+@testable import QuranTextKit
+@testable import TranslationService
+
+final class QuranTextDataServiceTests: XCTestCase {
+    // MARK: Internal
+
+    override func setUp() async throws {
+        try await super.setUp()
+
+        localTranslationsFake = LocalTranslationsFake()
+        let localtranslationsRetriever = localTranslationsFake.retriever
+        let persistence = GRDBQuranVerseTextPersistence(mode: .arabic, fileURL: TestData.quranTextURL)
+        textService = QuranTextDataService(
+            localTranslationRetriever: localtranslationsRetriever,
+            arabicPersistence: persistence,
+            translationsPersistenceBuilder: TestData.translationsPersistenceBuilder
+        )
+
+        let selectedTranslationsPreferences = SelectedTranslationsPreferences.shared
+        selectedTranslationsPreferences.selectedTranslationIds = translations.map(\.id)
+
+        try await localTranslationsFake.setTranslations(translations)
+    }
+
+    override func tearDown() {
+        super.tearDown()
+        localTranslationsFake.tearDown()
+        localTranslationsFake = nil
+        textService = nil
+    }
+
+    func testArabicNoTranslation() async throws {
+        let tests = [
+            [quran.suras[0].verses[0]],
+            [quran.suras[0].verses[1]],
+            [quran.suras[0].verses[1], quran.suras[0].verses[2]],
+            [quran.suras[1].verses[0]],
+        ]
+        for verses in tests {
+            let versesText = try await textService.textForVerses(verses, translations: [])
+
+            let expectedVerses = verses.map {
+                VerseText(
+                    arabicText: TestData.quranTextAt($0),
+                    translations: [],
+                    arabicPrefix: $0 == quran.suras[1].verses[0] ? [TestData.quranTextAt(quran.firstVerse)] : [],
+                    arabicSuffix: []
+                )
+            }
+            let expected = Dictionary(uniqueKeysWithValues: zip(verses, expectedVerses))
+            XCTAssertEqual(expected, versesText)
+        }
+    }
+
+    func testArabicPersistenceReturnsQuranText() async throws {
+        let verse = quran.firstVerse
+        let persistence = GRDBQuranVerseTextPersistence(mode: .arabic, fileURL: TestData.quranTextURL)
+
+        let text: QuranText = try await persistence.textForVerse(verse)
+
+        XCTAssertEqual(text, TestData.quranTextAt(verse))
+    }
+
+    func testWithTranslations() async throws {
+        let tests = [
+            [quran.suras[0].verses[1]],
+            [quran.suras[0].verses[1], quran.suras[0].verses[2]],
+        ]
+        for verses in tests {
+            let versesText = try await textService.textForVerses(verses, translations: translations)
+
+            let expectedVerses = verses.map { verse in
+                VerseText(
+                    arabicText: TestData.quranTextAt(verse),
+                    translations: translations.map {
+                        .string(TranslationString(text: TestData.translationTextAt($0, verse), quranRanges: [], footnoteRanges: [], footnotes: []))
+                    },
+                    arabicPrefix: [],
+                    arabicSuffix: []
+                )
+            }
+            let expected = Dictionary(uniqueKeysWithValues: zip(verses, expectedVerses))
+            XCTAssertEqual(expected, versesText)
+        }
+    }
+
+    func testTranslationWithFooterAndVerses() async throws {
+        let translations = [TestData.khanTranslation]
+        try await localTranslationsFake.setTranslations(translations)
+
+        let verse = quran.suras[0].verses[5]
+        let versesText = try await textService.textForVerses([verse], translations: translations)
+
+        let translationText = TestData.translationTextAt(translations[0], verse)
+        let textWithoutFootnotes = "Guide us to the Straight Way.  {ABC} [1] {DE} [2] FG"
+        let string = TranslationString(
+            text: textWithoutFootnotes,
+            quranRanges: [
+                textWithoutFootnotes.range(of: "{ABC}"),
+                textWithoutFootnotes.range(of: "{DE}"),
+            ].compactMap { $0 },
+            footnoteRanges: [
+                textWithoutFootnotes.range(of: "[1]"),
+                textWithoutFootnotes.range(of: "[2]"),
+            ].compactMap { $0 },
+            footnotes: [
+                translationText.range(of: "[[Footer1]]"),
+                translationText.range(of: "[[Footer2]]"),
+            ].compactMap { $0 }.map { translationText[$0] }
+        )
+        let expectedVerse = VerseText(
+            arabicText: TestData.quranTextAt(verse),
+            translations: [.string(string)],
+            arabicPrefix: [],
+            arabicSuffix: []
+        )
+        let expected = [verse: expectedVerse]
+        XCTAssertEqual(expected, versesText)
+    }
+
+    func testNumberedArabicTextSortsAndFormatsVerses() async throws {
+        let first = quran.suras[0].verses[0]
+        let second = quran.suras[0].verses[1]
+
+        let text = try await textService.numberedArabicText(for: [second, first])
+
+        XCTAssertEqual(
+            text,
+            QuranText("\(TestData.quranTextAt(first)) ١ \(TestData.quranTextAt(second)) ٢")
+        )
+    }
+
+    func testNumberedArabicTextReturnsEmptyTextForEmptyVerses() async throws {
+        let text = try await textService.numberedArabicText(for: [])
+
+        XCTAssertEqual(text, QuranText(""))
+    }
+
+    // MARK: Private
+
+    private var textService: QuranTextDataService!
+    private var localTranslationsFake: LocalTranslationsFake!
+    private let quran = Quran.hafsMadani1405
+
+    private let translations = [
+        TestData.khanTranslation,
+        TestData.sahihTranslation,
+    ]
+}

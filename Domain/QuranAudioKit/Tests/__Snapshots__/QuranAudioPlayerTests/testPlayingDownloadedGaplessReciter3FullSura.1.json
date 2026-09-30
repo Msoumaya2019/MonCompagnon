@@ -1,0 +1,86 @@
+{
+  "playing" : {
+    "_0" : {
+      "endTime" : null,
+      "files" : [
+        {
+          "frames" : [
+            {
+              "endTime" : null,
+              "startTime" : 0
+            },
+            {
+              "endTime" : null,
+              "startTime" : 10.034
+            },
+            {
+              "endTime" : null,
+              "startTime" : 12.681
+            },
+            {
+              "endTime" : null,
+              "startTime" : 15.811
+            }
+          ],
+          "url" : "\/audio_files\/mishari_alafasy\/112.mp3"
+        },
+        {
+          "frames" : [
+            {
+              "endTime" : null,
+              "startTime" : 0
+            },
+            {
+              "endTime" : null,
+              "startTime" : 10.806
+            },
+            {
+              "endTime" : null,
+              "startTime" : 14.607
+            },
+            {
+              "endTime" : null,
+              "startTime" : 19.894
+            },
+            {
+              "endTime" : null,
+              "startTime" : 26.256
+            }
+          ],
+          "url" : "\/audio_files\/mishari_alafasy\/113.mp3"
+        },
+        {
+          "frames" : [
+            {
+              "endTime" : null,
+              "startTime" : 0
+            },
+            {
+              "endTime" : null,
+              "startTime" : 13.324
+            },
+            {
+              "endTime" : null,
+              "startTime" : 18.951
+            },
+            {
+              "endTime" : null,
+              "startTime" : 24.57
+            },
+            {
+              "endTime" : null,
+              "startTime" : 32.968
+            },
+            {
+              "endTime" : null,
+              "startTime" : 41.413
+            }
+          ],
+          "url" : "\/audio_files\/mishari_alafasy\/114.mp3"
+        }
+      ],
+      "frameRuns" : 1,
+      "requestRuns" : 1
+    }
+  }
+}

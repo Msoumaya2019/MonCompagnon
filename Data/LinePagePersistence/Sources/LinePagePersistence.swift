@@ -1,0 +1,19 @@
+//
+//  LinePagePersistence.swift
+//
+//
+//  Created by Mohamed Afifi on 2026-03-28.
+//
+
+import QuranGeometry
+import QuranKit
+
+public protocol LinePagePersistence {
+    func highlightSpans(_ page: Page) async throws -> [LinePageHighlightSpan]
+    func suraHeaders(_ page: Page) async throws -> [LinePageSuraHeader]
+}
+
+/// Reads line-relative ayah markers independently of highlight and sura-header data.
+public protocol LinePageAyahMarkerPersistence {
+    func ayahMarkers(_ page: Page) async throws -> [LinePageAyahMarker]
+}

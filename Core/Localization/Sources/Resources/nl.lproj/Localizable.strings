@@ -1,0 +1,507 @@
+/*
+  Author: https://github.com/abdelouali
+ */
+
+
+// MARK: - General
+
+// Metadata: Translated by ChatGPT; human review required.
+"button.close" = "Sluiten";
+"button.delete" = "Verwijderen";
+
+// MARK: - Errors
+
+// Metadata: Translated by ChatGPT; human review required.
+"error.dialog.title" = "Fout";
+"error.message.connection_lost" = "Internet verbinding is verbroken. Ga naar een locatie waar een meer stabiele verbinding beschikbaar is, of wacht tot de verbinding terug tot stand is gekomen.";
+"error.message.international_roaming_off" = "Internationale roaming is niet toegestaan. Verander de internationale roaming-instelling, of schakel Wi-Fi aan.";
+"error.message.not_connected_to_internet" = "Niet verbonden met het internet. Schakel Wifi aan, of mobiele dataverbinding.";
+"error.message.general" = "Oeps! Er is iets verkeerd gegaan. Probeer het opnieuw.";
+"error.message.no_disk_space" = "Er is geen opslagruimte meer beschikbaar. Downloaden mislukt.";
+
+// MARK: - Quran
+
+"ayah" = "Ayah";
+"surah" = "Soera";
+// Metadata: Translated by AI; human review required.
+"quran_alquran" = "De Koran";
+
+// MARK: - Translation
+
+"translation.text-type.translation" = "Vertaling";
+"translation.text-type.transliteration" = "Transliteratie";
+// Metadata: Translated by ChatGPT; human review required.
+"translation.selectedTranslations" = "Geselecteerd";
+"translation.translator" = "Vertaler: ";
+"translation.text.see-referenced-verse" = "Zie ayah %d.";
+"translation.text.read-more" = "Lees Meer";
+"error.translation.text-retrieval" = "Oeps! Er is iets fout gegaan. We konden de vertaling niet ophalen.";
+"error.translation.text-not-available" = "Er is geen vertaling beschikbaar voor deze ayah.";
+
+// MARK: - Search
+
+"search.recents.title" = "Recente zoekopdrachten";
+"search.popular.title" = "Probeer te zoeken met";
+"search.placeholder.text" = "Soera, vers, vertaling, tafseer en nummers";
+"search.result.count" = "%@ (%d)";
+
+// MARK: - Settings
+
+"setting.write_review" = "Schrijf een app store-recensie...";
+"setting.contact_us" = "Contacteer ons";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.donate" = "Doneren";
+"setting.share_app" = "Deel de app...";
+"setting.app_version" = "App Versie";
+
+// MARK: - Quran Menu
+
+"menu.arabic" = "Arabisch";
+"menu.translation" = "Vertaling/Tafseer";
+"menu.select_translation" = "Selecteer vertalingen/tafseer";
+"menu.pointer" = "Aanwijzer voor woordvertaling";
+"menu.pointer.select_translation" = "Aanwijzer weergegeven";
+"menu.fontSizeLetter" = "A";
+"menu.translationFontSize" = "Vertaalgrootte";
+"menu.arabicFontSize" = "Koran Grootte";
+"menu.twoPages" = "2 pagina's naast elkaar (liggend)";
+"menu.verticalScrolling" = "Verticaal scrollen";
+"menu.linePageDividers" = "Regelscheiding";
+"menu.linePageSidelines" = "Zijlijnen";
+// Metadata: Translated by ChatGPT; human review required.
+"menu.theme_settings" = "Thema's en instellingen";
+
+// MARK: - Theme
+
+"theme.light" = "Licht";
+"theme.dark" = "Donker";
+// Metadata: Translated by AI; human review required.
+"theme.match_device" = "Zoals apparaat";
+"theme.auto.message" = "De Koran-app houdt zich aan de weergave-instelling van uw iPhone";
+// Metadata: Translated by AI; human review required.
+"theme.appearance" = "Weergave";
+
+// MARK: - App Icon
+
+// Metadata: Translated by AI; human review required.
+"app_icon.default" = "Standaard";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.black_gold" = "Zwart en goud";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.blue" = "Blauw";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.green" = "Groen";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.navy_gold" = "Marineblauw en goud";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.orange" = "Oranje";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.purple" = "Paars";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.red" = "Rood";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.teal_white" = "Blauwgroen en wit";
+// Metadata: Translated by AI; human review required.
+"app_icon.section.colors" = "Kleuren";
+// Metadata: Translated by AI; human review required.
+"app_icon.section.signature" = "Signatuur";
+// Metadata: Translated by AI; human review required.
+"app_icon.title" = "App-icoon";
+
+// MARK: - Tabs
+
+"tab.notes" = "Notities";
+
+// MARK: - Update
+
+"update.filesystem.title" = "Databases bijwerken...";
+"downloading_title" = "Downloaden…";
+
+// MARK: - Reciters
+
+"reciters.title" = "Selecteer de reciteerder om naar te luisteren";
+"reciters.recent" = "Recent";
+"reciters.downloaded" = "Gedownload";
+"reciters.all" = "Alle";
+
+// MARK: - Audio
+
+"audio.playing.action.modify" = "Wijzigen";
+"audio.playing.message" = "Audio afspelen van %@ tot %@";
+"audio.downloading.message" = "Audio downloaden van %@ tot %@";
+
+"audio.playing-verses.label" = "Verzen Afgespeeld";
+"audio.adjust-end-verse-to-the-end.label" = "Pas het eindvers aan het einde van de";
+
+"audio.select-start-verse" = "Selecteer Beginvers";
+"audio.select-end-verse" = "Selecteer Eindvers";
+
+"audio.download-play-amount" = "Downloaden/Afspelen tot";
+"audio.download-play-amount.description" = "Bij het afspelen van audio wordt deze afgespeeld tot het einde van de";
+
+// MARK: - Bookmarks
+
+"bookmarks.no-data.title" = "Bladwijzers toevoegen...";
+"bookmarks.no-data.text" = "Tik tijdens het lezen van de Koran op de knop Bladwijzer om de huidige pagina te markeren.";
+
+// MARK: - Notes
+
+"notes.sync.title" = "Je notities synchroniseren";
+"notes.sync.body" = "Log in bij Quran.com om je notities op al je apparaten beschikbaar te houden.";
+"notes.sync.no-data.title" = "Nog geen notities";
+"notes.sync.no-data.text" = "Houd tijdens het lezen een ayah ingedrukt en tik daarna op ‘Voeg Notitie Toe’ om je eerste notitie te schrijven.";
+
+"notes.no-data.title" = "Ayah-hoogtepunten toevoegen...";
+"notes.no-data.text" = "Tik op een Ayah en houd deze vast. U kunt de selectie uitbreiden om meerdere Ayat op te nemen en tik vervolgens op de bladwijzerknop.";
+"notes.verses-count" = "(+%d ayat)";
+"notes.delete.alert.title" = "Hoogtepunt verwijderen";
+"notes.delete.alert.body" = "De bijbehorende notitie zal ook worden verwijderd.";
+"notes.icloud.alert.title" = "iCloud-synchronisatie";
+"notes.icloud.alert.body" = "De app gebruikt iCloud om bladwijzers en notities op al je apparaten te synchroniseren. U kunt het uitschakelen via de iCloud-instellingen van uw apparaat.";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.search.placeholder.text" = "Doorzoek je notities";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.search.no-results.title" = "Geen notities komen overeen met \"%@\"";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.search.no-results.text" = "Probeer een ander woord uit een opgeslagen notitie of een soeranaam.";
+
+// MARK: - Ayah Menu
+
+"ayah.menu.copy" = "Kopieer";
+"ayah.menu.share" = "Deel...";
+"ayah.menu.play-end-juz" = "tot het einde van Juz'";
+"ayah.menu.play-end-surah" = "tot het einde van Soera";
+"ayah.menu.play-end-page" = "tot het einde van Pagina";
+// Metadata: Translated by AI; human review required.
+"ayah.menu.play-end-quran" = "tot het einde van de Koran";
+"ayah.menu.repeat" = "Herhaal";
+"ayah.menu.selected-verse" = "geselecteerd vers";
+"ayah.menu.selected-verses" = "geselecteerde verzen";
+"ayah.menu.highlight" = "Markeer";
+"ayah.menu.highlight-select-color" = "selecteer kleur";
+"ayah.menu.add-note" = "Voeg Notitie Toe";
+"ayah.menu.edit-note" = "Bewerk Notitie";
+"ayah.menu.delete-note" = "Verwijder Notitie";
+"ayah.menu.delete-highlight" = "Verwijder Hoogtepunt";
+
+// MARK: - Reading Selector
+
+// Selector UI
+"reading.selector.selectMushaf.short" = "Selecteer";
+"reading.selector.selectMushaf.long" = "Stel in als huidige Mushaf";
+"reading.selector.title" = "Kies Musaf";
+"reading.selector.group.uthmani" = "Uthmani";
+"reading.selector.group.tajweed" = "Tajweed";
+"reading.selector.group.indopak" = "Indo-Pakistaans";
+"reading.selector.badge.experimental" = "Experimenteel";
+"reading.selector.badge.large-screen-optimized" = "Geoptimaliseerd voor grotere schermen";
+"reading.selector.selection-description" = "Tik op een Mushaf voor meer informatie.";
+"reading.selector.property.hafs" = "Hafs Mushaf";
+"reading.selector.property.pages.604" = "604 pagina's";
+"reading.selector.property.lines.15" = "Pagina van 15 regels";
+"reading.selector.property.word-translation.supported" = "Woord-voor-woord vertaling";
+"reading.selector.property.word-translation.not-supported" = "Geen woord-voor-woord vertaling";
+
+// Hafs 1405
+"reading.hafs-1405.title" = "Hafs, klassieke Madina, 1405 AH";
+"reading.hafs-1405.description" = "De klassieke hafs Mushaf, uitgegeven in Medina in 1405 Hijri. De app bood deze versie lange tijd aan.\nUit het King Fahd Quran Printing Complex.";
+"reading.hafs-1405.issue" = "Uitgegeven in 1405 Hijri";
+
+// Hafs 1421
+"reading.hafs-1421.title" = "Hafs, klassieke Medina, 1421 AH";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1421.description" = "De Hafs Mushaf uitgegeven in Medina in 1421 Hijri. Van het Koning Fahd Koran Drukkomplex.";
+"reading.hafs-1421.issue" = "Uitgegeven in 1421 Hijri";
+
+// Hafs 1440
+"reading.hafs-1440.title" = "Hafs, Medina, 1440 AH";
+"reading.hafs-1440.description" = "De hafs Mushaf uitgegeven in Medina in 1440 Hijri. Van het King Fahd Quran Printing Complex.";
+"reading.hafs-1440.issue" = "Uitgegeven in 1440 Hijri";
+
+// Hafs Tajweed
+// Metadata: Translated by ChatGPT; human review required.
+"reading.tajweed.title" = "Hafs, Tajweed";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.tajweed.description" = "De Tajweed Hafs Mushaf. Al-Quran Al-Kareem - Dar al-Marefa Editie.";
+
+// MARK: - Diagnostics
+
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.title" = "Diagnostiek";
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.details" = "Deze instellingen worden door de app-ontwikkelaar specifiek gebruikt voor debugging en diagnostische doeleinden.";
+
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.share_app_logs" = "App-logs delen";
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.enable_debug_logs" = "Debug-logging inschakelen";
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.enable_debug_logs.details" = "De instelling wordt van kracht bij de volgende herstart van de app.";
+
+
+// MARK: - What's new
+
+"new.title" = "Wat is er nieuw";
+"new.action" = "Ga verder";
+
+// New app icon
+// Metadata: Translated by AI; human review required.
+"new.app_icon.body" = "De Quran-app draagt nu het gezamenlijke herkenningsteken van een familie hulpmiddelen die rond het woord van Allah zijn gebouwd. Je bladwijzers, notities en voortgang staan precies waar je ze hebt gelaten.";
+// Metadata: Translated by AI; human review required.
+"new.app_icon.choose_another" = "Kies een ander icoon";
+// Metadata: Translated by AI; human review required.
+"new.app_icon.title" = "Ons nieuwe icoon is er";
+
+// Reading layouts
+// Metadata: Translated by ChatGPT; human review required.
+"new.reading_layouts" = "Nieuwe Madani-mushafs";
+// Metadata: Translated by ChatGPT; human review required.
+"new.reading_layouts.details" = "* Madani Mushaf 1439 en 1441 toegevoegd, geoptimaliseerd om het volledige scherm te vullen.";
+
+// Experimental IndoPak
+// Metadata: Translated by ChatGPT; human review required.
+"new.experimental_indopak" = "Indo-Pakistaans – 15 regels";
+// Metadata: Translated by ChatGPT; human review required.
+"new.experimental_indopak.details" = "* Probeer de nieuwe 15-regelige Indo-Pakistaanse leesindeling in Naskh-stijl.";
+
+// Audio controls
+// Metadata: Translated by ChatGPT; human review required.
+"new.audio_controls" = "Geavanceerde audio-opties";
+// Metadata: Translated by ChatGPT; human review required.
+"new.audio_controls.details" = "De Geavanceerde audio-opties zijn opnieuw ontworpen en uitgebreid met meer bedieningselementen — met dank aan @OKKHALIL3.\n* Afspeelsnelheden van 0,25× tot 2× — met dank aan @OKKHALIL3.\n* Herhalingen van 1× tot 100×, plus een lusoptie — met dank aan @OKKHALIL3.\n* Instelbare pauzes tussen ayat en herhaalde bereiken — met dank aan @abdorizak en @OKKHALIL3.\n* Audio streamen zonder het eerst te downloaden — met dank aan @OKKHALIL3.\n* Ingebouwde ayah-kiezer — met dank aan @OKKHALIL3.";
+
+// Notes
+// Metadata: Translated by ChatGPT; human review required.
+"new.notes_updates" = "Notities zoeken en bewerken";
+// Metadata: Translated by ChatGPT; human review required.
+"new.notes_updates.details" = "* Zoek notities op tekst of soera — met dank aan @abdorizak.\n* De notitiekaarten en notitie-editor zijn opnieuw ontworpen.";
+
+// Navigation
+// Metadata: Translated by ChatGPT; human review required.
+"new.navigation_updates" = "Startscherm en navigatie";
+// Metadata: Translated by ChatGPT; human review required.
+"new.navigation_updates.details" = "* Inklapbare juz-secties zijn toegevoegd aan de soera- en juz-lijsten op het Startscherm — met dank aan @OKKHALIL3.\n* De navigatie tussen pagina’s en ayat is consistenter gemaakt.";
+
+// Translation
+// Metadata: Translated by ChatGPT; human review required.
+"new.translation_update" = "Vertaalupdate";
+// Metadata: Translated by ChatGPT; human review required.
+"new.translation_update.details" = "* De Russische vertaling van ‘mushaf’ is gecorrigeerd — met dank aan @pulatovpro.";
+
+// Audio
+// Metadata: Translated by ChatGPT; human review required.
+"audio.delay.off" = "Uit";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.end-at" = "Eindigen bij";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.end-at.custom" = "Aangepast";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.playback-ayah-range" = "Bereik van ayahs afspelen";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.playback-speed" = "Afspeelsnelheid";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repeat-count" = "Aantal herhalingen";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay" = "Pauze tussen herhalingen (seconden)";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.10s" = "10 s";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.1s" = "1 s";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.2s" = "2 s";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.3s" = "3 s";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.5s" = "5 s";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.description" = "Stelt in hoe lang wordt gepauzeerd voordat de volgende herhaling begint.";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.streaming.description" = "Bespaart opslagruimte door audio te streamen, maar vereist een internetverbinding.";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.streaming.title" = "Audio streamen";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.verse-delay" = "Pauze na elke ayah";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.verse-delay.description" = "Kies hoe lang na elke ayah wordt gepauzeerd. Bij 1× duurt de pauze ongeveer even lang als het afspelen van de ayah, zodat je tijd hebt om te herhalen of te memoriseren voordat je verdergaat.";
+
+// Ayah menu
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.notes-count" = "Notities (%d)";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.move-here" = "Bij %@ • Hierheen verplaatsen";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.moved" = "Leesbladwijzer verplaatst van %@ naar %@";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.removed" = "Leesbladwijzer verwijderd van %@";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.save-here" = "Je leespositie hier opslaan";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.saved" = "Leesbladwijzer opgeslagen bij %@";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.saved-here" = "Hier opgeslagen • Tik om te verwijderen";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.single-ayah-only" = "Selecteer één ayah";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.title" = "Leesbladwijzer";
+
+// Bookmarks
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections" = "Verzamelingen";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.add" = "Verzameling toevoegen";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.delete-hint" = "Veeg over een bladwijzer om deze te verwijderen.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.no-data.colored.text" = "Ayahs die je tijdens het lezen met een %@ bladwijzer markeert, verschijnen hier.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.no-data.text" = "Ayahs die je tijdens het lezen als bladwijzer opslaat, verschijnen hier.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.open-hint" = "Opent deze ayah in de Quran.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.colored" = "Gekleurde bladwijzers";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.delete.confirmation.message" = "Deze verzameling bevat bladwijzers. Weet je zeker dat je deze wilt verwijderen?";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.delete.confirmation.title" = "Verzameling verwijderen?";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.favorites" = "Favorieten";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.mine" = "Mijn verzamelingen";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.new" = "Nieuwe verzameling...";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.new.placeholder" = "Naam van verzameling";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.no-data.text" = "Maak een verzameling om ayahs te ordenen op thema, dua of memorisatieplan.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.no-data.title" = "Nog geen verzamelingen";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.rename" = "Naam wijzigen";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.delete-all" = "Alles verwijderen";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.delete-all.confirmation" = "Weet je zeker dat je alle bladwijzers wilt verwijderen?";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.collection.mixed" = "Gedeeltelijk geselecteerd";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.collection.selected" = "Geselecteerd";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.collection.unselected" = "Niet geselecteerd";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.error.highlight-unavailable" = "De markeringskleuren worden nog geladen. Probeer het opnieuw.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.old-page-bookmarks" = "Oude paginabladwijzers";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.sync.action" = "Inloggen";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.sync.body" = "Log in bij Quran.com om je collecties op al je apparaten beschikbaar te houden.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.sync.title" = "Je collecties synchroniseren";
+
+// Highlight colors
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.blue" = "Blauw";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.green" = "Groen";
+// Metadata: Translated by AI; human review required.
+"highlight.color.orange" = "Oranje";
+// Metadata: Translated by AI; human review required.
+"highlight.color.pink" = "Roze";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.purple" = "Paars";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.red" = "Rood";
+// Metadata: Translated by AI; human review required.
+"highlight.color.teal" = "Blauwgroen";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.yellow" = "Geel";
+
+// Notes
+// Metadata: Translated by ChatGPT; human review required.
+"notes.delete-note.alert.body" = "Deze notitie wordt verwijderd.";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.delete-note.alert.title" = "Notitie verwijderen";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.editor.created" = "Aangemaakt op %@";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.editor.delete" = "Notitie verwijderen";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.editor.note-divider" = "JOUW NOTITIE";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.minimum-length.alert.body" = "Notities moeten minstens %d tekens bevatten.";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.minimum-length.alert.title" = "Notitie is te kort";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.new" = "Nieuwe notitie";
+
+// Reading selector
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1439.description" = "Het Madani-schrift uit 1439 van het Koning Fahd-complex voor het drukken van de Quran. Geoptimaliseerd voor grotere schermen.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1439.issue" = "Uitgegeven in 1439 Hidjri";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1439.title" = "Madani Mushaf (1439)";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1441.description" = "De Madani Mushaf uit 1441 van het Koning Fahd-complex voor het drukken van de Quran. Geoptimaliseerd voor grotere schermen.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1441.issue" = "Uitgegeven in 1441 Hidjri";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1441.title" = "Madani Mushaf (1441)";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.indopak.description" = "Een Hafs-Mushaf in de Indo-Pakistaanse Naskh-stijl, die veel wordt gebruikt in Zuid-Azië. De pagina-afbeeldingen zijn afkomstig van het Koning Fahd-complex voor het drukken van de Quran.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.indopak.title" = "Indo-Pakistaans – 15 regels";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.property.pages.610" = "610 pagina’s";
+
+// Quran.com account
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.attach_notes" = "Je ayah-notities synchroniseren";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.custom_collections" = "Je aangepaste verzamelingen synchroniseren";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.profile" = "Account beheren";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sign_in" = "Inloggen bij Quran.com";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sign_in.subtitle" = "Notities, bladwijzers en verzamelingen synchroniseren";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.signed_in" = "Ingelogd";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sign_out" = "Uitloggen";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sync_devices" = "Je bladwijzers op alle apparaten synchroniseren";
+
+// Translation text
+// Metadata: Translated by ChatGPT; human review required.
+"translation.text.ayah-number" = "%d:%d";
+// Metadata: Translated by ChatGPT; human review required.
+"translation.text.footnote-number" = "[%d]";
+// Metadata: Translated by ChatGPT; human review required.
+"translation.text.footnote-title" = "Voetnoot nr. %d";
+
+/* Audio banner options summary */
+"audio.summary.verse" = "vers %@";
+"audio.summary.range" = "bereik %@";
+"audio.options" = "Audio-opties";
+
+// MARK: - Continue reading and reading bookmarks
+
+// Home heading for saved reading positions and recent pages.
+// Metadata: Translated by AI; human review required.
+"home.continue-reading.title" = "Verder lezen";
+// Collections heading for saved reading positions.
+// Metadata: Translated by AI; human review required.
+"bookmarks.reading.title" = "Leesbladwijzers";
+// Button that collapses the additional reading bookmarks.
+// Metadata: Translated by AI; human review required.
+"bookmarks.reading.show-less" = "Minder tonen";
+// VoiceOver state when the additional reading bookmarks are visible.
+// Metadata: Translated by AI; human review required.
+"accessibility.expanded" = "Uitgeklapt";
+// VoiceOver state when the additional reading bookmarks are hidden.
+// Metadata: Translated by AI; human review required.
+"accessibility.collapsed" = "Ingeklapt";
+// Recent pages heading with a localized page count.
+// Metadata: Translated by AI; human review required.
+"home.recent-pages.title" = "Recente pagina\\'s (%@)";

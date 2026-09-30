@@ -1,0 +1,537 @@
+/*
+  Author: Salih Aydin <slhydn@icloud.com>
+ */
+
+
+// MARK: - General
+
+// Metadata: Translated by ChatGPT; human review required.
+"button.close" = "Kapat";
+"button.delete" = "Sil";
+
+// MARK: - Errors
+
+// Metadata: Translated by ChatGPT; human review required.
+"error.dialog.title" = "Hata";
+"error.message.connection_lost" = "İnternet bağlantısı bulunamadı. İnternet bağlantısının daha stabil olduğu bir yere geçin veya düzelene kadar bekleyin.";
+"error.message.international_roaming_off" = "Uluslararası dolaşıma izin verilmedi. Uluslararası dolaşım ayarlarını değiştirin veya bir kablosuz ağa bağlanın.";
+"error.message.not_connected_to_internet" = "İnternet bağlantısı bulunamadı. Kablosuz bağlantıyı veya hücresel ağ bağlantısını etkinleştirin.";
+"error.message.general" = "Hay aksi! Bir sorun oluştu. Lütfen tekrar deneyin.";
+"error.message.no_disk_space" = "İndirilenleri kaydetmek için disk alanı yetersiz.";
+
+// MARK: - Quran
+
+"ayah" = "Ayet";
+"surah" = "Sure";
+// Metadata: Translated by AI; human review required.
+"quran_alquran" = "Kur'an";
+
+// MARK: - Translation
+
+"translation.text-type.translation" = "Meal";
+"translation.text-type.transliteration" = "Okunuşu";
+// Metadata: Translated by ChatGPT; human review required.
+"translation.selectedTranslations" = "Seçildi";
+"translation.translator" = "Çevirmen: ";
+// Metadata: Translated by ChatGPT; human review required.
+"translation.text.see-referenced-verse" = "%d ayeti görün.";
+"translation.text.read-more" = "Daha fazlası";
+"error.translation.text-retrieval" = "Hay aksi! Bir sorun çıktı. Meali bulamadık.";
+"error.translation.text-not-available" = "Bu Ayetin meali bulunmamaktadır.";
+
+// MARK: - Search
+
+"search.recents.title" = "Son aramalar";
+"search.popular.title" = "Bununla aramayı deneyin";
+"search.placeholder.text" = "Sure, ayet, meal, tefsir, and numaralar";
+// Metadata: Translated by ChatGPT; human review required.
+"search.result.count" = "%@ (%d)";
+
+// MARK: - Settings
+
+"setting.write_review" = "Uygulamamızı AppStore'de değerlendirin...";
+"setting.contact_us" = "Bizimle iletişime geçin!";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.donate" = "Bağış Yap";
+"setting.share_app" = "Uygulamayı paylaşın...";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.app_version" = "Uygulama sürümü";
+
+// MARK: - Quran Menu
+
+"menu.arabic" = "Arapça";
+"menu.translation" = "Meal";
+"menu.select_translation" = "Meal/Tefsir seç";
+"menu.pointer" = "Meal imleci";
+"menu.pointer.select_translation" = "İmleç Göstersin";
+"menu.fontSizeLetter" = "A";
+"menu.translationFontSize" = "Çeviri Boyutu";
+"menu.arabicFontSize" = "Kuran Boyutu";
+// Metadata: Translated by ChatGPT; human review required.
+"menu.twoPages" = "Yan yana 2 sayfa (yatayda)";
+// Metadata: Translated by ChatGPT; human review required.
+"menu.verticalScrolling" = "Dikey kaydırma";
+"menu.linePageDividers" = "Satır ayırıcıları";
+"menu.linePageSidelines" = "Yan çizgiler";
+// Metadata: Translated by ChatGPT; human review required.
+"menu.theme_settings" = "Temalar ve ayarlar";
+
+// MARK: - Theme
+
+"theme.light" = "Açık";
+"theme.dark" = "Koyu";
+// Metadata: Translated by AI; human review required.
+"theme.match_device" = "Cihazla aynı";
+"theme.auto.message" = "Kur'an uygulamasının teması iPhone ayarlarına göre belirlenecek";
+// Metadata: Translated by AI; human review required.
+"theme.appearance" = "Görünüm";
+
+// MARK: - App Icon
+
+// Metadata: Translated by AI; human review required.
+"app_icon.default" = "Varsayılan";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.black_gold" = "Siyah ve altın";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.blue" = "Mavi";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.green" = "Yeşil";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.navy_gold" = "Lacivert ve altın";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.orange" = "Turuncu";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.purple" = "Mor";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.red" = "Kırmızı";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.teal_white" = "Petrol mavisi ve beyaz";
+// Metadata: Translated by AI; human review required.
+"app_icon.section.colors" = "Renkler";
+// Metadata: Translated by AI; human review required.
+"app_icon.section.signature" = "İmza";
+// Metadata: Translated by AI; human review required.
+"app_icon.title" = "Uygulama simgesi";
+
+// MARK: - Tabs
+
+"tab.notes" = "Notlar";
+
+// MARK: - Update
+
+"update.filesystem.title" = "Veritabanı güncelleniyor...";
+"downloading_title" = "Yükleniyor…";
+
+// MARK: - Reciters
+
+"reciters.title" = "Dinlemek istediğiniz hafızı seçiniz";
+"reciters.recent" = "Son";
+"reciters.downloaded" = "İndirilenler";
+"reciters.all" = "Herkes";
+
+// MARK: - Audio
+
+"audio.playing.action.modify" = "Düzenle";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.playing.message" = "%@ ile %@ arası ses oynatılıyor";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.downloading.message" = "%@ ile %@ arasındaki ses indiriliyor";
+
+"audio.playing-verses.label" = "Okunan ayetler";
+"audio.adjust-end-verse-to-the-end.label" = "Bitişi sonuna ayarla";
+
+"audio.select-start-verse" = "Başlangıç Ayetini Seçin";
+"audio.select-end-verse" = "Son Ayeti Seçin";
+
+// Metadata: Translated by ChatGPT; human review required.
+"audio.download-play-amount" = "İndir/Oynatma limiti";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.download-play-amount.description" = "Ses oynatılırken, sonuna kadar oynatılacak";
+
+// MARK: - Bookmarks
+
+"bookmarks.no-data.title" = "Ayraçlar ekleniyor...";
+"bookmarks.no-data.text" = "Kur'an okurken, bulunduğunuz sayfayı işaretlemek için Ayraç butonuna basın.";
+
+// MARK: - Notes
+
+"notes.sync.title" = "Notlarınızı eşitleyin";
+"notes.sync.body" = "Notlarınızı tüm cihazlarda kullanılabilir tutmak için Quran.com’da oturum açın.";
+"notes.sync.no-data.title" = "Henüz not yok";
+"notes.sync.no-data.text" = "Okurken bir ayete basılı tutun, ardından ilk notunuzu yazmak için “Not Ekle”ye dokunun.";
+
+"notes.no-data.title" = "Vurgulanan ayetler kaydediliyor...";
+"notes.no-data.text" = "Ayete dokunup basılı tutun. Birden fazla ayet seçmek için parmağınızı sürükleyebilirsiniz, sonrasında tekrar Ayraç butonuna basın.";
+"notes.verses-count" = "(+%d ayet)";
+"notes.delete.alert.title" = "Vurguyu silin";
+"notes.delete.alert.body" = "İlgili not silinecek.";
+"notes.icloud.alert.title" = "iCloud Senkronizasyonu";
+"notes.icloud.alert.body" = "Uygulama ayraçları ve notlarınızı farklı cihazlarınız arasında kullanabilmeniz için iCloud senkronizasyonunu kullanmaktadır. Bu özelliği cihazınızın iCloud ayarlarından kapatabilirsiniz.";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.search.placeholder.text" = "Notlarınızda arayın";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.search.no-results.title" = "\"%@\" ile eşleşen not yok";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.search.no-results.text" = "Kaydettiğiniz bir nottan başka bir kelime veya sure adı deneyin.";
+
+// MARK: - Ayah Menu
+
+"ayah.menu.copy" = "Kopyala";
+"ayah.menu.share" = "Paylaş...";
+"ayah.menu.play-end-juz" = "Cüzün sonuna kadar";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.play-end-surah" = "Sure'nin sonuna kadar";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.play-end-page" = "Sayfanın sonuna kadar";
+// Metadata: Translated by AI; human review required.
+"ayah.menu.play-end-quran" = "Kur'an'ın sonuna kadar";
+"ayah.menu.repeat" = "Tekrarlamak";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.selected-verse" = "seçilen ayet";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.selected-verses" = "seçilen ayetler";
+"ayah.menu.highlight" = "Vurgula";
+"ayah.menu.highlight-select-color" = "renk seç";
+"ayah.menu.add-note" = "Not Ekle";
+"ayah.menu.edit-note" = "Notu Düzenle";
+"ayah.menu.delete-note" = "Notu Sil";
+"ayah.menu.delete-highlight" = "Vurgulanan Yeri Sil";
+
+// MARK: - Reading Selector
+
+// Selector UI
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.selectMushaf.short" = "Seç";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.selectMushaf.long" = "Mevcut Mushaf olarak ayarla";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.title" = "Mushaf Seç";
+"reading.selector.group.uthmani" = "Osmanî";
+"reading.selector.group.tajweed" = "Tecvid";
+"reading.selector.group.indopak" = "Hint-Pakistan";
+"reading.selector.badge.experimental" = "Deneysel";
+"reading.selector.badge.large-screen-optimized" = "Daha büyük ekranlar için optimize edildi";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.selection-description" = "Daha fazla bilgi için bir Mushaf'a dokunun.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.property.hafs" = "Hafs Mushaf";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.property.pages.604" = "604 sayfa";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.property.lines.15" = "15 satırlık sayfa";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.property.word-translation.supported" = "Kelime kelime çeviri";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.property.word-translation.not-supported" = "Kelime kelime çeviri yok";
+
+// Hafs 1405
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1405.title" = "Hafs, klasik Medine, 1405 AH";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1405.description" = "1405 Hicri yılında Medine'de yayımlanan klasik Hafs Mushaf. Uygulama uzun süre bu versiyonu sundu.\nKral Fahd Kuran Basım Kompleksinden.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1405.issue" = "1405 Hicri yılında yayımlandı";
+
+// Hafs 1421
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1421.title" = "Hafs, Medine, 1421 AH";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1421.description" = "1421 Hicri yılında Medine'de yayımlanan Hafs Mushaf. Kral Fahd Kuran Basım Kompleksinden.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1421.issue" = "1421 Hicri yılında yayımlandı";
+
+// Hafs 1440
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1440.title" = "Hafs, Medine, 1440 AH";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1440.description" = "1440 Hicri yılında Medine'de yayımlanan Hafs Mushaf. Kral Fahd Kuran Basım Kompleksinden.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1440.issue" = "1440 Hicri yılında yayımlandı";
+
+// Hafs Tajweed
+// Metadata: Translated by ChatGPT; human review required.
+"reading.tajweed.title" = "Hafs, Tecvid";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.tajweed.description" = "Tecvid Hafs Mushaf. Al-Quran Al-Kareem - Dar al-Marefa Baskısı.";
+
+// MARK: - Diagnostics
+
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.title" = "Teşhisler";
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.details" = "Bu ayarlar, uygulama geliştiricisi tarafından özellikle hata ayıklama ve tanı amaçları için kullanılır.";
+
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.share_app_logs" = "Uygulama günlüklerini paylaş";
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.enable_debug_logs" = "Hata ayıklama kaydını etkinleştir";
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.enable_debug_logs.details" = "Ayar, uygulamanın bir sonraki yeniden başlatılmasında etkili olacak.";
+
+
+// MARK: - What's new
+
+"new.title" = "Yenilikler";
+"new.action" = "Devam Et";
+
+// New app icon
+// Metadata: Translated by AI; human review required.
+"new.app_icon.body" = "Kur’an uygulaması artık Allah’ın kelamı etrafında geliştirilen bir araç ailesinin ortak işaretini taşıyor. Yer imleriniz, notlarınız ve ilerlemeniz tam bıraktığınız yerde.";
+// Metadata: Translated by AI; human review required.
+"new.app_icon.choose_another" = "Başka simge seç";
+// Metadata: Translated by AI; human review required.
+"new.app_icon.title" = "Yeni simgemiz burada";
+
+// Reading layouts
+// Metadata: Translated by ChatGPT; human review required.
+"new.reading_layouts" = "Yeni Medine Mushafları";
+// Metadata: Translated by ChatGPT; human review required.
+"new.reading_layouts.details" = "* Medine Mushafı 1439 ve 1441 eklendi; ekranın tamamını dolduracak şekilde optimize edildi.";
+
+// Experimental IndoPak
+// Metadata: Translated by ChatGPT; human review required.
+"new.experimental_indopak" = "Hint-Pakistan — 15 Satır";
+// Metadata: Translated by ChatGPT; human review required.
+"new.experimental_indopak.details" = "* Nesih stilindeki yeni 15 satırlık Hint-Pakistan okuma düzenini deneyin.";
+
+// Audio controls
+// Metadata: Translated by ChatGPT; human review required.
+"new.audio_controls" = "Gelişmiş Ses Seçenekleri";
+// Metadata: Translated by ChatGPT; human review required.
+"new.audio_controls.details" = "Gelişmiş Ses Seçenekleri yeniden tasarlandı ve daha fazla denetim eklendi — @OKKHALIL3 sayesinde.\n* 0,25× ile 2× arasında oynatma hızları — @OKKHALIL3 sayesinde.\n* 1× ile 100× arasında tekrar sayısı ve döngü seçeneği — @OKKHALIL3 sayesinde.\n* Ayetler ve tekrarlanan aralıklar arasında ayarlanabilir duraklamalar — @abdorizak ve @OKKHALIL3 sayesinde.\n* Önce indirmeden ses akışı — @OKKHALIL3 sayesinde.\n* Satır içi ayet seçici — @OKKHALIL3 sayesinde.";
+
+// Notes
+// Metadata: Translated by ChatGPT; human review required.
+"new.notes_updates" = "Not Arama ve Düzenleme";
+// Metadata: Translated by ChatGPT; human review required.
+"new.notes_updates.details" = "* Notları metinlerine veya sureye göre arayın — @abdorizak sayesinde.\n* Not kartları ve not düzenleyici yeniden tasarlandı.";
+
+// Navigation
+// Metadata: Translated by ChatGPT; human review required.
+"new.navigation_updates" = "Ana Sayfa ve Gezinme";
+// Metadata: Translated by ChatGPT; human review required.
+"new.navigation_updates.details" = "* Ana Sayfa’daki sure ve cüz listelerine daraltılabilir cüz bölümleri eklendi — @OKKHALIL3 sayesinde.\n* Sayfalar ve ayetler arasındaki gezinme daha tutarlı hale getirildi.";
+
+// Translation
+// Metadata: Translated by ChatGPT; human review required.
+"new.translation_update" = "Çeviri Güncellemesi";
+// Metadata: Translated by ChatGPT; human review required.
+"new.translation_update.details" = "* “Mushaf” sözcüğünün Rusça çevirisi düzeltildi — @pulatovpro sayesinde.";
+
+// Audio
+// Metadata: Translated by ChatGPT; human review required.
+"audio.delay.off" = "Kapalı";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.end-at" = "Şurada bitir";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.end-at.custom" = "Özel";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.playback-ayah-range" = "Oynatılacak ayet aralığı";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.playback-speed" = "Oynatma hızı";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repeat-count" = "Tekrar sayısı";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay" = "Tekrarlar arasındaki duraklama (saniye)";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.10s" = "10 sn";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.1s" = "1 sn";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.2s" = "2 sn";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.3s" = "3 sn";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.5s" = "5 sn";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.description" = "Bir sonraki tekrar başlamadan önce ne kadar duraklanacağını belirler.";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.streaming.description" = "Sesi internet üzerinden oynatarak depolama alanından tasarruf sağlar, ancak internet bağlantısı gerektirir.";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.streaming.title" = "Sesi çevrimiçi oynat";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.verse-delay" = "Her ayetten sonra duraklat";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.verse-delay.description" = "Her ayetten sonra ne kadar duraklanacağını seçin. 1× ayarında duraklama, ayetin oynatma süresi kadar sürer; böylece devam etmeden önce tekrar etmek veya ezberlemek için zamanınız olur.";
+
+// Ayah menu
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.notes-count" = "Notlar (%d)";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.move-here" = "%@ konumunda • Buraya taşı";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.moved" = "Okuma yer imi %@ konumundan %@ konumuna taşındı";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.removed" = "%@ konumundaki okuma yer imi kaldırıldı";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.save-here" = "Okuma konumunuzu buraya kaydedin";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.saved" = "Okuma yer imi %@ konumuna kaydedildi";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.saved-here" = "Buraya kaydedildi • Silmek için dokunun";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.single-ayah-only" = "Tek bir ayet seçin";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.title" = "Okuma yer imi";
+
+// Bookmarks
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections" = "Koleksiyonlar";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.add" = "Koleksiyon ekle";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.delete-hint" = "Silmek için yer imini kaydırın.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.no-data.colored.text" = "Okurken %@ yer imiyle vurguladığınız ayetler burada görünür.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.no-data.text" = "Okurken yer imi eklediğiniz ayetler burada görünür.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.open-hint" = "Bu ayeti Kur’an’da açar.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.colored" = "Renkli yer imleri";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.delete.confirmation.message" = "Bu koleksiyonda yer imleri var. Silmek istediğinizden emin misiniz?";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.delete.confirmation.title" = "Koleksiyon silinsin mi?";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.favorites" = "Favoriler";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.mine" = "Koleksiyonlarım";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.new" = "Yeni koleksiyon...";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.new.placeholder" = "Koleksiyon adı";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.no-data.text" = "Ayetleri konuya, duaya veya ezber planına göre düzenlemek için bir koleksiyon oluşturun.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.no-data.title" = "Henüz koleksiyon yok";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.rename" = "Yeniden adlandır";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.delete-all" = "Tümünü sil";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.delete-all.confirmation" = "Tüm yer imlerini silmek istediğinizden emin misiniz?";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.collection.mixed" = "Kısmen seçili";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.collection.selected" = "Seçili";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.collection.unselected" = "Seçili değil";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.error.highlight-unavailable" = "Vurgu renkleri hâlâ yükleniyor. Lütfen tekrar deneyin.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.old-page-bookmarks" = "Eski sayfa yer imleri";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.sync.action" = "Giriş yap";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.sync.body" = "Koleksiyonlarınızı tüm cihazlarda kullanılabilir tutmak için Quran.com’da oturum açın.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.sync.title" = "Koleksiyonlarınızı eşitleyin";
+
+// Highlight colors
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.blue" = "Mavi";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.green" = "Yeşil";
+// Metadata: Translated by AI; human review required.
+"highlight.color.orange" = "Turuncu";
+// Metadata: Translated by AI; human review required.
+"highlight.color.pink" = "Pembe";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.purple" = "Mor";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.red" = "Kırmızı";
+// Metadata: Translated by AI; human review required.
+"highlight.color.teal" = "Petrol mavisi";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.yellow" = "Sarı";
+
+// Notes
+// Metadata: Translated by ChatGPT; human review required.
+"notes.delete-note.alert.body" = "Bu not silinecek.";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.delete-note.alert.title" = "Notu sil";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.editor.created" = "%@ oluşturuldu";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.editor.delete" = "Notu sil";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.editor.note-divider" = "NOTUNUZ";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.minimum-length.alert.body" = "Notlar en az %d karakter olmalıdır.";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.minimum-length.alert.title" = "Not çok kısa";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.new" = "Yeni not";
+
+// Reading selector
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1439.description" = "Kral Fahd Kur’an Basım Kompleksi’nin 1439 tarihli Medine yazısı. Daha büyük ekranlar için optimize edilmiştir.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1439.issue" = "1439 Hicri’de yayımlandı";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1439.title" = "Medine Mushafı (1439)";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1441.description" = "Kral Fahd Kur’an Basım Kompleksi’nin 1441 tarihli Medine Mushafı. Daha büyük ekranlar için optimize edilmiştir.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1441.issue" = "1441 Hicri’de yayımlandı";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1441.title" = "Medine Mushafı (1441)";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.indopak.description" = "Güney Asya’da yaygın olarak kullanılan Hint-Pakistan Nesih stilinde bir Hafs Mushafı. Sayfa görüntüleri Kral Fahd Kur’an Basım Kompleksi’nden alınmıştır.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.indopak.title" = "Hint-Pakistan — 15 Satır";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.property.pages.610" = "610 sayfa";
+
+// Quran.com account
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.attach_notes" = "Ayet notlarınızı eşitlenmiş tutun";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.custom_collections" = "Özel koleksiyonlarınızı eşitlenmiş tutun";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.profile" = "Hesabı yönet";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sign_in" = "Quran.com'da oturum aç";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sign_in.subtitle" = "Notları, yer imlerini ve koleksiyonları eşitleyin";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.signed_in" = "Oturum açıldı";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sign_out" = "Çıkış yap";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sync_devices" = "Yer imlerinizi tüm cihazlarda eşitleyin";
+
+// Translation text
+// Metadata: Translated by ChatGPT; human review required.
+"translation.text.ayah-number" = "%d:%d";
+// Metadata: Translated by ChatGPT; human review required.
+"translation.text.footnote-number" = "[%d]";
+// Metadata: Translated by ChatGPT; human review required.
+"translation.text.footnote-title" = "Dipnot #%d";
+
+/* Audio banner options summary */
+"audio.summary.verse" = "ayet %@";
+"audio.summary.range" = "aralık %@";
+"audio.options" = "Ses seçenekleri";
+
+// MARK: - Continue reading and reading bookmarks
+
+// Home heading for saved reading positions and recent pages.
+// Metadata: Translated by AI; human review required.
+"home.continue-reading.title" = "Okumaya devam et";
+// Collections heading for saved reading positions.
+// Metadata: Translated by AI; human review required.
+"bookmarks.reading.title" = "Okuma yer imleri";
+// Button that collapses the additional reading bookmarks.
+// Metadata: Translated by AI; human review required.
+"bookmarks.reading.show-less" = "Daha az göster";
+// VoiceOver state when the additional reading bookmarks are visible.
+// Metadata: Translated by AI; human review required.
+"accessibility.expanded" = "Genişletildi";
+// VoiceOver state when the additional reading bookmarks are hidden.
+// Metadata: Translated by AI; human review required.
+"accessibility.collapsed" = "Daraltıldı";
+// Recent pages heading with a localized page count.
+// Metadata: Translated by AI; human review required.
+"home.recent-pages.title" = "Son sayfalar (%@)";

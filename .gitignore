@@ -1,0 +1,39 @@
+# Xcode
+#
+build/
+.DS_Store
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+!default.xcworkspace
+xcuserdata
+#Breakpoints_v2.xcbkptlist
+upload_dsym_results
+xcschememanagement.plist
+*.xccheckout
+profile
+*.moved-aside
+DerivedData
+.idea/
+*.hmap
+*.ipa
+*.xcuserstate
+package.json
+
+# Swift Package Manager. See: https://github.com/apple/swift-package-manager/blob/main/Sources/Workspace/InitPackage.swift#L381
+
+ .DS_Store
+.build
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/configuration/registries.json
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+/Example/QuranEngineApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+.netrc
+/BuildTools/

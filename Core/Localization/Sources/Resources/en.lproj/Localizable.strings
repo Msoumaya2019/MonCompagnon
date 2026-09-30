@@ -1,0 +1,378 @@
+/*
+  Quran iOS app localization. Other localizations are from Android repo.
+ */
+
+
+// MARK: - General
+
+"button.close" = "Close";
+"button.delete" = "Delete";
+
+// MARK: - Errors
+
+"error.dialog.title" = "Error";
+"error.message.connection_lost" = "Internet connection is lost. Move to a location where more stable connection is available, or wait until the connection returns to be stable.";
+"error.message.international_roaming_off" = "International roaming is not allowed. Change the international roaming setting, or turn on Wi-Fi.";
+"error.message.not_connected_to_internet" = "Not connected to the internet. Turn on Wi-Fi, or allow cellular data connection.";
+"error.message.general" = "Oops! Something went wrong. Please try again.";
+"error.message.no_disk_space" = "No available disk space to save the downloads.";
+
+// MARK: - Quran
+
+"ayah" = "Ayah";
+"surah" = "Surah";
+// Metadata: Translated by AI; human review required.
+"quran_alquran" = "Quran";
+
+// IndoPak sura names
+"quran.sura-name.indopak.17" = "Banī Isrā’īl";
+"quran.sura-name.indopak.40" = "Al-Mu’min";
+"quran.sura-name.indopak.41" = "Ḥā-Mīm al-Sajdah";
+"quran.sura-name.indopak.76" = "Al-Dahr";
+"quran.sura-name.indopak.111" = "Al-Lahab";
+"quran.sura-name-translation.indopak.17" = "Children of Israel";
+"quran.sura-name-translation.indopak.40" = "The Believer";
+"quran.sura-name-translation.indopak.41" = "Ḥā-Mīm The Prostration";
+"quran.sura-name-translation.indopak.76" = "The Time";
+"quran.sura-name-translation.indopak.111" = "The Flame";
+
+// MARK: - Translation
+
+"translation.text-type.translation" = "Translation";
+"translation.text-type.transliteration" = "Transliteration";
+"translation.selectedTranslations" = "Selected";
+"translation.translator" = "Translator: ";
+"translation.text.see-referenced-verse" = "See ayah %d.";
+"translation.text.read-more" = "Read more";
+"translation.text.ayah-number" = "%d:%d";
+"translation.text.footnote-number" = "[%d]";
+"translation.text.footnote-title" = "Footnote #%d";
+"error.translation.text-retrieval" = "Oops! Something went wrong. We couldn't retrieve the translation.";
+"error.translation.text-not-available" = "No translation available for this Ayah.";
+
+// MARK: - Search
+
+"search.recents.title" = "Recent searches";
+"search.popular.title" = "Try searching with";
+"search.placeholder.text" = "Surah, verse, translation, tafseer, and numbers";
+"search.result.count" = "%@ (%d)";
+
+// MARK: - Settings
+
+"setting.write_review" = "Write an app store review...";
+"setting.contact_us" = "Contact Us";
+"setting.donate" = "Donate";
+"setting.share_app" = "Share the app...";
+"setting.app_version" = "App Version";
+"setting.quran_account.sign_in" = "Sign in to Quran.com";
+"setting.quran_account.sign_in.subtitle" = "Sync notes, bookmarks and collections";
+"setting.quran_account.signed_in" = "Signed in";
+"setting.quran_account.profile" = "Manage account";
+"setting.quran_account.sign_out" = "Sign out";
+"setting.quran_account.sync_devices" = "Sync your bookmarks across all devices";
+"setting.quran_account.custom_collections" = "Keep your custom collections in sync";
+"setting.quran_account.attach_notes" = "Keep your verse notes in sync";
+
+// MARK: - Quran Menu
+
+"menu.arabic" = "Arabic";
+"menu.translation" = "Translation/Tafseer";
+"menu.select_translation" = "Select translations/tafseer";
+"menu.pointer" = "Word translation pointer";
+"menu.pointer.select_translation" = "Pointer Showing";
+"menu.fontSizeLetter" = "A";
+"menu.translationFontSize" = "Translation Size";
+"menu.arabicFontSize" = "Quran Size";
+"menu.twoPages" = "2 pages side-by-side (in landscape)";
+"menu.verticalScrolling" = "Vertical scrolling";
+"menu.linePageDividers" = "Line dividers";
+"menu.linePageSidelines" = "Side lines";
+"menu.theme_settings" = "Themes & Settings";
+
+// MARK: - Theme
+
+"theme.light" = "Light";
+"theme.dark" = "Dark";
+"theme.match_device" = "Match Device";
+"theme.auto.message" = "Quran app will adhere to your iPhone's appearance setting";
+"theme.appearance" = "Appearance";
+
+// MARK: - App Icon
+
+"app_icon.title" = "App Icon";
+"app_icon.default" = "Default";
+"app_icon.section.signature" = "Signature";
+"app_icon.section.colors" = "Colors";
+"app_icon.name.navy_gold" = "Navy & Gold";
+"app_icon.name.teal_white" = "Teal & White";
+"app_icon.name.black_gold" = "Black & Gold";
+"app_icon.name.blue" = "Blue";
+"app_icon.name.purple" = "Purple";
+"app_icon.name.red" = "Red";
+"app_icon.name.orange" = "Orange";
+"app_icon.name.green" = "Green";
+
+// MARK: - Tabs
+
+"tab.notes" = "Notes";
+
+// MARK: - Update
+
+"update.filesystem.title" = "Upgrading databases...";
+"downloading_title" = "Downloading…";
+
+// MARK: - Reciters
+
+"reciters.title" = "Select the reciter to listen to";
+"reciters.recent" = "Recent";
+"reciters.downloaded" = "Downloaded";
+"reciters.all" = "All";
+
+// MARK: - Audio
+
+"audio.playing.action.modify" = "Modify";
+"audio.playing.message" = "Playing audio from %@ to %@";
+"audio.downloading.message" = "Downloading audio from %@ to %@";
+
+"audio.playing-verses.label" = "Playing Verses";
+"audio.adjust-end-verse-to-the-end.label" = "Adjust end verse to the end of the";
+
+"audio.select-start-verse" = "Select Starting Verse";
+"audio.select-end-verse" = "Select Ending Verse";
+
+"audio.playback-ayah-range" = "Playback ayah range";
+"audio.playback-speed" = "Playback Speed";
+"audio.end-at" = "End at";
+"audio.end-at.custom" = "Custom";
+
+"audio.download-play-amount" = "Download/Play up to";
+"audio.streaming.title" = "Stream Audio";
+"audio.streaming.description" = "Saves disk space by streaming audio, but requires an internet connection.";
+"audio.download-play-amount.description" = "When playing audio, it will play to the end of the";
+
+"audio.delay.off" = "Off";
+"audio.repeat-count" = "Repeat Count";
+"audio.verse-delay" = "Pause After Each Verse";
+"audio.verse-delay.description" = "Choose how long to pause after each verse. 1× waits about as long as the verse took to play, giving you time to repeat or memorize before continuing.";
+"audio.repetition-delay" = "Pause Between Repetitions (seconds)";
+"audio.repetition-delay.description" = "Sets how long to pause before the next repetition starts.";
+"audio.repetition-delay.1s" = "1s";
+"audio.repetition-delay.2s" = "2s";
+"audio.repetition-delay.3s" = "3s";
+"audio.repetition-delay.5s" = "5s";
+"audio.repetition-delay.10s" = "10s";
+
+// MARK: - Bookmarks
+
+"bookmarks.no-data.title" = "Adding Bookmarks...";
+"bookmarks.no-data.text" = "When you're reading the Quran, tap the Bookmark button to mark the current page.";
+"bookmarks.delete-all" = "Delete All";
+"bookmarks.delete-all.confirmation" = "Are you sure you want to delete all bookmarks?";
+
+"bookmarks.sync.title" = "Sync your collections";
+"bookmarks.sync.body" = "Sign in to Quran.com to keep your collections available across devices.";
+"bookmarks.sync.action" = "Sign In";
+
+"bookmarks.collections" = "Collections";
+"bookmarks.collections.add" = "Add Collection";
+"bookmarks.collections.colored" = "Colored Bookmarks";
+"bookmarks.collections.favorites" = "Favorites";
+"bookmarks.collections.mine" = "My Collections";
+"bookmarks.collections.new" = "New Collection...";
+"bookmarks.collections.new.placeholder" = "Collection name";
+"bookmarks.collections.rename" = "Rename";
+"bookmarks.collections.delete.confirmation.title" = "Delete Collection?";
+"bookmarks.collections.delete.confirmation.message" = "This collection contains bookmarks. Are you sure you want to delete it?";
+"bookmarks.collections.no-data.title" = "No collections yet";
+"bookmarks.collections.no-data.text" = "Create a collection to organize ayahs by theme, dua, or memorization plan.";
+"bookmarks.collections.ayahs.delete-hint" = "Swipe a bookmark to delete it.";
+"bookmarks.collections.ayahs.open-hint" = "Opens this ayah in the Quran.";
+"bookmarks.collections.ayahs.no-data.text" = "Ayahs you bookmark while reading will appear here.";
+"bookmarks.collections.ayahs.no-data.colored.text" = "Ayahs you highlight with a %@ bookmark while reading will appear here.";
+"bookmarks.editor.collection.unselected" = "Not selected";
+"bookmarks.editor.collection.mixed" = "Partially selected";
+"bookmarks.editor.collection.selected" = "Selected";
+"bookmarks.editor.error.highlight-unavailable" = "Highlight colors are still loading. Please try again.";
+
+// MARK: - Notes
+
+"notes.sync.title" = "Sync your notes";
+"notes.sync.body" = "Sign in to Quran.com to keep your notes available across devices.";
+"notes.sync.no-data.title" = "No notes yet";
+"notes.sync.no-data.text" = "Tap and hold an Ayah while reading, then tap Add Note to write your first note.";
+
+"notes.no-data.title" = "Adding Ayah Highlights...";
+"notes.no-data.text" = "Tap and hold on an Ayah. You can extend the selection to include multiple Ayat, then tap the Bookmark button.";
+"notes.verses-count" = "(+%d ayat)";
+"notes.new" = "New Note";
+"notes.delete.alert.title" = "Delete Highlight";
+"notes.delete.alert.body" = "The associated note will also be deleted.";
+"notes.delete-note.alert.title" = "Delete Note";
+"notes.delete-note.alert.body" = "This note will be deleted.";
+"notes.editor.created" = "Created %@";
+"notes.editor.delete" = "Delete note";
+"notes.editor.note-divider" = "YOUR NOTE";
+"notes.icloud.alert.title" = "iCloud Sync";
+"notes.icloud.alert.body" = "The app uses iCloud to sync bookmarks & notes across your devices. You can disable it from your device's iCloud settings.";
+"notes.search.placeholder.text" = "Search your notes";
+"notes.search.no-results.title" = "No notes match \"%@\"";
+"notes.search.no-results.text" = "Try a different word from a note you saved or a sura name.";
+
+// MARK: - Ayah Menu
+
+"ayah.menu.copy" = "Copy";
+"ayah.menu.share" = "Share...";
+"ayah.menu.play-end-juz" = "to the end of Juz'";
+"ayah.menu.play-end-surah" = "to the end of Surah";
+"ayah.menu.play-end-page" = "to the end of Page";
+"ayah.menu.play-end-quran" = "to the end of Quran";
+"ayah.menu.repeat" = "Repeat";
+"ayah.menu.selected-verse" = "selected verse";
+"ayah.menu.selected-verses" = "selected verses";
+"ayah.menu.highlight" = "Highlight";
+"ayah.menu.highlight-select-color" = "select color";
+"ayah.menu.add-note" = "Add Note";
+"ayah.menu.edit-note" = "Edit Note";
+"ayah.menu.notes-count" = "Notes (%d)";
+"ayah.menu.delete-note" = "Delete Note";
+"ayah.menu.delete-highlight" = "Delete Highlight";
+"ayah.menu.reading-bookmark.title" = "Reading Bookmark";
+"ayah.menu.reading-bookmark.single-ayah-only" = "Select a single Ayah";
+"ayah.menu.reading-bookmark.move-here" = "At %@ • Move here";
+"ayah.menu.reading-bookmark.save-here" = "Save your place here";
+"ayah.menu.reading-bookmark.saved-here" = "Saved here • Tap to delete";
+"ayah.menu.reading-bookmark.saved" = "Reading bookmark saved at %@";
+"ayah.menu.reading-bookmark.moved" = "Reading bookmark moved from %@ to %@";
+"ayah.menu.reading-bookmark.removed" = "Reading bookmark removed from %@";
+
+// MARK: - Highlights
+
+"highlight.color.red" = "Red";
+"highlight.color.green" = "Green";
+"highlight.color.blue" = "Blue";
+"highlight.color.yellow" = "Yellow";
+"highlight.color.purple" = "Purple";
+"highlight.color.pink" = "Pink";
+"highlight.color.teal" = "Teal";
+"highlight.color.orange" = "Orange";
+
+// MARK: - Reading Selector
+
+// Selector UI
+"reading.selector.selectMushaf.short" = "Select";
+"reading.selector.selectMushaf.long" = "Set as current Mushaf";
+"reading.selector.title" = "Choose Mushaf";
+"reading.selector.group.uthmani" = "Uthmani";
+"reading.selector.group.tajweed" = "Tajweed";
+"reading.selector.group.indopak" = "IndoPak";
+"reading.selector.badge.experimental" = "Experimental";
+"reading.selector.badge.large-screen-optimized" = "Large-screen optimized";
+"reading.selector.selection-description" = "Tap on a Mushaf for more information.";
+"reading.selector.property.hafs" = "Hafs Mushaf";
+"reading.selector.property.pages.604" = "604 pages";
+"reading.selector.property.pages.610" = "610 pages";
+"reading.selector.property.lines.15" = "15-line page";
+"reading.selector.property.word-translation.supported" = "Word-by-word translation";
+"reading.selector.property.word-translation.not-supported" = "No Word-by-word translation";
+
+// Hafs 1405
+"reading.hafs-1405.title" = "Hafs, classic Medina, 1405 AH";
+"reading.hafs-1405.description" = "The classic hafs Mushaf issued in Madina in 1405 Hijri. The app used to offer this version for a long time.\nFrom the King Fahd Quran Printing Complex.";
+"reading.hafs-1405.issue" = "Issued in 1405 Hijri";
+
+// Hafs 1421
+"reading.hafs-1421.title" = "Hafs, Medina, 1421 AH";
+"reading.hafs-1421.description" = "The hafs Mushaf issued in Medina in 1421 Hijri. From the King Fahd Quran Printing Complex.";
+"reading.hafs-1421.issue" = "Issued in 1421 Hijri";
+
+// Hafs 1440
+"reading.hafs-1440.title" = "Hafs, Medina, 1440 AH";
+"reading.hafs-1440.description" = "The hafs Mushaf issued in Medina in 1440 Hijri. From the King Fahd Quran Printing Complex.";
+"reading.hafs-1440.issue" = "Issued in 1440 Hijri";
+
+// Hafs 1439
+"reading.hafs-1439.title" = "Madani Mushaf (1439)";
+"reading.hafs-1439.description" = "The 1439 Madani script from the King Fahd Quran Printing Complex. Optimized for larger screens.";
+"reading.hafs-1439.issue" = "Issued in 1439 Hijri";
+
+// Hafs 1441
+"reading.hafs-1441.title" = "Madani Mushaf (1441)";
+"reading.hafs-1441.description" = "The 1441 Madani Mushaf from the King Fahd Quran Printing Complex. Optimized for larger screens.";
+"reading.hafs-1441.issue" = "Issued in 1441 Hijri";
+
+// Hafs Tajweed
+"reading.tajweed.title" = "Hafs, Tajweed";
+"reading.tajweed.description" = "The tajweed hafs Mushaf. Al-Quran Al-Kareem - Dar al-Marefa Edition.";
+
+// Hafs IndoPak
+"reading.indopak.title" = "IndoPak 15-Line";
+"reading.indopak.description" = "A Hafs Mushaf in the IndoPak Naskh style, commonly used across South Asia. Page images are from the King Fahd Quran Printing Complex.";
+
+// MARK: - Diagnostics
+
+"diagnostics.title" = "Diagnostics";
+"diagnostics.details" = "These settings are utilized by the app developer specifically for debugging and diagnostic purposes.";
+
+"diagnostics.share_app_logs" = "Share app logs";
+"diagnostics.enable_debug_logs" = "Enable debug logging";
+"diagnostics.enable_debug_logs.details" = "The setting will take effect upon the next restart of the app.";
+
+
+// MARK: - What's new
+
+"new.title" = "What's new";
+"new.action" = "Continue";
+
+// New app icon
+"new.app_icon.title" = "Our new icon is here";
+"new.app_icon.body" = "Quran now carries the shared mark of a family of tools built around Allah’s word. Your bookmarks, notes, and progress are right where you left them.";
+"new.app_icon.choose_another" = "Choose Another Icon";
+
+// Reading layouts
+"new.reading_layouts" = "New Madani Mushafs";
+"new.reading_layouts.details" = "* Added Madani Mushaf 1439 and 1441, optimized to fill the entire screen.";
+
+// Experimental IndoPak
+"new.experimental_indopak" = "IndoPak 15-Line";
+"new.experimental_indopak.details" = "* Try the new IndoPak 15-line reading layout in the Naskh style.";
+
+// Audio controls
+"new.audio_controls" = "Advanced Audio Options";
+"new.audio_controls.details" = "Redesigned Advanced Audio Options and added more controls - thanks to @OKKHALIL3.\n* Playback speeds from 0.25× to 2× - thanks to @OKKHALIL3.\n* Repeat counts from 1× to 100×, plus a loop option - thanks to @OKKHALIL3.\n* Configurable pauses between ayahs and repeated ranges - thanks to @abdorizak and @OKKHALIL3.\n* Stream audio instead of downloading it first - thanks to @OKKHALIL3.\n* Inline ayah picker - thanks to @OKKHALIL3.";
+
+// Notes
+"new.notes_updates" = "Notes Search & Editing";
+"new.notes_updates.details" = "* Search notes by their text or surah - thanks to @abdorizak.\n* Redesigned note cards and the note editor.";
+
+// Navigation
+"new.navigation_updates" = "Home & Navigation";
+"new.navigation_updates.details" = "* Added collapsible Juz sections to the Home surah and Juz lists - thanks to @OKKHALIL3.\n* Made page and ayah navigation more consistent.";
+
+// Translation
+"new.translation_update" = "Translation Update";
+"new.translation_update.details" = "* Corrected the Russian translation of “mushaf” - thanks to @pulatovpro.";
+
+"bookmarks.old-page-bookmarks" = "Old Page Bookmarks";
+
+"notes.minimum-length.alert.title" = "Note is too short";
+"notes.minimum-length.alert.body" = "Notes must be at least %d characters.";
+
+/* Audio banner options summary */
+"audio.summary.verse" = "verse %@";
+"audio.summary.range" = "range %@";
+"audio.options" = "Audio options";
+
+// MARK: - Continue reading and reading bookmarks
+
+// Home heading for saved reading positions and recent pages.
+"home.continue-reading.title" = "Continue reading";
+// Collections heading for saved reading positions.
+"bookmarks.reading.title" = "Reading bookmarks";
+// Button that collapses the additional reading bookmarks.
+"bookmarks.reading.show-less" = "Show less";
+// VoiceOver state when the additional reading bookmarks are visible.
+"accessibility.expanded" = "Expanded";
+// VoiceOver state when the additional reading bookmarks are hidden.
+"accessibility.collapsed" = "Collapsed";
+// Recent pages heading with a localized page count.
+"home.recent-pages.title" = "Recent pages (%@)";

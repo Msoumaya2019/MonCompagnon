@@ -1,0 +1,241 @@
+//
+//  ContentLineViewModel.swift
+//
+//
+//  Created by Mohamed Afifi on 2026-03-29.
+//
+
+import AnnotationsService
+import Combine
+import ImageService
+import LinePagePersistence
+import NoorUI
+import QuranAnnotations
+import QuranGeometry
+import QuranKit
+import QuranTextKit
+import SwiftUI
+import VLogging
+
+@MainActor
+final class ContentLineViewModel: ObservableObject {
+    // MARK: Lifecycle
+
+    init(
+        reading: Reading,
+        page: Page,
+        linePageAssetService: LinePageAssetService,
+        overlayService: VerseOverlayService
+    ) {
+        self.reading = reading
+        self.page = page
+        self.linePageAssetService = linePageAssetService
+        self.overlayService = overlayService
+        let contentStatePreferences = QuranContentStatePreferences.shared
+        showSidelines = reading.usesLinePageSidelines && contentStatePreferences.showLinePageSidelines
+        showLineDividers = reading.usesLinePageDividers && contentStatePreferences.showLinePageDividers
+        linePageMetrics = reading.linePageMetrics ?? .madaniLinePages(widthParameter: 1080)
+        overlays = overlayService.overlays.restricted(to: page)
+
+        geometryData = LinePageGeometryData(
+            metrics: linePageMetrics,
+            highlightSpans: [],
+            ayahMarkers: [],
+            suraHeaders: [],
+            sidelines: []
+        )
+
+        overlayService.$overlays
+            .map { $0.restricted(to: page) }
+            .removeDuplicates()
+            .sink { [weak self] in self?.overlays = $0 }
+            .store(in: &cancellables)
+
+        contentStatePreferences.$showLinePageSidelines
+            .sink { [weak self] showSidelines in
+                self?.showSidelines = reading.usesLinePageSidelines && showSidelines
+            }
+            .store(in: &cancellables)
+
+        contentStatePreferences.$showLinePageDividers
+            .sink { [weak self] showLineDividers in
+                self?.showLineDividers = reading.usesLinePageDividers && showLineDividers
+            }
+            .store(in: &cancellables)
+
+        overlayService.scrollRequests
+            .sink { [weak self] in
+                self?.scrollToVerseIfNeeded()
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: Internal
+
+    let page: Page
+
+    @Published var assets: LinePageAssets?
+    @Published private(set) var geometryData: LinePageGeometryData
+    @Published private var overlays: VerseOverlays
+    @Published var scrollToVerse: AyahNumber?
+
+    var imageRenderingMode: QuranThemedImage.RenderingMode {
+        reading.usesInvertedQuranImageRenderingInDarkMode ? .invertInDarkMode : .tinted
+    }
+
+    var highlightColorsByVerse: [AyahNumber: Color] {
+        overlays.versesByHighlights().mapValues { Color($0) }
+    }
+
+    #if QURAN_SYNC
+    var annotationsHidden: Bool { overlays.annotationsHidden }
+
+    var ayahAnnotations: [AyahNumber: Set<AyahAnnotation>] {
+        overlays.annotationsByVerse
+    }
+    #endif
+
+    var drawsAyahNumbersAndSuraHeaders: Bool {
+        reading.drawsAyahNumbersAndSuraHeaders
+    }
+
+    var chromeStyle: LinePageChromeStyle {
+        LinePageChromeStyle(reading: reading)
+    }
+
+    var wordFrames: WordFrameCollection {
+        wordFrameAdapter.wordFrames(
+            from: geometryData.highlightSpans,
+            quran: page.quran,
+            metrics: linePageMetrics,
+            lineCount: geometryData.lineCount
+        )
+    }
+
+    func loadLinePage() async {
+        let page = page
+        let linePageAssetService = linePageAssetService
+
+        let result = await linePageAssetService.assetsForPage(page)
+
+        switch result {
+        case .available(let assets):
+            let persistence = GRDBLinePagePersistence(fileURL: assets.ayahInfoDatabaseURL)
+            let ayahMarkerPersistence: LinePageAyahMarkerPersistence = assets.ayahMarkerURL.map {
+                GRDBLinePagePersistence(fileURL: $0)
+            } ?? persistence
+            self.assets = assets
+            geometryData = LinePageGeometryData(
+                metrics: linePageMetrics,
+                lineCount: assets.lines.count,
+                highlightSpans: [],
+                ayahMarkers: [],
+                suraHeaders: [],
+                sidelines: ContentLineLayoutBuilder.geometrySidelines(from: assets)
+            )
+
+            do {
+                async let highlightSpans = persistence.highlightSpans(page)
+                async let ayahMarkers = ayahMarkerPersistence.ayahMarkers(page)
+                async let suraHeaders = persistence.suraHeaders(page)
+                let loadedHighlightSpans = try await highlightSpans
+                let loadedAyahMarkers = try await ayahMarkers
+                let loadedSuraHeaders = try await suraHeaders
+
+                geometryData = LinePageGeometryData(
+                    metrics: linePageMetrics,
+                    lineCount: assets.lines.count,
+                    highlightSpans: loadedHighlightSpans,
+                    ayahMarkers: loadedAyahMarkers,
+                    suraHeaders: loadedSuraHeaders,
+                    sidelines: ContentLineLayoutBuilder.geometrySidelines(from: assets)
+                )
+            } catch {
+                logger.warning("Quran Line Page: failed to load overlay data for page \(page.pageNumber): \(error)")
+            }
+
+            scrollToVerseIfNeeded()
+        case .unavailable:
+            logger.warning("Quran Line Page: assets unavailable for page \(page.pageNumber)")
+        }
+    }
+
+    func layout(for availableSize: CGSize, showHeaderFooter: Bool) -> LinePageLayout? {
+        guard let assets else {
+            currentLayout = nil
+            return nil
+        }
+
+        let layout = geometryEngine.layout(
+            ContentLineLayoutBuilder.input(
+                page: page,
+                availableSize: availableSize,
+                data: LinePageGeometryData(
+                    metrics: linePageMetrics,
+                    lineCount: assets.lines.count,
+                    highlightSpans: geometryData.highlightSpans,
+                    ayahMarkers: geometryData.ayahMarkers,
+                    suraHeaders: geometryData.suraHeaders,
+                    sidelines: geometryData.sidelines
+                ),
+                showHeaderFooter: showHeaderFooter,
+                showSidelines: showSidelines,
+                showLineDividers: showLineDividers,
+                highlightedVerses: Set(highlightColorsByVerse.keys)
+            )
+        )
+        currentLayout = layout
+        return layout
+    }
+
+    func lineImage(for lineNumber: Int) -> UIImage? {
+        assets?.lines.first(where: { $0.lineNumber == lineNumber })?.image
+    }
+
+    func sidelineImage(for id: String) -> UIImage? {
+        assets?.sidelines.first(where: { $0.imageURL.lastPathComponent == id })?.image
+    }
+
+    func updateContentFrame(_ frame: CGRect) {
+        contentFrame = frame
+    }
+
+    func verseAtGlobalPoint(_ point: CGPoint) -> AyahNumber? {
+        guard let currentLayout else {
+            return nil
+        }
+        let localPoint = CGPoint(
+            x: point.x - contentFrame.minX,
+            y: point.y - contentFrame.minY
+        )
+        return currentLayout.verse(at: localPoint)
+    }
+
+    // MARK: Private
+
+    private let reading: Reading
+    private let overlayService: VerseOverlayService
+    private let linePageAssetService: LinePageAssetService
+    private let linePageMetrics: LinePageMetrics
+    @Published private var showSidelines: Bool
+    @Published private var showLineDividers: Bool
+    private let wordFrameAdapter = LinePageWordFrameAdapter()
+    private let geometryEngine = LinePageGeometryEngine()
+    private var cancellables: Set<AnyCancellable> = []
+    private var currentLayout: LinePageLayout?
+    private var contentFrame: CGRect = .zero
+
+    private func scrollToVerseIfNeededSynchronously() {
+        let ayah = overlayService.overlays.firstScrollingVerse()
+        if let ayah {
+            logger.info("Quran Line Page: scrollToVerseIfNeeded \(ayah.nonLocalizedDescription)")
+        }
+        scrollToVerse = ayah
+    }
+
+    private func scrollToVerseIfNeeded() {
+        DispatchQueue.main.async {
+            self.scrollToVerseIfNeededSynchronously()
+        }
+    }
+}

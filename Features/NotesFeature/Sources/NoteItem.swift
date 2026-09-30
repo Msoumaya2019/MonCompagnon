@@ -1,0 +1,36 @@
+//
+//  NoteItem.swift
+//  Quran
+//
+//  Created by Afifi, Mohamed on 11/22/20.
+//  Copyright © 2020 Quran.com. All rights reserved.
+//
+
+import Foundation
+import QuranAnnotations
+import QuranText
+
+struct NoteItem: Equatable, Identifiable {
+    let note: Note
+    let quranText: QuranText?
+
+    var id: String {
+        #if QURAN_SYNC
+        note.id
+        #else
+        note.verses.description
+        #endif
+    }
+
+    var noteText: String {
+        #if QURAN_SYNC
+        note.text
+        #else
+        note.text ?? ""
+        #endif
+    }
+}
+
+#if QURAN_SYNC
+extension NoteItem: Sendable {}
+#endif

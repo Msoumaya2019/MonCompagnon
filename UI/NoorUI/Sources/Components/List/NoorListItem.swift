@@ -1,0 +1,421 @@
+//
+//  NoorListItem.swift
+//
+//
+//  Created by Mohamed Afifi on 2023-06-25.
+//
+
+import QuranKit
+import QuranText
+import SwiftUI
+import UIx
+import VLogging
+
+public struct NoorListItem: View {
+    public struct Subtitle {
+        // MARK: Lifecycle
+
+        public init(label: MultipartText? = nil, text: MultipartText, location: SubtitleLocation) {
+            self.label = label
+            self.text = text
+            self.location = location
+        }
+
+        // MARK: Internal
+
+        let label: MultipartText?
+        let text: MultipartText
+        let location: SubtitleLocation
+    }
+
+    public struct ItemImage {
+        // MARK: Lifecycle
+
+        public init(_ image: NoorSystemImage, color: Color? = nil) {
+            self.image = image.image
+            self.color = color
+            appIconLength = nil
+        }
+
+        public init(_ image: Image, color: Color? = nil) {
+            self.image = image
+            self.color = color
+            appIconLength = nil
+        }
+
+        /// A Home Screen icon preview, drawn `length` points wide with the icon's rounded corners.
+        public init(appIcon option: AppIconOption, length: CGFloat) {
+            image = option.previewImage
+            color = nil
+            appIconLength = length
+        }
+
+        // MARK: Internal
+
+        let image: Image
+        let color: Color?
+        let appIconLength: CGFloat?
+    }
+
+    // MARK: Lifecycle
+
+    public init(
+        leadingEdgeLineColor: Color? = nil,
+        image: ItemImage? = nil,
+        heading: String? = nil,
+        subheading: MultipartText? = nil,
+        headerAccessory: Accessory? = nil,
+        rightPretitle: MultipartText? = nil,
+        title: MultipartText,
+        titleAllowsWrapping: Bool = true,
+        titleColor: Color? = nil,
+        rightSubtitle: MultipartText? = nil,
+        subtitle: Subtitle? = nil,
+        accessory: Accessory? = nil,
+        action: TapAction? = nil
+    ) {
+        self.leadingEdgeLineColor = leadingEdgeLineColor
+        self.image = image
+        self.heading = heading
+        self.subheading = subheading
+        self.headerAccessory = headerAccessory
+        self.rightPretitle = rightPretitle
+        self.title = title
+        self.titleAllowsWrapping = titleAllowsWrapping
+        self.titleColor = titleColor
+        self.rightSubtitle = rightSubtitle
+        self.subtitle = subtitle
+        self.accessory = accessory
+        self.action = action
+    }
+
+    // MARK: Public
+
+    public enum SubtitleLocation {
+        case trailing
+        case bottom
+    }
+
+    public enum TapAction {
+        case sync(Action)
+        case async(AsyncAction)
+    }
+
+    public enum Accessory {
+        case text(String, accessibilityLabel: String? = nil)
+        case disclosureIndicator
+        case download(DownloadType, action: AsyncAction)
+        case image(NoorSystemImage, color: Color? = nil)
+        case button(
+            text: String? = nil,
+            image: NoorSystemImage,
+            color: Color? = nil,
+            accessibilityLabel: String,
+            action: AsyncAction
+        )
+
+        // MARK: Internal
+
+        var actionable: Bool {
+            switch self {
+            case .text: return false
+            case .download: return true
+            case .disclosureIndicator: return false
+            case .image: return false
+            case .button: return true
+            }
+        }
+    }
+
+    public var body: some View {
+        if action != nil {
+            if hasActionableAccessory {
+                // Use Tap gesture since tapping accessory button will also trigger the whole cell selection.
+                content
+                    .onTapGesture(perform: performAction)
+            } else {
+                Button(action: performAction) {
+                    content
+                }
+            }
+        } else {
+            content
+        }
+    }
+
+    // MARK: Internal
+
+    let leadingEdgeLineColor: Color?
+    let image: ItemImage?
+    let heading: String?
+    let subheading: MultipartText?
+    let headerAccessory: Accessory?
+    let rightPretitle: MultipartText?
+    let title: MultipartText
+    let titleAllowsWrapping: Bool
+    let titleColor: Color?
+    let rightSubtitle: MultipartText?
+    let subtitle: Subtitle?
+    let accessory: Accessory?
+    let action: TapAction?
+
+    // MARK: Private
+
+    private var hasActionableAccessory: Bool {
+        headerAccessory?.actionable == true || accessory?.actionable == true
+    }
+
+    @MainActor
+    private func performAction() {
+        guard let action else {
+            return
+        }
+
+        logTap()
+        currentTask?.cancel()
+
+        switch action {
+        case .sync(let action):
+            currentTask = nil
+            action()
+        case .async(let action):
+            currentTask = Task {
+                await action()
+            }
+        }
+    }
+
+    private func logTap() {
+        let properties: [(String, String?)] = [
+            ("heading", heading),
+            ("subheading", subheading?.rawValue),
+            ("rightPretitle", rightPretitle?.rawValue),
+            ("title", title.rawValue),
+            ("rightSubtitle", rightSubtitle?.rawValue),
+            ("subtitle", subtitle?.label?.rawValue),
+        ]
+        let description = properties.compactMap { p in p.1.map { "\(p.0)=\($0)" } }.joined()
+        logger.info("NoorListItem tapped. {\(description)}")
+    }
+
+    @State private var currentTask: Task<Void, Never>? = nil
+
+    private var content: some View {
+        HStack {
+            if let leadingEdgeLineColor {
+                leadingEdgeLineColor
+                    .frame(width: 4)
+            }
+
+            if let image {
+                if let appIconLength = image.appIconLength {
+                    AppIconPreview(image.image, length: appIconLength)
+                } else if let color = image.color {
+                    image.image
+                        .foregroundColor(color)
+                } else {
+                    image.image
+                }
+            }
+
+            VStack(alignment: .leading) {
+                if heading != nil || subheading != nil || headerAccessory != nil {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading) {
+                            if let heading {
+                                Text(heading)
+                                    .foregroundColor(.accentColor)
+                            }
+
+                            if let subheading {
+                                subheading.view(ofSize: .caption)
+                                    .foregroundColor(Color.secondaryLabel)
+                            }
+                        }
+
+                        if let headerAccessory {
+                            Spacer()
+                            accessoryView(headerAccessory)
+                        }
+                    }
+                }
+
+                if let rightPretitle {
+                    HStack {
+                        rightPretitle.view(ofSize: .body)
+                        Spacer()
+                    }
+                    .environment(\.layoutDirection, .rightToLeft)
+                }
+
+                title.view(ofSize: .body, allowsWrapping: titleAllowsWrapping)
+                    .foregroundColor(titleColor ?? .primary)
+
+                if let rightSubtitle {
+                    HStack {
+                        rightSubtitle.view(ofSize: .caption)
+                            .foregroundColor(.secondaryLabel)
+                        Spacer()
+                    }
+                    .environment(\.layoutDirection, .rightToLeft)
+                }
+
+                if let subtitle, subtitle.location == .bottom {
+                    subtitleView(subtitle, textFont: .footnote)
+                }
+            }
+
+            if subtitle?.location == .trailing || accessory != nil {
+                Spacer()
+
+                if let subtitle, subtitle.location == .trailing {
+                    subtitleView(subtitle, textFont: .body)
+                }
+
+                if let accessory {
+                    accessoryView(accessory)
+                }
+            }
+        }
+        .foregroundColor(.primary)
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private func accessoryView(_ accessory: Accessory) -> some View {
+        switch accessory {
+        case .text(let text, let accessibilityLabel):
+            Text(text)
+                .foregroundColor(.secondaryLabel)
+                .fontWeight(.light)
+                .fixedSize()
+                .accessibilityLabel(accessibilityLabel ?? text)
+        case .disclosureIndicator:
+            DisclosureIndicator()
+        case let .download(type, action):
+            AppStoreDownloadButton(type: type, action: action)
+        case let .image(image, color):
+            if let color {
+                image.image
+                    .foregroundColor(color)
+            } else {
+                image.image
+            }
+        case let .button(text, image, color, accessibilityLabel, action):
+            HStack(spacing: 8) {
+                if let text {
+                    Text(text)
+                        .foregroundColor(.secondaryLabel)
+                        .fontWeight(.light)
+                }
+                AsyncButton(action: action) {
+                    image.image
+                        .foregroundColor(color ?? .accentColor)
+                        .minimumTouchTarget()
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(accessibilityLabel)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func subtitleText(_ subtitle: Subtitle, textFont: MultipartText.FontSize) -> some View {
+        subtitle.text.view(ofSize: textFont)
+            .foregroundColor(.secondaryLabel)
+    }
+
+    @ViewBuilder
+    private func subtitleView(_ subtitle: Subtitle, textFont: MultipartText.FontSize) -> some View {
+        if let label = subtitle.label {
+            HStack {
+                if #available(iOS 16.0, *) {
+                    label.view(ofSize: textFont)
+                        .foregroundColor(.secondaryLabel)
+                        .bold()
+                } else {
+                    label.view(ofSize: textFont)
+                        .foregroundColor(.secondaryLabel)
+                }
+                subtitleText(subtitle, textFont: textFont)
+            }
+        } else {
+            subtitleText(subtitle, textFont: textFont)
+        }
+    }
+}
+
+struct NoorListItem_Previews: PreviewProvider {
+    static let quran = Quran.hafsMadani1405
+    static let ayahText: QuranText = "وَإِذۡ قَالَ مُوسَىٰ لِقَوۡمِهِۦ يَٰقَوۡمِ إِنَّكُمۡ ظَلَمۡتُمۡ أَنفُسَكُم بِٱتِّخَاذِكُمُ ٱلۡعِجۡلَ فَتُوبُوٓاْ إِلَىٰ بَارِئِكُمۡ فَٱقۡتُلُوٓاْ أَنفُسَكُمۡ ذَٰلِكُمۡ خَيۡرٞ لَّكُمۡ عِندَ بَارِئِكُمۡ فَتَابَ عَلَيۡكُمۡۚ إِنَّهُۥ هُوَ ٱلتَّوَّابُ ٱلرَّحِيمُ"
+
+    static var previews: some View {
+        List {
+            ForEach(0 ..< 100) { section in
+                Section {
+                    NoorListItem(
+                        image: .init(.audio),
+                        title: "Title",
+                        accessory: .none
+                    )
+
+                    NoorListItem(
+                        image: .init(.share),
+                        heading: "English",
+                        title: "An English title",
+                        subtitle: .init(label: "Translator: ", text: "An English subtitle", location: .bottom),
+                        action: .sync {}
+                    )
+
+                    NoorListItem(
+                        leadingEdgeLineColor: .purple,
+                        subheading: "\(ayah: quran.suras[0].verses[1])",
+                        rightPretitle: "\(quran: ayahText, font: .uthmanicHafs, color: .purple, lineLimit: 2)",
+                        title: "An English title",
+                        subtitle: .init(text: "6 days ago", location: .bottom),
+                        action: .sync {}
+                    )
+
+                    NoorListItem(
+                        image: .init(.mail),
+                        title: "Title",
+                        subtitle: .init(text: "Subtitle", location: .trailing),
+                        accessory: .disclosureIndicator,
+                        action: .sync {}
+                    )
+
+                    NoorListItem(
+                        title: "Reciter name",
+                        subtitle: .init(text: "1.25GB – 14 suras downloaded", location: .bottom),
+                        accessory: .none,
+                        action: .sync {}
+                    )
+
+                    NoorListItem(
+                        image: .init(.bookmark, color: .red),
+                        title: "\(quran.suras[0].localizedSuraNumber). \(sura: quran.suras[0])",
+                        subtitle: .init(text: "Just now", location: .bottom),
+                        accessory: .text("44"),
+                        action: .sync {}
+                    )
+
+                    NoorListItem(
+                        title: "Reciter name",
+                        subtitle: .init(text: "1.25GB – 14 suras downloaded", location: .bottom),
+                        accessory: .download(.downloading(progress: 0.9), action: {}),
+                        action: .sync {}
+                    )
+
+                    NoorListItem(
+                        title: "Reciter name",
+                        subtitle: .init(text: "1.25GB – 14 suras downloaded", location: .bottom),
+                        accessory: .download(.download, action: {})
+                    )
+
+                } header: {
+                    Text("Section \(section + 1)")
+                }
+            }
+        }
+    }
+}

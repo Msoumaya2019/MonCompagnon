@@ -1,0 +1,504 @@
+/*
+  Author: https://github.com/techyescountry
+ */
+
+
+// MARK: - General
+
+// Metadata: Translated by ChatGPT; human review required.
+"button.close" = "Đóng";
+"button.delete" = "Xóa";
+
+// MARK: - Errors
+
+// Metadata: Translated by ChatGPT; human review required.
+"error.dialog.title" = "Lỗi";
+"error.message.connection_lost" = "Mất kết nối mạng. Di chuyển đến nới có kết nối ổn định hơn hoặc đợi cho đến khi kết nối ổn định trở lại.";
+"error.message.international_roaming_off" = "Chuyển vùng quốc tế không được phép. Thay đổi cài đặt chuyển vùng quốc tế hoặc bật Wi-Fi.";
+"error.message.not_connected_to_internet" = "Không được kết nối với internet. Bật Wi-Fi hoặc cho phép kết nối dữ liệu di động.";
+"error.message.general" = "Ối! Đã xảy ra sự cố. Vui lòng thử lại.";
+"error.message.no_disk_space" = "Không đủ dung lượng trống để lưu các bản tải xuống.";
+
+// MARK: - Quran
+
+"ayah" = "Ayah";
+"surah" = "Surah";
+// Metadata: Translated by AI; human review required.
+"quran_alquran" = "Kinh Quran";
+
+// MARK: - Translation
+
+"translation.text-type.translation" = "Bản dịch";
+"translation.text-type.transliteration" = "Phiên âm";
+// Metadata: Translated by ChatGPT; human review required.
+"translation.selectedTranslations" = "Đã chọn";
+"translation.translator" = "Dịch giả: ";
+"translation.text.see-referenced-verse" = "Xem ayah %d.";
+"translation.text.read-more" = "Xem thêm";
+"error.translation.text-retrieval" = "Ối! Đã xảy ra sự cố. Chúng tôi không thể truy xuất bản dịch.";
+"error.translation.text-not-available" = "Không có bản dịch nào cho Ayah này.";
+
+// MARK: - Search
+
+"search.recents.title" = "Tìm kiếm gần đây";
+"search.popular.title" = "Thử tìm kiếm với";
+"search.placeholder.text" = "Surah, câu kinh, bản dịch, tafseer và số";
+"search.result.count" = "%@ (%d)";
+
+// MARK: - Settings
+
+"setting.write_review" = "Đánh giá ứng dụng trên Appstore...";
+"setting.contact_us" = "Liên hệ";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.donate" = "Quyên góp";
+"setting.share_app" = "Chia sẻ ứng dụng...";
+"setting.app_version" = "Phiên bản ứng dụng";
+
+// MARK: - Quran Menu
+
+"menu.arabic" = "Ả Rập";
+"menu.translation" = "Bản dịch/Tafseer";
+"menu.select_translation" = "Chọn bản dịch/tafseer";
+"menu.pointer" = "Con trỏ dịch từ";
+"menu.pointer.select_translation" = "Hiển thị con trỏ";
+"menu.fontSizeLetter" = "A";
+"menu.translationFontSize" = "Cỡ chữ Bản dịch";
+"menu.arabicFontSize" = "Cỡ chữ Quran";
+"menu.twoPages" = "2 trang cạnh nhau (xoay ngang)";
+"menu.verticalScrolling" = "Cuộn dọc";
+"menu.linePageDividers" = "Đường phân cách dòng";
+"menu.linePageSidelines" = "Đường bên";
+// Metadata: Translated by ChatGPT; human review required.
+"menu.theme_settings" = "Chủ đề & Cài đặt";
+
+// MARK: - Theme
+
+"theme.light" = "Sáng";
+"theme.dark" = "Tối";
+// Metadata: Translated by AI; human review required.
+"theme.match_device" = "Theo thiết bị";
+"theme.auto.message" = "Ứng dụng Kinh Quran sẽ tự theo cài đặt giao diện trên iPhone của bạn";
+// Metadata: Translated by AI; human review required.
+"theme.appearance" = "Giao diện";
+
+// MARK: - App Icon
+
+// Metadata: Translated by AI; human review required.
+"app_icon.default" = "Mặc định";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.black_gold" = "Đen & vàng kim";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.blue" = "Xanh dương";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.green" = "Xanh lá";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.navy_gold" = "Xanh hải quân & vàng kim";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.orange" = "Cam";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.purple" = "Tím";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.red" = "Đỏ";
+// Metadata: Translated by AI; human review required.
+"app_icon.name.teal_white" = "Xanh mòng két & trắng";
+// Metadata: Translated by AI; human review required.
+"app_icon.section.colors" = "Màu sắc";
+// Metadata: Translated by AI; human review required.
+"app_icon.section.signature" = "Đặc trưng";
+// Metadata: Translated by AI; human review required.
+"app_icon.title" = "Biểu tượng ứng dụng";
+
+// MARK: - Tabs
+
+"tab.notes" = "Ghi chú";
+
+// MARK: - Update
+
+"update.filesystem.title" = "Nâng cấp cơ sở dữ liệu...";
+"downloading_title" = "Đang tải xuống…";
+
+// MARK: - Reciters
+
+"reciters.title" = "Chọn người xướng đọc để nghe";
+"reciters.recent" = "Gần đây";
+"reciters.downloaded" = "Đã tải";
+"reciters.all" = "Tất cả";
+
+// MARK: - Audio
+
+"audio.playing.action.modify" = "Sửa";
+"audio.playing.message" = "Phát âm thanh từ %@ đến %@";
+"audio.downloading.message" = "Đang tải âm thanh từ %@ đến %@";
+
+"audio.playing-verses.label" = "Câu đang Phát";
+"audio.adjust-end-verse-to-the-end.label" = "Điều chỉnh câu cuối thành kết thúc của";
+
+"audio.select-start-verse" = "Chọn Câu Đầu";
+"audio.select-end-verse" = "Chọn Câu Cuối";
+
+"audio.download-play-amount" = "Tải xuống/Phát đến";
+"audio.download-play-amount.description" = "Khi phát âm thanh, nó sẽ phát đến cuối của";
+
+// MARK: - Bookmarks
+
+"bookmarks.no-data.title" = "Thêm Đánh dấu...";
+"bookmarks.no-data.text" = "Khi bạn đang đọc Kinh Quran, hãy nhấn vào nút Đánh dấu trang để đánh dấu trang hiện tại.";
+
+// MARK: - Notes
+
+"notes.sync.title" = "Đồng bộ ghi chú của bạn";
+"notes.sync.body" = "Đăng nhập vào Quran.com để giữ ghi chú của bạn khả dụng trên mọi thiết bị.";
+"notes.sync.no-data.title" = "Chưa có ghi chú";
+"notes.sync.no-data.text" = "Khi đọc, hãy chạm và giữ một ayah, sau đó chạm vào “Thêm Ghi chú” để viết ghi chú đầu tiên.";
+
+"notes.no-data.title" = "Thêm Tô sáng Ayah...";
+"notes.no-data.text" = "Chạm và giữ vào một Ayah. Bạn có thể mở rộng lựa chọn để bao gồm nhiều Ayat, sau đó chạm vào nút Đánh dấu.";
+"notes.verses-count" = "(+%d ayat)";
+"notes.delete.alert.title" = "Xóa Tô sáng";
+"notes.delete.alert.body" = "Ghi chú liên quan cũng sẽ bị xóa.";
+"notes.icloud.alert.title" = "Đồng bộ iCloud";
+"notes.icloud.alert.body" = "Ứng dụng sử dụng iCloud để đồng bộ hóa dấu trang và ghi chú trên các thiết bị của bạn. Bạn có thể tắt nó từ cài đặt iCloud của thiết bị.";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.search.placeholder.text" = "Tìm kiếm ghi chú của bạn";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.search.no-results.title" = "Không có ghi chú nào khớp với \"%@\"";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.search.no-results.text" = "Hãy thử một từ khác từ ghi chú bạn đã lưu hoặc tên sura.";
+
+// MARK: - Ayah Menu
+
+"ayah.menu.copy" = "Sao chép";
+"ayah.menu.share" = "Chia sẻ...";
+"ayah.menu.play-end-juz" = "đến cuối Juz'";
+"ayah.menu.play-end-surah" = "đến cuối Surah";
+"ayah.menu.play-end-page" = "đến cuối Trang";
+// Metadata: Translated by AI; human review required.
+"ayah.menu.play-end-quran" = "đến cuối Kinh Quran";
+"ayah.menu.repeat" = "Lặp lại";
+"ayah.menu.selected-verse" = "câu đã chọn";
+"ayah.menu.selected-verses" = "bộ câu đã chọn";
+"ayah.menu.highlight" = "Tô sáng";
+"ayah.menu.highlight-select-color" = "chọn màu";
+"ayah.menu.add-note" = "Thêm Ghi chú";
+"ayah.menu.edit-note" = "Sửa Ghi chú";
+"ayah.menu.delete-note" = "Xóa Ghi chú";
+"ayah.menu.delete-highlight" = "Xóa Tô sáng";
+
+// MARK: - Reading Selector
+
+// Selector UI
+"reading.selector.selectMushaf.short" = "Chọn";
+"reading.selector.selectMushaf.long" = "Đặt làm Mushaf hiện tại";
+"reading.selector.title" = "Chọn Mushaf";
+"reading.selector.group.uthmani" = "Uthmani";
+"reading.selector.group.tajweed" = "Tajweed";
+"reading.selector.group.indopak" = "Ấn Độ–Pakistan";
+"reading.selector.badge.experimental" = "Thử nghiệm";
+"reading.selector.badge.large-screen-optimized" = "Tối ưu cho màn hình lớn hơn";
+"reading.selector.selection-description" = "Chạm vào Mushaf để biết thêm thông tin.";
+"reading.selector.property.hafs" = "Hafs Mushaf";
+"reading.selector.property.pages.604" = "604 trang";
+"reading.selector.property.lines.15" = "15-dòng mỗi trang";
+"reading.selector.property.word-translation.supported" = "Dịch Từng Từ";
+"reading.selector.property.word-translation.not-supported" = "Không có Dịch Từng Từ";
+
+// Hafs 1405
+"reading.hafs-1405.title" = "Hafs, Madina cổ điển, 1405 AH";
+"reading.hafs-1405.description" = "Hafs cổ điển Mushaf ban hành ở Medina vào năm 1405 Hijri. Ứng dụng đã từng cung cấp phiên bản này trong một thời gian dài.\nTừ Tổ hợp In ấn Kinh Quran của Vua Fahd.";
+"reading.hafs-1405.issue" = "Ban hành năm 1405 Hijri";
+
+// Hafs 1421
+"reading.hafs-1421.title" = "Hafs, Medina, 1421 AH";
+"reading.hafs-1421.description" = "Hafs Mushaf ban hành ở Medina vào năm 1421 Hijri. Từ Tổ hợp in Kinh Quran King Fahd.";
+"reading.hafs-1421.issue" = "Ban hành năm 1421 Hijri";
+
+// Hafs 1440
+"reading.hafs-1440.title" = "Hafs, Medina, 1440 AH";
+"reading.hafs-1440.description" = "Hafs Mushaf ban hành ở Medina vào năm 1440 Hijri. Từ Tổ hợp in Kinh Quran King Fahd.";
+"reading.hafs-1440.issue" = "Ban hành năm 1440 Hijri";
+
+// Hafs Tajweed
+"reading.tajweed.title" = "Hafs, Tajweed";
+"reading.tajweed.description" = "Tajweed hafs Mushaf. Al-Quran Al-Kareem - Phiên bản Dar al-Marefa.";
+
+// MARK: - Diagnostics
+
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.title" = "Chuẩn đoán";
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.details" = "Các cài đặt này được nhà phát triển ứng dụng sử dụng cụ thể cho mục đích gỡ lỗi và chẩn đoán.";
+
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.share_app_logs" = "Chia sẻ nhật ký ứng dụng";
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.enable_debug_logs" = "Kích hoạt ghi nhật ký gỡ lỗi";
+// Metadata: Translated by ChatGPT; human review required.
+"diagnostics.enable_debug_logs.details" = "Cài đặt này sẽ có hiệu lực khi ứng dụng được khởi động lại lần tiếp theo.";
+
+
+// MARK: - What's new
+
+"new.title" = "Có gì mới";
+"new.action" = "Tiếp";
+
+// New app icon
+// Metadata: Translated by AI; human review required.
+"new.app_icon.body" = "Ứng dụng Quran giờ mang dấu hiệu chung của một bộ công cụ được xây dựng xoay quanh lời của Allah. Dấu trang, ghi chú và tiến trình của bạn vẫn ở nguyên chỗ cũ.";
+// Metadata: Translated by AI; human review required.
+"new.app_icon.choose_another" = "Chọn biểu tượng khác";
+// Metadata: Translated by AI; human review required.
+"new.app_icon.title" = "Biểu tượng mới của chúng tôi đã có";
+
+// Reading layouts
+// Metadata: Translated by ChatGPT; human review required.
+"new.reading_layouts" = "Các Mushaf Madani mới";
+// Metadata: Translated by ChatGPT; human review required.
+"new.reading_layouts.details" = "* Đã thêm Mushaf Madani 1439 và 1441, được tối ưu hóa để hiển thị toàn màn hình.";
+
+// Experimental IndoPak
+// Metadata: Translated by ChatGPT; human review required.
+"new.experimental_indopak" = "Ấn Độ–Pakistan – 15 dòng";
+// Metadata: Translated by ChatGPT; human review required.
+"new.experimental_indopak.details" = "* Hãy thử bố cục đọc Ấn Độ–Pakistan 15 dòng mới theo phong cách Naskh.";
+
+// Audio controls
+// Metadata: Translated by ChatGPT; human review required.
+"new.audio_controls" = "Tùy chọn âm thanh nâng cao";
+// Metadata: Translated by ChatGPT; human review required.
+"new.audio_controls.details" = "Tùy chọn âm thanh nâng cao đã được thiết kế lại và bổ sung thêm nhiều điều khiển — cảm ơn @OKKHALIL3.\n* Tốc độ phát từ 0,25× đến 2× — cảm ơn @OKKHALIL3.\n* Số lần lặp từ 1× đến 100×, cùng tùy chọn lặp liên tục — cảm ơn @OKKHALIL3.\n* Khoảng dừng có thể cấu hình giữa các ayah và phạm vi lặp — cảm ơn @abdorizak và @OKKHALIL3.\n* Phát trực tuyến âm thanh mà không cần tải xuống trước — cảm ơn @OKKHALIL3.\n* Bộ chọn ayah ngay trong dòng — cảm ơn @OKKHALIL3.";
+
+// Notes
+// Metadata: Translated by ChatGPT; human review required.
+"new.notes_updates" = "Tìm kiếm và chỉnh sửa ghi chú";
+// Metadata: Translated by ChatGPT; human review required.
+"new.notes_updates.details" = "* Tìm ghi chú theo nội dung hoặc surah — cảm ơn @abdorizak.\n* Thẻ ghi chú và trình chỉnh sửa ghi chú đã được thiết kế lại.";
+
+// Navigation
+// Metadata: Translated by ChatGPT; human review required.
+"new.navigation_updates" = "Trang chủ và điều hướng";
+// Metadata: Translated by ChatGPT; human review required.
+"new.navigation_updates.details" = "* Đã thêm các phần juz có thể thu gọn vào danh sách surah và juz trên Trang chủ — cảm ơn @OKKHALIL3.\n* Điều hướng giữa trang và ayah trở nên nhất quán hơn.";
+
+// Translation
+// Metadata: Translated by ChatGPT; human review required.
+"new.translation_update" = "Cập nhật bản dịch";
+// Metadata: Translated by ChatGPT; human review required.
+"new.translation_update.details" = "* Đã sửa bản dịch tiếng Nga của “mushaf” — cảm ơn @pulatovpro.";
+
+// Audio
+// Metadata: Translated by ChatGPT; human review required.
+"audio.delay.off" = "Tắt";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.end-at" = "Kết thúc tại";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.end-at.custom" = "Tùy chỉnh";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.playback-ayah-range" = "Phạm vi ayah phát";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.playback-speed" = "Tốc độ phát";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repeat-count" = "Số lần lặp";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay" = "Khoảng nghỉ giữa các lần lặp (giây)";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.10s" = "10 giây";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.1s" = "1 giây";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.2s" = "2 giây";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.3s" = "3 giây";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.5s" = "5 giây";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.repetition-delay.description" = "Đặt thời gian tạm dừng trước khi lần lặp tiếp theo bắt đầu.";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.streaming.description" = "Tiết kiệm dung lượng bằng cách phát trực tuyến âm thanh nhưng cần kết nối internet.";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.streaming.title" = "Phát trực tuyến âm thanh";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.verse-delay" = "Tạm dừng sau mỗi ayah";
+// Metadata: Translated by ChatGPT; human review required.
+"audio.verse-delay.description" = "Chọn thời gian tạm dừng sau mỗi ayah. Ở mức 1×, khoảng nghỉ dài gần bằng thời gian phát ayah, giúp bạn có thời gian lặp lại hoặc ghi nhớ trước khi tiếp tục.";
+
+// Ayah Menu
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.notes-count" = "Ghi chú (%d)";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.move-here" = "Tại %@ • Chuyển đến đây";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.moved" = "Dấu trang đọc đã được chuyển từ %@ đến %@";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.removed" = "Dấu trang đọc tại %@ đã được xóa";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.save-here" = "Lưu vị trí đọc của bạn tại đây";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.saved" = "Dấu trang đọc đã được lưu tại %@";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.saved-here" = "Đã lưu tại đây • Chạm để xóa";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.single-ayah-only" = "Chọn một ayah";
+// Metadata: Translated by ChatGPT; human review required.
+"ayah.menu.reading-bookmark.title" = "Dấu trang đọc";
+
+// Bookmarks
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections" = "Bộ sưu tập";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.add" = "Thêm bộ sưu tập";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.delete-hint" = "Vuốt dấu trang sang trái để xóa.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.no-data.colored.text" = "Các ayah bạn tô sáng bằng dấu trang màu %@ khi đọc sẽ xuất hiện ở đây.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.no-data.text" = "Các ayah bạn đánh dấu khi đọc sẽ xuất hiện ở đây.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.ayahs.open-hint" = "Mở ayah này trong Quran.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.colored" = "Dấu trang có màu";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.delete.confirmation.message" = "Bộ sưu tập này chứa dấu trang. Bạn có chắc muốn xóa không?";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.delete.confirmation.title" = "Xóa bộ sưu tập?";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.favorites" = "Yêu thích";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.mine" = "Bộ sưu tập của tôi";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.new" = "Bộ sưu tập mới…";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.new.placeholder" = "Tên bộ sưu tập";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.no-data.text" = "Tạo bộ sưu tập để sắp xếp các ayah theo chủ đề, dua hoặc kế hoạch ghi nhớ.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.no-data.title" = "Chưa có bộ sưu tập";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.collections.rename" = "Đổi tên";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.delete-all" = "Xóa tất cả";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.delete-all.confirmation" = "Bạn có chắc muốn xóa tất cả dấu trang không?";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.collection.mixed" = "Đã chọn một phần";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.collection.selected" = "Đã chọn";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.collection.unselected" = "Chưa chọn";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.editor.error.highlight-unavailable" = "Màu tô sáng vẫn đang tải. Vui lòng thử lại.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.old-page-bookmarks" = "Dấu trang trang cũ";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.sync.action" = "Đăng nhập";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.sync.body" = "Đăng nhập vào Quran.com để giữ bộ sưu tập của bạn khả dụng trên mọi thiết bị.";
+// Metadata: Translated by ChatGPT; human review required.
+"bookmarks.sync.title" = "Đồng bộ bộ sưu tập của bạn";
+
+// Highlight Colors
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.blue" = "Xanh dương";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.green" = "Xanh lá";
+// Metadata: Translated by AI; human review required.
+"highlight.color.orange" = "Cam";
+// Metadata: Translated by AI; human review required.
+"highlight.color.pink" = "Hồng";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.purple" = "Tím";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.red" = "Đỏ";
+// Metadata: Translated by AI; human review required.
+"highlight.color.teal" = "Xanh mòng két";
+// Metadata: Translated by ChatGPT; human review required.
+"highlight.color.yellow" = "Vàng";
+
+// Notes
+// Metadata: Translated by ChatGPT; human review required.
+"notes.delete-note.alert.body" = "Ghi chú này sẽ bị xóa.";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.delete-note.alert.title" = "Xóa ghi chú";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.editor.created" = "Đã tạo %@";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.editor.delete" = "Xóa ghi chú";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.editor.note-divider" = "GHI CHÚ CỦA BẠN";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.minimum-length.alert.body" = "Ghi chú phải có ít nhất %d ký tự.";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.minimum-length.alert.title" = "Ghi chú quá ngắn";
+// Metadata: Translated by ChatGPT; human review required.
+"notes.new" = "Ghi chú mới";
+
+// Reading Selector
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1439.description" = "Phông chữ Madani 1439 từ Khu liên hợp In ấn Quran Vua Fahd. Được tối ưu cho màn hình lớn hơn.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1439.issue" = "Phát hành năm 1439 Hijri";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1439.title" = "Mushaf Madani (1439)";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1441.description" = "Phông chữ Madani 1441 từ Khu liên hợp In ấn Quran Vua Fahd. Được tối ưu cho màn hình lớn hơn.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1441.issue" = "Phát hành năm 1441 Hijri";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.hafs-1441.title" = "Mushaf Madani (1441)";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.indopak.description" = "Một Mushaf Hafs theo phong cách Naskh Ấn Độ–Pakistan, được sử dụng rộng rãi khắp Nam Á. Hình ảnh trang được lấy từ Khu liên hợp In ấn Quran Vua Fahd.";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.indopak.title" = "Ấn Độ–Pakistan – 15 dòng";
+// Metadata: Translated by ChatGPT; human review required.
+"reading.selector.property.pages.610" = "610 trang";
+
+// Quran.com Account
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.attach_notes" = "Giữ ghi chú ayah được đồng bộ";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.custom_collections" = "Giữ bộ sưu tập tùy chỉnh được đồng bộ";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.profile" = "Quản lý tài khoản";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sign_in" = "Đăng nhập Quran.com";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sign_in.subtitle" = "Đồng bộ ghi chú, dấu trang và bộ sưu tập";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.signed_in" = "Đã đăng nhập";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sign_out" = "Đăng xuất";
+// Metadata: Translated by ChatGPT; human review required.
+"setting.quran_account.sync_devices" = "Đồng bộ dấu trang trên mọi thiết bị";
+
+// Translation Text
+// Metadata: Translated by ChatGPT; human review required.
+"translation.text.ayah-number" = "%d:%d";
+// Metadata: Translated by ChatGPT; human review required.
+"translation.text.footnote-number" = "[%d]";
+// Metadata: Translated by ChatGPT; human review required.
+"translation.text.footnote-title" = "Chú thích #%d";
+
+/* Audio banner options summary */
+"audio.summary.verse" = "câu %@";
+"audio.summary.range" = "đoạn %@";
+"audio.options" = "Tùy chọn âm thanh";
+
+// MARK: - Continue reading and reading bookmarks
+
+// Home heading for saved reading positions and recent pages.
+// Metadata: Translated by AI; human review required.
+"home.continue-reading.title" = "Đọc tiếp";
+// Collections heading for saved reading positions.
+// Metadata: Translated by AI; human review required.
+"bookmarks.reading.title" = "Dấu trang đọc";
+// Button that collapses the additional reading bookmarks.
+// Metadata: Translated by AI; human review required.
+"bookmarks.reading.show-less" = "Hiển thị ít hơn";
+// VoiceOver state when the additional reading bookmarks are visible.
+// Metadata: Translated by AI; human review required.
+"accessibility.expanded" = "Đã mở rộng";
+// VoiceOver state when the additional reading bookmarks are hidden.
+// Metadata: Translated by AI; human review required.
+"accessibility.collapsed" = "Đã thu gọn";
+// Recent pages heading with a localized page count.
+// Metadata: Translated by AI; human review required.
+"home.recent-pages.title" = "Vừa Đọc (%@)";

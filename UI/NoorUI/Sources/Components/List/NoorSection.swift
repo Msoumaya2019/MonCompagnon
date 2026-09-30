@@ -1,0 +1,280 @@
+//
+//  NoorSection.swift
+//
+//
+//  Created by Mohamed Afifi on 2023-07-04.
+//
+
+import Localization
+import SwiftUI
+import UIx
+
+public struct NoorBasicSection<Content: View>: View {
+    // MARK: Lifecycle
+
+    public init(
+        title: String? = nil,
+        footer: String? = nil,
+        isExpanded: Binding<Bool>? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.footer = footer
+        self.isExpanded = isExpanded
+        self.content = content()
+    }
+
+    // MARK: Public
+
+    public var body: some View {
+        if let isExpanded, #available(iOS 17.0, *) {
+            Section(isExpanded: isExpanded) {
+                content
+            } header: {
+                collapsibleHeader(isExpanded: isExpanded)
+            }
+        } else if let footer {
+            if let title {
+                Section {
+                    content
+                } header: {
+                    Text(title)
+                } footer: {
+                    Text(footer)
+                }
+            } else {
+                Section {
+                    content
+                } footer: {
+                    Text(footer)
+                }
+            }
+        } else if let title {
+            Section {
+                content
+            } header: {
+                Text(title)
+            }
+        } else {
+            Section {
+                content
+            }
+        }
+    }
+
+    // MARK: Internal
+
+    let title: String?
+    let footer: String?
+    let isExpanded: Binding<Bool>?
+    let content: Content
+
+    // MARK: Private
+
+    /// The List adds about this much margin around the header label, outside the Button.
+    /// Expanding only the content shape covers that margin without changing the layout.
+    private let headerHitSlop: CGFloat = 10
+
+    @ViewBuilder
+    private func collapsibleHeader(isExpanded: Binding<Bool>) -> some View {
+        Button {
+            withAnimation(NoorAnimation.standard) {
+                isExpanded.wrappedValue.toggle()
+            }
+        } label: {
+            HStack {
+                if let title {
+                    Text(title)
+                }
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.footnote.weight(.semibold))
+                    .rotationEffect(.degrees(isExpanded.wrappedValue ? 0 : -90))
+            }
+            .contentShape(Rectangle().inset(by: -headerHitSlop))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title ?? "")
+        .accessibilityHint(isExpanded.wrappedValue ? "Collapse section" : "Expand section")
+    }
+}
+
+public struct SelfIdentifiable<T: Hashable>: Identifiable {
+    // MARK: Lifecycle
+
+    public init(value: T) {
+        self.value = value
+    }
+
+    // MARK: Public
+
+    public let value: T
+
+    public var id: T { value }
+}
+
+public struct NoorListRows<Item: Identifiable, Row: View>: View {
+    // MARK: Lifecycle
+
+    public init(
+        _ items: [Item],
+        canDelete: @escaping @MainActor @Sendable (Item) -> Bool = { _ in true },
+        onDelete: ItemDeletionAction<Item>? = nil,
+        onMove: ((IndexSet, Int) -> Void)? = nil,
+        @ViewBuilder row: @escaping (Item) -> Row
+    ) {
+        self.items = items
+        self.onDelete = onDelete
+        self.onMove = onMove
+        rows = ForEach(items) { item in
+            NoorDeletableRow(
+                item: item,
+                content: row(item),
+                isDeleteEnabled: onDelete != nil && canDelete(item),
+                onDelete: onDelete
+            )
+        }
+    }
+
+    // MARK: Public
+
+    public var body: some View {
+        rows
+            .onDelete(perform: deleteAction)
+            .onMove(perform: onMove)
+    }
+
+    // MARK: Private
+
+    private let items: [Item]
+    private let onDelete: ItemDeletionAction<Item>?
+    private let onMove: ((IndexSet, Int) -> Void)?
+    private let rows: ForEach<[Item], Item.ID, NoorDeletableRow<Item, Row>>
+
+    @State private var deletingItemIDs: Set<Item.ID> = []
+
+    private var deleteAction: ((IndexSet) -> Void)? {
+        onDelete.map { _ in
+            { indexSet in
+                let itemsToDelete = indexSet.map { items[$0] }
+                for itemToDelete in itemsToDelete {
+                    delete(itemToDelete)
+                }
+            }
+        }
+    }
+
+    private func delete(_ item: Item) {
+        guard deletingItemIDs.insert(item.id).inserted else {
+            return
+        }
+        guard let operation = onDelete?(item) else {
+            deletingItemIDs.remove(item.id)
+            return
+        }
+
+        Task { @MainActor in
+            await operation()
+            deletingItemIDs.remove(item.id)
+        }
+    }
+}
+
+public struct NoorSection<Item: Identifiable, ListItem: View>: View {
+    // MARK: Lifecycle
+
+    public init(
+        title: String? = nil,
+        isExpanded: Binding<Bool>? = nil,
+        _ items: [Item],
+        onDelete: ItemDeletionAction<Item>? = nil,
+        onMove: ((IndexSet, Int) -> Void)? = nil,
+        @ViewBuilder listItem: @escaping (Item) -> ListItem
+    ) {
+        self.title = title
+        self.isExpanded = isExpanded
+        isEmpty = items.isEmpty
+        rows = NoorListRows(
+            items,
+            onDelete: onDelete,
+            onMove: onMove,
+            row: listItem
+        )
+    }
+
+    // MARK: Public
+
+    public var body: some View {
+        if !isEmpty {
+            NoorBasicSection(title: title, isExpanded: isExpanded) {
+                rows
+            }
+        }
+    }
+
+    // MARK: Internal
+
+    let title: String?
+    let isExpanded: Binding<Bool>?
+    let isEmpty: Bool
+    let rows: NoorListRows<Item, ListItem>
+}
+
+public extension View {
+    @ViewBuilder
+    func noorDeleteSwipeAction(
+        isEnabled: Bool = true,
+        action: @escaping Action
+    ) -> some View {
+        if isEnabled {
+            modifier(NoorDeleteSwipeActionModifier(action: action))
+                .deleteDisabled(false)
+        } else {
+            deleteDisabled(true)
+        }
+    }
+}
+
+private struct NoorDeleteSwipeActionModifier: ViewModifier {
+    let action: Action
+
+    @ScaledMetric(relativeTo: .body) private var minimumContentHeight = 36
+
+    func body(content: Content) -> some View {
+        content
+            .frame(minHeight: minimumContentHeight)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive, action: action) {
+                    Label(l("button.delete"), systemImage: "xmark")
+                }
+            }
+    }
+}
+
+private struct NoorDeletableRow<Item, Content: View>: View {
+    let item: Item
+    let content: Content
+    let isDeleteEnabled: Bool
+    let onDelete: ItemDeletionAction<Item>?
+
+    @State private var isDeleting = false
+
+    var body: some View {
+        content
+            .noorDeleteSwipeAction(isEnabled: isDeleteEnabled && !isDeleting) {
+                delete()
+            }
+    }
+
+    private func delete() {
+        guard !isDeleting, let operation = onDelete?(item) else {
+            return
+        }
+        isDeleting = true
+
+        Task { @MainActor in
+            await operation()
+            isDeleting = false
+        }
+    }
+}

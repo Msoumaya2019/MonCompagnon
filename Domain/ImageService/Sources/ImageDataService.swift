@@ -1,0 +1,138 @@
+//
+//  ImageDataService.swift
+//
+//
+//  Created by Mohamed Afifi on 2021-12-15.
+//
+
+import QuranGeometry
+import QuranKit
+import UIKit
+import VLogging
+import WordFramePersistence
+import WordFrameService
+
+public enum ImageDataServiceError: Error {
+    case imageNotFound(page: Page, url: URL)
+}
+
+extension ImageDataServiceError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .imageNotFound(let page, let url):
+            return "No image found for page '\(page)' at '\(url.path)'"
+        }
+    }
+}
+
+public struct ImageDataService {
+    // MARK: Lifecycle
+
+    public init(ayahInfoDatabase: URL, imagesURL: URL, ayahMarkerURL: URL?) {
+        self.imagesURL = imagesURL
+        let persistence = GRDBWordFramePersistence(fileURL: ayahInfoDatabase)
+        self.persistence = persistence
+        ayahMarkerPersistence = ayahMarkerURL.map {
+            GRDBWordFramePersistence(fileURL: $0)
+        } ?? persistence
+    }
+
+    // MARK: Public
+
+    public func suraHeaders(_ page: Page) async throws -> [SuraHeaderLocation] {
+        try await persistence.suraHeaders(page)
+    }
+
+    public func ayahNumbers(_ page: Page) async throws -> [AyahNumberLocation] {
+        try await ayahMarkerPersistence.ayahNumbers(page)
+    }
+
+    public func imageForPage(_ page: Page) async throws -> ImagePage {
+        try Task.checkCancellation()
+        let imageURL = imageURLForPage(page)
+        guard let image = UIImage(contentsOfFile: imageURL.path) else {
+            logFiles(directory: imagesURL) // <reading>/images/width/
+            logFiles(directory: imagesURL.deletingLastPathComponent()) // <reading>/images/
+            logFiles(directory: imagesURL.deletingLastPathComponent().deletingLastPathComponent()) // <reading>/
+            throw ImageDataServiceError.imageNotFound(page: page, url: imageURL)
+        }
+
+        // preload the image
+        let unloadedImage: UIImage = image
+        let preloadedImage = preloadImage(unloadedImage)
+
+        let wordFrames = try await wordFrames(page)
+        return ImagePage(image: preloadedImage, wordFrames: wordFrames, startAyah: page.firstVerse)
+    }
+
+    // MARK: Internal
+
+    func wordFrames(_ page: Page) async throws -> WordFrameCollection {
+        let plainWordFrames = try await persistence.wordFrameCollectionForPage(page)
+        let wordFrames = processor.processWordFrames(plainWordFrames)
+        return wordFrames
+    }
+
+    // MARK: Private
+
+    private let processor = WordFrameProcessor()
+    private let persistence: WordFramePersistence
+    private let ayahMarkerPersistence: AyahMarkerPersistence
+    private let imagesURL: URL
+
+    private func logFiles(directory: URL) {
+        let fileManager = FileManager.default
+        let files = (try? fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+        let fileNames = files.map(\.lastPathComponent)
+        logger.error("Images: Directory \(directory) contains files \(fileNames)")
+    }
+
+    private func imageURLForPage(_ page: Page) -> URL {
+        imagesURL.appendingPathComponent("page\(page.pageNumber.as3DigitString()).png")
+    }
+
+    private func preloadImage(_ imageToPreload: UIImage, cropInsets: UIEdgeInsets = .zero) -> UIImage {
+        let targetImage: CGImage?
+        if let cgImage = imageToPreload.cgImage {
+            targetImage = cgImage
+        } else if let ciImage = imageToPreload.ciImage {
+            let context = CIContext(options: nil)
+            targetImage = context.createCGImage(ciImage, from: ciImage.extent)
+        } else {
+            targetImage = nil
+        }
+        guard var cgimg = targetImage else {
+            return imageToPreload
+        }
+
+        let rect = CGRect(x: 0, y: 0, width: cgimg.width, height: cgimg.height)
+        let croppedRect = rect.inset(by: cropInsets)
+        let cropped = cgimg.cropping(to: croppedRect)
+        cgimg = cropped ?? cgimg
+
+        // make a bitmap context of a suitable size to draw to, forcing decode
+        let width = cgimg.width
+        let height = cgimg.height
+
+        let colourSpace = CGColorSpaceCreateDeviceRGB()
+        let imageContext = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: colourSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+        )
+
+        // draw the image to the context, release it
+        imageContext?.draw(cgimg, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        // now get an image ref from the context
+        if let outputImage = imageContext?.makeImage() {
+            let cachedImage = UIImage(cgImage: outputImage)
+            return cachedImage
+        }
+        return imageToPreload
+    }
+}

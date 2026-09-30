@@ -1,0 +1,111 @@
+# QuranEngine
+
+## Make commands
+
+The Makefile exposes explicit targets for each sync mode:
+
+- no sync: `make build-no-sync`, `make test-no-sync`, `make build-example-no-sync`, `make run-example-no-sync`
+- sync enabled: `make build-sync`, `make test-sync`, `make build-example-sync`, `make run-example-sync`
+- local sync: `make build-mobile-sync-spm`, `make build-sync-local-debug`, `make test-sync-local-debug`, `make build-example-sync-local-debug`, `make run-example-sync-local-debug`
+- SwiftFormat: `make format-lint`
+
+Package build targets honor `TARGET` as a scheme override, such as `make build-no-sync TARGET=NoorUI`. Package test targets always use the `QuranEngine-Package` scheme. Omit `TARGET` to run its full test plan, or set a production or test target to filter the run, such as `make test-sync TARGET=AyahMenuFeature` or `make test-sync TARGET=AyahMenuFeatureTests`. Keep every package test target in `QuranEngine-Package.xctestplan`. Ambient `QURAN_SYNC` may be set or unset through `launchctl`, so always use an explicit sync-mode target.
+
+Local sync targets expect `quran-ios`, `mobile-sync`, and `mobile-sync-spm` under one workspace. The Makefile finds that workspace through `git rev-parse --git-common-dir`, so the defaults work from both the primary checkout and Git worktrees. Do not derive sibling repositories from `../` relative to a worktree. `MOBILE_SYNC_DIR` locates the Gradle repository, `MOBILE_SYNC_SPM_PATH` selects the local Swift package, and `MOBILE_SYNC_XCFRAMEWORK_PATH` selects its local binary; path presence is the local/remote switch. The Makefile must supply and validate these paths. Keep the XCFramework path relative to the `mobile-sync-spm` package root because SwiftPM binary target paths must be relative.
+
+Keeping these commands green locally should keep the CI workflow green as well.
+
+## Architecture
+
+- Respect target layers: `Core`/`Model` stay foundational, `Data` owns persistence/network implementations, `Domain` owns business services, `Features` own UI workflows, and `Example` wires concrete dependencies.
+- Avoid dependency direction reversals. Lower layers should not import feature/app targets.
+- Add new modules through the `Package.swift` target helpers and keep dependencies explicit.
+- Prefer extending existing services/builders over creating parallel abstractions.
+- Keep feature entry points in `*Builder` types; dependency wiring belongs in builders/container, not views.
+- Pass dependencies directly to view-model initializers; do not introduce nested `Deps` or dependency-bag types.
+
+## UI and features
+
+- `ViewModel`, builder, and UIKit/SwiftUI presentation code should be `@MainActor` when touching UI state.
+- Keep navigation through listener/navigator protocols already used by the feature.
+- Do not introduce new listener or delegate patterns unless extending an existing one; prefer closure-based callbacks for new interaction seams.
+- Views should stay mostly declarative; business logic belongs in view models/interactors/services.
+- Reuse NoorUI/UIx components before adding one-off controls.
+- Put new reusable UI components in NoorUI; avoid feature-local component duplicates.
+- Prefer `NoorAnimation.standard` for SwiftUI animations and `NoorAnimation.animate` for UIKit animations unless there is a clear reason for different behavior. Preserve Reduce Motion handling and intentional animation suppression.
+- Do not add a NoorUI dependency to lower-level modules such as UIx.
+- Use NoorUI navigation-action components instead of constructing feature-local buttons.
+- Keep Edit, Close, overflow, and secondary navigation actions neutral. Reserve the app tint for Done and primary actions.
+- Use Done only to commit or finish an editing/confirmation flow. Use a leading Close × for dismissal-only modals, with localized accessibility text.
+- Let pushed screens use the standard Back button; do not add Close or Done solely to pop them.
+- Match established layouts in analogous features before introducing a new visual pattern.
+- Render Quran Arabic with NoorUI's Quran text APIs and Quran font; never use a system font.
+- Render sura names with NoorUI's locale-aware `MultipartText` sura interpolation: localized plus decorated Arabic outside Arabic locales, localized Arabic only in Arabic locales.
+- Prefer native `UINavigationItem` title, subtitle, and attributed-title APIs; use a custom `titleView` only when native APIs cannot meet the requirement. For pre-iOS 26 fallback, combine title and subtitle as `Title (Subtitle)`.
+- Inject concrete data services through builders and view models; do not wrap them in closure-based adapters.
+- Use `@ScaledMetric` for explicit UI dimensions that should scale with Dynamic Type; avoid fixed numeric layout metrics.
+- Prefer default `.padding()` spacing; specify edges or values only when the design requires custom spacing.
+- Always use `#Preview` for SwiftUI previews; do not use `PreviewProvider`.
+- Preserve localized strings; do not hardcode user-facing text unless existing nearby code does.
+
+## Localization
+
+- When adding or removing a supported language, update `supportedLocalizations` in `Core/Localization/Tests/LocalizationCatalogTests.swift`.
+- When adding, renaming, or removing an Android localization key used by iOS, update `requiredAndroidKeys` in `Core/Localization/Tests/LocalizationCatalogTests.swift`.
+- Run `make test-no-sync TARGET=LocalizationTests` and `make test-sync TARGET=LocalizationTests` after localization catalog changes.
+
+## Concurrency
+
+- Prefer `Sendable` on models/services crossing concurrency boundaries.
+- Avoid detached tasks unless there is a clear lifecycle reason.
+- Prefer structured async flows; keep `Task {}` usage close to UI/event boundaries.
+- Be careful with shared mutable state; use existing `Locking`, actors, or `ManagedCriticalState` patterns.
+
+## Persistence and data
+
+- Use existing persistence boundaries (`CoreDataPersistence`, GRDB persistence targets, test support) instead of ad hoc file/database access.
+- Keep mapping between external SDK/data models and QuranEngine models in domain/data services, not features.
+- Treat migrations and sync mapping as user-data-sensitive; add narrow regression coverage when changing them.
+
+## Sync and build flags
+
+- Code behind `QURAN_SYNC` must compile both with and without the flag.
+- Any sync change should be checked with explicit sync and no-sync Make targets.
+- Do not rely on ambient shell/launchctl `QURAN_SYNC`.
+
+## Style
+
+- Follow local `// MARK:` organization and existing access-control style.
+- Prefer small files/types; split when a file grows into several responsibilities.
+- Keep public API minimal; default to internal/private.
+- Avoid drive-by cleanup in unrelated modules.
+- Use SwiftFormat; do not hand-format around it.
+
+## Pull requests
+
+- Do not add PR screenshots to git. Upload them directly to GitHub and reference the attachment URLs in the PR description.
+- Use the Codex in-app browser to upload PR screenshots to GitHub.
+- When uploading a screenshot to a PR description, edit its width to around 300 px and remove the height.
+
+## Dependencies
+
+- New third-party dependencies need a quick health check and should be added only when they remove meaningful complexity.
+- Prefer existing packages/utilities already in the repo.
+
+## Testing guidance
+
+- Keep tests in their owning module's `Tests` target. `AllTargetsTests` exists only to link otherwise-untested targets for coverage; do not add behavioral tests there without explicit confirmation.
+- Prefer real objects whenever practical. Use real model types, services, persistence stacks, parsers, mappers, builders, and value objects instead of test doubles.
+- Use fakes only at process or platform boundaries: filesystem, network/session, clock/time, bundle/resources, keychain, OAuth/auth SDK, external SDKs, UIKit navigation/presentation seams.
+- For `QURAN_SYNC` persistence behavior, always use the real MobileSync database through `MobileSyncTestDatabase` from `MobileSyncTestSupport`; never fake `QuranDataService`, `MobileSyncNoteService`, or another sync persistence service.
+- Use `Domain/AnnotationsService/Tests/MobileSyncNoteServiceTests.swift` as the reference pattern: `override func setUp() async throws { try await database.reset() }` (and the same reset in `tearDown`), then exercise the production service and assert database-observable state.
+- Do not add mocks or a mocking framework. Avoid generated mocks.
+- Do not introduce protocols only to make something mockable. Protocols should represent real architectural boundaries already useful in production.
+- If a fake is reused across modules, put it in a dedicated `*Fake` target next to the boundary module, like `SystemDependenciesFake`, `NetworkSupportFake`, or `AuthenticationClientFake`.
+- If a double is test-local and single-purpose, keep it private in that test file.
+- Name test doubles by role: `Fake` for behavior/state simulation, `Spy` only when recording calls is the assertion, `Unavailable...` or `Noop...` for null behavior. Avoid `Mock`.
+- Prefer asserting observable state/output over call order. Interaction assertions should be rare and mostly for delegates, navigation, analytics, or boundary effects.
+- Fakes should be deterministic, small, and behavior-oriented. Do not reimplement the full production dependency.
+- For persistence behavior, prefer real in-memory/temp persistence or repo test support over fakes when feasible.
+- Bug fixes should include a regression test when the behavior is reachable without excessive scaffolding.
+- Keep tests focused: one behavior per test, explicit setup, no hidden dependence on ambient env like `QURAN_SYNC`.

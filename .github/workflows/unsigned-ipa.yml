@@ -1,0 +1,96 @@
+name: Unsigned IPA
+
+# Builds an UNSIGNED .ipa of the MonCompagnon app and attaches it to the run.
+# Nothing is signed and no Apple credentials are needed: the resulting ipa is
+# meant to be re-signed on-device (e.g. with eSign).
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-unsigned-ipa:
+    name: Build unsigned IPA
+    runs-on: macos-26
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          XCODE_APP="/Applications/Xcode_26.2.app"
+          if [ ! -d "$XCODE_APP" ]; then
+            XCODE_APP="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1 || true)"
+          fi
+          if [ -z "$XCODE_APP" ] || [ ! -d "$XCODE_APP" ]; then
+            echo "No Xcode 26 found on this runner." >&2
+            ls -d /Applications/Xcode*.app 2>/dev/null >&2 || true
+            exit 1
+          fi
+          echo "Using $XCODE_APP"
+          sudo xcode-select -s "$XCODE_APP"
+          xcodebuild -version
+          swift --version
+
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: .build/DerivedData/no-sync
+          key: ${{ runner.os }}-unsigned-ipa-${{ hashFiles('Package.resolved', 'Package.swift', 'Example/QuranEngineApp.xcodeproj/project.pbxproj') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-unsigned-ipa-${{ hashFiles('Package.resolved', 'Package.swift', 'Example/QuranEngineApp.xcodeproj/project.pbxproj') }}-
+            ${{ runner.os }}-unsigned-ipa-
+
+      - name: Archive and package unsigned IPA
+        run: make unsigned-ipa
+
+      - name: Verify the IPA is unsigned and carries our identity
+        run: |
+          set -euo pipefail
+          IPA=".build/DerivedData/no-sync/unsigned-ipa/MonCompagnon-unsigned.ipa"
+          test -f "$IPA" || { echo "IPA not produced" >&2; exit 1; }
+
+          rm -rf /tmp/ipa-check && mkdir -p /tmp/ipa-check
+          unzip -q "$IPA" -d /tmp/ipa-check
+          APP="$(ls -d /tmp/ipa-check/Payload/*.app)"
+          echo "app bundle: $APP"
+
+          echo "== Bundle identity =="
+          plutil -extract CFBundleIdentifier raw "$APP/Info.plist"
+          plutil -extract CFBundleDisplayName raw "$APP/Info.plist"
+
+          echo "== Signature check (expected: not signed) =="
+          if codesign -dv "$APP" 2>&1 | grep -q 'Signature='; then
+            echo "WARNING: the app bundle appears to be signed."
+          else
+            echo "OK: no code signature present."
+          fi
+          if [ -f "$APP/embedded.mobileprovision" ]; then
+            echo "WARNING: a provisioning profile is embedded."
+          else
+            echo "OK: no provisioning profile embedded."
+          fi
+
+          ls -lh "$IPA"
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: MonCompagnon-unsigned-ipa
+          path: .build/DerivedData/no-sync/unsigned-ipa/MonCompagnon-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30

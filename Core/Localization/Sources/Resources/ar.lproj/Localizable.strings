@@ -1,0 +1,375 @@
+
+
+// MARK: - General
+
+"button.close" = "إغلاق";
+"button.delete" = "حذف";
+
+// MARK: - Errors
+
+"error.dialog.title" = "خطأ";
+"error.message.connection_lost" = "فقد الإتصال بشبكة الإنترنت. من فضلك تحرك إلى مكان به إشارة أفضل.";
+"error.message.international_roaming_off" = "لا يسمح باستخدام التجوال الدولي. من فضلك قم بتغيير إعدادات خدمة التجوال الدولي، أو إتصل بالإنترنت عن طريق Wi-Fi.";
+"error.message.not_connected_to_internet" = "لا يوجد إتصال بشبكة الإنترنت. من فضلك قم بتشغيل Wi-Fi، أو السماح باتصال البيانات الخلوية.";
+"error.message.general" = "عفوا. حدث خطأ، حاول مرة اخرى.";
+"error.message.no_disk_space" = "لا توجد مساحة كافيه في ذاكرة الهاتف لحفظ التنزيلات.";
+
+// MARK: - Quran
+
+"ayah" = "آية";
+"surah" = "السورة";
+"quran_alquran" = "القرآن";
+
+// IndoPak sura names
+"quran.sura-name.indopak.17" = "بَنِي إِسْرَائِيل";
+"quran.sura-name.indopak.40" = "الْمُؤْمِن";
+"quran.sura-name.indopak.41" = "حمٓ السَّجْدَة";
+"quran.sura-name.indopak.76" = "الدَّهْر";
+"quran.sura-name.indopak.111" = "اللَّهَب";
+
+// MARK: - Translation
+
+"translation.text-type.translation" = "الترجمة إلى الإنجليزية";
+"translation.text-type.transliteration" = "نسخ الحروف للإنجليزية";
+"translation.selectedTranslations" = "المختار";
+"translation.translator" = "المفسر: ";
+"translation.text.see-referenced-verse" = "انظر آية رقم %d.";
+"translation.text.read-more" = "اقرأ المزيد";
+"error.translation.text-retrieval" = "عفوا. حدث خطأ، حاول مرة اخرى.";
+"error.translation.text-not-available" = "لا توجد ترجمة متاحة لهذه الآية.";
+
+// MARK: - Search
+
+"search.recents.title" = "عمليات البحث الأخيرة";
+"search.popular.title" = "اختبر البحث بإستخدام";
+"search.placeholder.text" = "سور أو آيات أو تفاسير أو ترجمات أو الأرقام";
+"search.result.count" = "(%2$d) %1$@";
+
+// MARK: - Settings
+
+"setting.write_review" = "قيم التطبيق على المتجر الالكتروني‎...";
+"setting.contact_us" = "اتصل بنا";
+"setting.donate" = "تبرع";
+"setting.share_app" = "مشاركة التطبيق...";
+"setting.app_version" = "نسخة التطبيق";
+"setting.quran_account.sign_in" = "تسجيل الدخول إلى Quran.com";
+"setting.quran_account.sign_in.subtitle" = "مزامنة الملاحظات والعلامات المرجعية والمجموعات";
+"setting.quran_account.signed_in" = "تم تسجيل الدخول";
+"setting.quran_account.profile" = "إدارة الحساب";
+"setting.quran_account.sign_out" = "تسجيل الخروج";
+"setting.quran_account.sync_devices" = "مزامنة العلامات عبر جميع الأجهزة";
+"setting.quran_account.custom_collections" = "إبقاء مجموعاتك المخصصة متزامنة";
+"setting.quran_account.attach_notes" = "إبقاء ملاحظات الآيات متزامنة";
+
+// MARK: - Quran Menu
+
+"menu.arabic" = "عربي";
+"menu.translation" = "التفاسير والتراجم";
+"menu.select_translation" = "اختر التفاسير والتراجم";
+"menu.pointer" = "مؤشر ترجمة الكلمات";
+"menu.pointer.select_translation" = "لغة المؤشر";
+"menu.fontSizeLetter" = "أ";
+"menu.translationFontSize" = "حجم خط تفسير";
+"menu.arabicFontSize" = "حجم خط القرآن";
+"menu.twoPages" = "عرض صفحتين في الوضع الأفقي";
+"menu.verticalScrolling" = "تمرير رأسي";
+"menu.linePageDividers" = "فواصل الأسطر";
+"menu.linePageSidelines" = "الخطوط الجانبية";
+"menu.theme_settings" = "المظهر والإعدادات";
+
+// MARK: - Theme
+
+"theme.light" = "فاتح";
+"theme.dark" = "داكن";
+"theme.match_device" = "مطابقة الجهاز";
+"theme.auto.message" = "سوف يلتزم تطبيق القرآن بإعداد مظهر iPhone الخاص بك";
+"theme.appearance" = "المظهر";
+
+// MARK: - App Icon
+
+"app_icon.title" = "أيقونة التطبيق";
+"app_icon.default" = "الافتراضية";
+"app_icon.section.signature" = "المميزة";
+"app_icon.section.colors" = "الألوان";
+"app_icon.name.navy_gold" = "كُحلي وذهبي";
+"app_icon.name.teal_white" = "أزرق مخضر وأبيض";
+"app_icon.name.black_gold" = "أسود وذهبي";
+"app_icon.name.blue" = "أزرق";
+"app_icon.name.purple" = "بنفسجي";
+"app_icon.name.red" = "أحمر";
+"app_icon.name.orange" = "برتقالي";
+"app_icon.name.green" = "أخضر";
+
+// MARK: - Tabs
+
+"tab.notes" = "الملاحظات";
+
+// MARK: - Update
+
+"update.filesystem.title" = "جاري تحديث قواعد البيانات ...";
+"downloading_title" = "جاري التحميل....";
+
+// MARK: - Reciters
+
+"reciters.title" = "اختر القارئ";
+"reciters.recent" = "الأخيرة";
+"reciters.downloaded" = "التنزيلات";
+"reciters.all" = "الكل";
+
+// MARK: - Audio
+
+"audio.playing.action.modify" = "تغير";
+"audio.playing.message" = "تشغيل الصوت من %@ إلى %@";
+"audio.downloading.message" = "تنزيل الصوت من %@ إلى %@";
+
+"audio.playing-verses.label" = "سماع آيات";
+"audio.adjust-end-verse-to-the-end.label" = "ضبط نهاية الآية لنهاية";
+
+"audio.select-start-verse" = "حدد بداية التشغيل الصوتي";
+"audio.select-end-verse" = "حدد نهاية التشغيل الصوتي";
+
+"audio.download-play-amount" = "تحميل وتشغيل الصوت لنهاية";
+"audio.streaming.title" = "تشغيل الصوت عبر الإنترنت";
+"audio.streaming.description" = "يوفر مساحة التخزين ببث الصوت، لكنه يتطلب اتصالًا بالإنترنت.";
+"audio.download-play-amount.description" = "عند بدء تشغيل الصوت، سيتوقف مع نهاية";
+"audio.delay.off" = "إيقاف";
+"audio.repeat-count" = "عدد مرات التكرار";
+"audio.repetition-delay" = "مدة الإيقاف بين التكرارات (بالثواني)";
+"audio.repetition-delay.description" = "يحدد مدة التوقف قبل بدء التكرار التالي.";
+"audio.repetition-delay.1s" = "١ث";
+"audio.repetition-delay.2s" = "٢ث";
+"audio.repetition-delay.3s" = "٣ث";
+"audio.repetition-delay.5s" = "٥ث";
+"audio.repetition-delay.10s" = "١٠ث";
+
+"audio.verse-delay" = "التوقف بعد كل آية";
+"audio.verse-delay.description" = "اختر مدة التوقف بعد كل آية. عند ١×، يتوقف التشغيل تقريبًا بقدر مدة الآية، مما يمنحك وقتًا للتكرار أو الحفظ قبل المتابعة.";
+
+// MARK: - Bookmarks
+
+"bookmarks.no-data.title" = "إضافة الإشارات المرجعية...";
+"bookmarks.no-data.text" = "عندما تقرأ القرآن، اضغط على زر الإشارة المرجعية لإضافة الصفحة.";
+"bookmarks.collections" = "المجموعات";
+"bookmarks.collections.add" = "إضافة مجموعة";
+"bookmarks.collections.colored" = "الإشارات المرجعية الملونة";
+"bookmarks.collections.favorites" = "المفضلة";
+"bookmarks.collections.mine" = "مجموعاتي";
+"bookmarks.collections.new" = "مجموعة جديدة...";
+"bookmarks.collections.new.placeholder" = "اسم المجموعة";
+"bookmarks.collections.rename" = "إعادة التسمية";
+"bookmarks.collections.delete.confirmation.title" = "هل تريد حذف المجموعة؟";
+"bookmarks.collections.delete.confirmation.message" = "تحتوي هذه المجموعة على إشارات مرجعية. هل أنت متأكد من رغبتك في حذفها؟";
+"bookmarks.collections.no-data.title" = "لا توجد مجموعات حتى الآن";
+"bookmarks.collections.no-data.text" = "أنشئ مجموعة لتنظيم الآيات حسب الموضوع أو الدعاء أو خطة الحفظ.";
+"bookmarks.collections.ayahs.delete-hint" = "اسحب الإشارة المرجعية لحذفها.";
+"bookmarks.collections.ayahs.open-hint" = "يفتح هذه الآية في القرآن.";
+"bookmarks.collections.ayahs.no-data.text" = "ستظهر هنا الآيات التي تضيف لها إشارة مرجعية أثناء القراءة.";
+"bookmarks.collections.ayahs.no-data.colored.text" = "ستظهر هنا الآيات التي تميّزها أثناء القراءة بإشارة مرجعية باللون %@.";
+"bookmarks.old-page-bookmarks" = "إشارات الصفحات المرجعية القديمة";
+
+"bookmarks.sync.title" = "زامن مجموعاتك";
+"bookmarks.sync.body" = "سجّل الدخول إلى Quran.com للاحتفاظ بمجموعاتك متاحة عبر أجهزتك.";
+"bookmarks.sync.action" = "تسجيل الدخول";
+
+"bookmarks.editor.collection.unselected" = "غير محددة";
+"bookmarks.editor.collection.mixed" = "محددة جزئيًا";
+"bookmarks.editor.collection.selected" = "محددة";
+"bookmarks.editor.error.highlight-unavailable" = "لا تزال ألوان التمييز قيد التحميل. حاول مرة أخرى.";
+
+// MARK: - Notes
+
+"notes.sync.title" = "زامن ملاحظاتك";
+"notes.sync.body" = "سجّل الدخول إلى Quran.com للاحتفاظ بملاحظاتك متاحة عبر أجهزتك.";
+"notes.sync.no-data.title" = "لا توجد ملاحظات بعد";
+"notes.sync.no-data.text" = "اضغط مطولًا على آية أثناء القراءة، ثم اضغط على «اضف ملاحظة» لكتابة ملاحظتك الأولى.";
+
+"notes.no-data.title" = "إضافة آيات مرجعية...";
+"notes.no-data.text" = "اضغط مع الاستمرار على الآيات. يمكنك تمديد التحديد ليشمل عدة آيات ، ثم اضغط على زر الإشارة المرجعية.";
+"notes.verses-count" = "(+%d آيات)";
+"notes.new" = "ملاحظة جديدة";
+"notes.delete.alert.title" = "حذف الإشارة المرجعية";
+"notes.delete.alert.body" = "سيتم حذف الملاحظة أيضًا.";
+"notes.delete-note.alert.title" = "حذف الملاحظة";
+"notes.delete-note.alert.body" = "سيتم حذف هذه الملاحظة.";
+"notes.editor.created" = "تم الإنشاء %@";
+"notes.editor.delete" = "حذف الملاحظة";
+"notes.editor.note-divider" = "ملاحظتك";
+"notes.icloud.alert.title" = "مزامنة iCloud";
+"notes.icloud.alert.body" = "يستخدم التطبيق iCloud لمزامنة الإشارات المرجعية والملاحظات عبر أجهزتك. يمكنك تعطيله من جهازك من خلال إعدادات iCloud.";
+"notes.search.placeholder.text" = "ابحث في ملاحظاتك";
+"notes.search.no-results.title" = "لا توجد ملاحظات تطابق \"%@\"";
+"notes.search.no-results.text" = "جرب كلمة مختلفة من ملاحظة قمت بحفظها أو اسم سورة.";
+
+// MARK: - Ayah Menu
+
+"ayah.menu.copy" = "نسخ";
+"ayah.menu.share" = "مشاركة...";
+"ayah.menu.play-end-juz" = "إلى نهاية الجزء";
+"ayah.menu.play-end-surah" = "إلى نهاية السورة";
+"ayah.menu.play-end-page" = "إلى نهاية الصفحة";
+"ayah.menu.play-end-quran" = "إلى نهاية القرآن";
+"ayah.menu.repeat" = "كرر";
+"ayah.menu.selected-verse" = "الآية المختارة";
+"ayah.menu.selected-verses" = "الآيات المختارة";
+"ayah.menu.highlight" = "تحديد";
+"ayah.menu.highlight-select-color" = "اختر لون";
+"ayah.menu.add-note" = "اضف ملاحظة";
+"ayah.menu.edit-note" = "تحرير الملاحظة";
+"ayah.menu.notes-count" = "الملاحظات (%d)";
+"ayah.menu.delete-note" = "حذف الملاحظة";
+"ayah.menu.delete-highlight" = "حذف التحديد";
+
+// MARK: - Highlights
+
+"highlight.color.red" = "أحمر";
+"highlight.color.green" = "أخضر";
+"highlight.color.blue" = "أزرق";
+"highlight.color.yellow" = "أصفر";
+"highlight.color.purple" = "بنفسجي";
+"highlight.color.pink" = "وردي";
+"highlight.color.teal" = "أزرق مخضر";
+"highlight.color.orange" = "برتقالي";
+
+// MARK: - Reading Selector
+
+// Selector UI
+"reading.selector.selectMushaf.short" = "اختر";
+"reading.selector.selectMushaf.long" = "اختر هذا المصحف";
+"reading.selector.title" = "اختر المصحف";
+"reading.selector.group.uthmani" = "العثماني";
+"reading.selector.group.tajweed" = "التجويد";
+"reading.selector.group.indopak" = "الهندي الباكستاني";
+"reading.selector.badge.experimental" = "تجريبي";
+"reading.selector.badge.large-screen-optimized" = "مهيأ للشاشات الأكبر";
+"reading.selector.selection-description" = "اضغط على المصحف للمزيد من المعلومات.";
+"reading.selector.property.hafs" = "مصحف حفص عن عاصم";
+"reading.selector.property.pages.604" = "٦٠٤ صفحة";
+"reading.selector.property.lines.15" = "١٥ سطرًا بالصفحة";
+"reading.selector.property.word-translation.supported" = "يدعم ترجمة الكلمات";
+"reading.selector.property.word-translation.not-supported" = "لا يدعم ترجمة الكلمات";
+
+// Hafs 1405
+"reading.hafs-1405.title" = "حفص، مصحف المدينة المنورة النمطي، ١٤٠٥هـ";
+"reading.hafs-1405.description" = "مصحف حفص عن عاصم، إصدر المدينة المنورة عام ١٤٠٥ هـ. كان التطبيق يقدم هذا الإصدار لفترة طويلة. \n إصدار مجمع الملك فهد لطباعة المصحف.";
+"reading.hafs-1405.issue" = "إصدار ١٤٠٥ هجري";
+
+// Hafs 1421
+"reading.hafs-1421.title" = "حفص، مصحف المدينة المنورة النمطي، ١٤٢١هـ";
+"reading.hafs-1421.description" = "مصحف حفص عن عاصم، إصدر المدينة المنورة عام ١٤٢١ هـ. إصدار مجمع الملك فهد لطباعة المصحف.";
+"reading.hafs-1421.issue" = "إصدار ١٤٢١ هجري";
+
+// Hafs 1440
+"reading.hafs-1440.title" = "حفص، مصحف المدينة المنورة النمطي، ١٤٤٠هـ";
+"reading.hafs-1440.description" = "مصحف حفص عن عاصم، إصدر المدينة المنورة عام ١٤٤٠ هـ. إصدار مجمع الملك فهد لطباعة المصحف.";
+"reading.hafs-1440.issue" = "إصدار ١٤٤٠ هجري";
+
+// Hafs 1439
+"reading.hafs-1439.title" = "مصحف المدينة (١٤٣٩)";
+"reading.hafs-1439.description" = "مصحف المدينة الطبعة من عام ١٤٣٩ من مجمع الملك فهد لطباعة المصحف الشريف، وملائم للشاشات الأطول.";
+"reading.hafs-1439.issue" = "إصدار ١٤٣٩ هجري";
+
+// Hafs 1441
+"reading.hafs-1441.title" = "مصحف المدينة (١٤٤١)";
+"reading.hafs-1441.description" = "مصحف المدينة إصدار ١٤٤١ من مجمع الملك فهد لطباعة المصحف الشريف، ومهيأ للشاشات الأكبر.";
+"reading.hafs-1441.issue" = "إصدار ١٤٤١ هجري";
+
+// Hafs Tajweed
+"reading.tajweed.title" = "مصحف التجويد";
+"reading.tajweed.description" = "مصحف التجويد (حفص عن عاصم) – دار المعرفة";
+
+// MARK: - Diagnostics
+
+"diagnostics.title" = "تشخيص التطبيق";
+"diagnostics.details" = "يستخدم المطور هذه الإعدادات خصيصًا لأغراض التصحيح والتشخيص.";
+
+"diagnostics.share_app_logs" = "مشاركة سجلات التطبيق";
+"diagnostics.enable_debug_logs" = "تمكين تسجيل التصحيح";
+"diagnostics.enable_debug_logs.details" = "سيكون للإعداد تأثير عند إعادة تشغيل التطبيق التالية.";
+
+
+// MARK: - What's new
+
+"new.title" = "المضاف حديثاً";
+"new.action" = "استمر";
+
+// New app icon
+"new.app_icon.title" = "أيقونتنا الجديدة هنا";
+"new.app_icon.body" = "يحمل تطبيق القرآن الآن العلامة المشتركة لعائلة من الأدوات المبنية حول كلام الله. علاماتك المرجعية وملاحظاتك وتقدّمك في مكانها كما تركتها تمامًا.";
+"new.app_icon.choose_another" = "اختر أيقونة أخرى";
+
+// Reading layouts
+"new.reading_layouts" = "مصاحف مدنية جديدة";
+"new.reading_layouts.details" = "* تمت إضافة مصحفي المدينة ١٤٣٩ و١٤٤١، وقد حُسِّنا لملء الشاشة بالكامل.";
+
+// Experimental IndoPak
+"new.experimental_indopak" = "الهندي الباكستاني – ١٥ سطرًا";
+"new.experimental_indopak.details" = "* جرّب المصحف الهندي الباكستاني الجديد المكوّن من ١٥ سطرًا بخط النسخ.";
+
+// Audio controls
+"new.audio_controls" = "خيارات الصوت المتقدمة";
+"new.audio_controls.details" = "أُعيد تصميم خيارات الصوت المتقدمة وأُضيفت المزيد من عناصر التحكم - بفضل @OKKHALIL3.\n* سرعات تشغيل من ٠٫٢٥× إلى ٢× - بفضل @OKKHALIL3.\n* عدد مرات تكرار من ١× إلى ١٠٠×، بالإضافة إلى خيار التكرار المستمر - بفضل @OKKHALIL3.\n* فواصل زمنية قابلة للضبط بين الآيات ونطاقات التكرار - بفضل @abdorizak و@OKKHALIL3.\n* بث الصوت بدلًا من تنزيله أولًا - بفضل @OKKHALIL3.\n* منتقي آيات أفضل - بفضل @OKKHALIL3.";
+
+// Notes
+"new.notes_updates" = "البحث في الملاحظات وتحريرها";
+"new.notes_updates.details" = "* ابحث في الملاحظات حسب نصها أو السورة - بفضل @abdorizak.\n* أُعيد تصميم بطاقات الملاحظات ومحرر الملاحظات.";
+
+// Navigation
+"new.navigation_updates" = "الرئيسية والتنقل";
+"new.navigation_updates.details" = "* تمت إضافة أقسام أجزاء قابلة للطي إلى قوائم السور والأجزاء على الصفحة الرئيسية - بفضل @OKKHALIL3.\n* أصبح التنقل بين الصفحات والآيات أكثر اتساقًا.";
+
+// Translation
+"new.translation_update" = "تحديث الترجمة";
+"new.translation_update.details" = "* تم تصحيح الترجمة الروسية لكلمة «مصحف» - بفضل @pulatovpro.";
+
+"notes.minimum-length.alert.title" = "الملاحظة قصيرة جدًا";
+"notes.minimum-length.alert.body" = "يجب أن تكون الملاحظة %d أحرف على الأقل.";
+
+// Audio
+"audio.end-at" = "الانتهاء عند";
+"audio.end-at.custom" = "مخصص";
+"audio.playback-ayah-range" = "نطاق تشغيل الآيات";
+"audio.playback-speed" = "سرعة التشغيل";
+
+// Reading bookmark
+"ayah.menu.reading-bookmark.move-here" = "عند %@ • انقل إلى هنا";
+"ayah.menu.reading-bookmark.moved" = "تم نقل علامة موضع القراءة من %@ إلى %@";
+"ayah.menu.reading-bookmark.removed" = "تمت إزالة علامة موضع القراءة من %@";
+"ayah.menu.reading-bookmark.save-here" = "احفظ موضعك هنا";
+"ayah.menu.reading-bookmark.saved" = "تم حفظ علامة موضع القراءة عند %@";
+"ayah.menu.reading-bookmark.saved-here" = "محفوظ هنا • اضغط للحذف";
+"ayah.menu.reading-bookmark.single-ayah-only" = "حدد آية واحدة";
+"ayah.menu.reading-bookmark.title" = "علامة موضع القراءة";
+
+// Bookmarks
+"bookmarks.delete-all" = "حذف الكل";
+"bookmarks.delete-all.confirmation" = "هل أنت متأكد من رغبتك في حذف جميع الإشارات المرجعية؟";
+
+// Reading selector
+"reading.indopak.description" = "مصحف برواية حفص بخط النسخ الهندي الباكستاني، الشائع في جنوب آسيا. صور الصفحات من مجمع الملك فهد لطباعة المصحف الشريف.";
+"reading.indopak.title" = "الهندي الباكستاني – ١٥ سطرًا";
+"reading.selector.property.pages.610" = "٦١٠ صفحة";
+
+// Translation
+"translation.text.ayah-number" = "%d:%d";
+"translation.text.footnote-number" = "[%d]";
+"translation.text.footnote-title" = "الحاشية رقم %d";
+
+/* Audio banner options summary */
+"audio.summary.verse" = "الآية %@";
+"audio.summary.range" = "المجموعة %@";
+"audio.options" = "خيارات الصوت";
+
+// MARK: - Continue reading and reading bookmarks
+
+// Home heading for saved reading positions and recent pages.
+"home.continue-reading.title" = "متابعة القراءة";
+// Collections heading for saved reading positions.
+"bookmarks.reading.title" = "علامات موضع القراءة";
+// Button that collapses the additional reading bookmarks.
+"bookmarks.reading.show-less" = "عرض أقل";
+// VoiceOver state when the additional reading bookmarks are visible.
+"accessibility.expanded" = "موسّع";
+// VoiceOver state when the additional reading bookmarks are hidden.
+"accessibility.collapsed" = "مطوي";
+// Recent pages heading with a localized page count.
+"home.recent-pages.title" = "الصفحات الأخيرة (%@)";

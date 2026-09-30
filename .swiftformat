@@ -1,0 +1,43 @@
+# Don't format
+--exclude .build,UI/UIx/Sources/SwiftUI/Epoxy,BuildTools
+
+# Options
+
+--import-grouping testable-bottom # sortedImports
+--wrap-arguments before-first # wrapArguments
+--wrap-parameters before-first # wrapArguments
+--func-attributes prev-line # wrapAttributes
+--type-attributes prev-line # wrapAttributes
+--ifdef no-indent # indent
+
+# Disabled
+
+--disable andOperator
+--disable emptyBraces
+--disable extensionAccessControl
+--disable hoistAwait
+--disable hoistPatternLet
+--disable hoistTry
+--disable organizeDeclarations
+--disable redundantReturn
+--disable unusedArguments
+
+# SwiftFormat 0.62 migration: keep the version bump low-churn.
+--disable docComments
+# Keep force unwraps in XCTest until we migrate tests to Swift Testing and can use #require.
+--disable noForceUnwrapInTests
+--disable redundantClosure
+--disable redundantNilInit
+--disable redundantSwiftUIGroup
+--disable redundantVariable
+--disable redundantViewBuilder
+--disable simplifyGenericConstraints
+--disable wrapIfStatementBodies
+--disable wrapPropertyBodies
+
+# Enabled
+
+--enable blankLineAfterImports
+--enable blankLinesBetweenImports
+--enable blockComments
+--enable isEmpty

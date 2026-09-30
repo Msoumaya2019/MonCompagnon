@@ -1,0 +1,181 @@
+//
+//  UIView+Extension.swift
+//  Quran
+//
+//  Created by Mohamed Afifi on 10/30/16.
+//
+//  Quran for iOS is a Quran reading application for iOS.
+//  Copyright (C) 2017  Quran.com
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+
+import UIKit
+
+extension UIView {
+    /// Returns the first view controller found while walking up the responder chain.
+    public var nearestViewController: UIViewController? {
+        var responder: UIResponder? = self
+        while let currentResponder = responder {
+            if let viewController = currentResponder as? UIViewController {
+                return viewController
+            }
+            responder = currentResponder.next
+        }
+        return nil
+    }
+
+    public func findFirstResponder() -> UIView? {
+        if isFirstResponder { return self }
+        for subView in subviews {
+            if let responder = subView.findFirstResponder() {
+                return responder
+            }
+        }
+        return nil
+    }
+
+    @discardableResult
+    public func loadViewFrom(nibClass: UIView.Type) -> UIView {
+        loadViewFrom(nibName: String(describing: nibClass))
+    }
+
+    @discardableResult
+    public func loadViewFrom(nibName: String, bundle: Bundle? = nil) -> UIView {
+        let nib = UINib(nibName: nibName, bundle: bundle)
+        guard let contentView = nib.instantiate(withOwner: self, options: nil).first as? UIView else {
+            fatalError("Couldn't load '\(nibName).xib' as the first item should be a UIView subclass.")
+        }
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(contentView)
+        addConstraints(NSLayoutConstraint.constraints(
+            withVisualFormat: "V:|[view]|",
+            options: [],
+            metrics: nil,
+            views: ["view": contentView]
+        ))
+        addConstraints(NSLayoutConstraint.constraints(
+            withVisualFormat: "H:|[view]|",
+            options: [],
+            metrics: nil,
+            views: ["view": contentView]
+        ))
+        return contentView
+    }
+
+    public class func loadFromNib(owner: AnyObject? = nil) -> Self {
+        let nibName = String(describing: self)
+        let nib = UINib(nibName: nibName, bundle: nil)
+        let views = nib.instantiate(withOwner: owner, options: nil)
+        precondition(views.count == 1, "\(nibName).xib should have only 1 top level object")
+        guard let view = views[0] as? Self else {
+            fatalError("Couldn't load '\(nibName).xib' as the first item should be a UIView subclass.")
+        }
+        return view
+    }
+
+    public func findSubview<T: UIView>(ofType type: T.Type) -> T? {
+        // breadth-first search
+        var queue = subviews
+        while !queue.isEmpty {
+            let subview = queue.removeFirst()
+            if let subview = subview as? T {
+                return subview
+            }
+            queue.append(contentsOf: subview.subviews)
+        }
+        return nil
+    }
+
+    public func findSubviews<T: UIView>(ofType type: T.Type) -> [T] {
+        // breadth-first search
+        var queue = subviews
+        var result: [T] = []
+        while !queue.isEmpty {
+            let subview = queue.removeFirst()
+            if let subview = subview as? T {
+                result.append(subview)
+            }
+            queue.append(contentsOf: subview.subviews)
+        }
+        return result
+    }
+
+    /// Finds all visible subviews of a specific type in the view hierarchy.
+    /// - Parameter type: The type of subviews to find.
+    /// - Returns: An array of visible subviews of the specified type.
+    public func findVisibleSubviews<T: UIView>(ofType type: T.Type) -> [T] {
+        findSubviews(ofType: T.self) { subview in
+            subview.isHidden == false && subview.alpha > 0 && subview.frame.size != .zero
+        }
+    }
+
+    /// Returns the visible subview of the requested type with the largest area inside the receiver.
+    public func mostVisibleSubview<T: UIView>(ofType type: T.Type) -> T? {
+        findVisibleSubviews(ofType: type)
+            .max { lhs, rhs in
+                lhs.visibleArea(in: self) < rhs.visibleArea(in: self)
+            }
+    }
+
+    /// Returns the area of the receiver that intersects the supplied view's bounds.
+    public func visibleArea(in view: UIView) -> CGFloat {
+        let frame = convert(bounds, to: view)
+        let intersection = frame.intersection(view.bounds)
+        guard !intersection.isNull else { return 0 }
+        return intersection.width * intersection.height
+    }
+
+    private func findSubviews<T: UIView>(ofType type: T.Type, include: (UIView) -> Bool) -> [T] {
+        var filteredSubviews: [T] = []
+
+        // Function to recursively search for subviews of the specified type.
+        func findInView(_ view: UIView) {
+            for subview in view.subviews where include(subview) {
+                if let typedSubview = subview as? T {
+                    filteredSubviews.append(typedSubview)
+                }
+                findInView(subview) // Recursively search in the subview.
+            }
+        }
+
+        findInView(self) // Start the search from the current view.
+        return filteredSubviews
+    }
+}
+
+extension UIView {
+    public var circularRadius: CGFloat {
+        min(bounds.width, bounds.height) / 2
+    }
+}
+
+extension UIView {
+    public var readableContentInsets: NSDirectionalEdgeInsets {
+        let readbleContentFrame = readableContentGuide.layoutFrame
+        return NSDirectionalEdgeInsets(
+            top: readbleContentFrame.minY,
+            leading: readbleContentFrame.minX,
+            bottom: bounds.height - readbleContentFrame.maxY,
+            trailing: bounds.width - readbleContentFrame.maxX
+        )
+    }
+}
+
+extension UIView {
+    public func snapshot(of area: CGRect? = nil) -> UIImage {
+        let rect = area ?? bounds
+        let renderer = UIGraphicsImageRenderer(size: rect.size)
+        return renderer.image { _ in
+            drawHierarchy(in: CGRect(origin: CGPoint(x: -rect.origin.x, y: -rect.origin.y), size: bounds.size), afterScreenUpdates: true)
+        }
+    }
+}

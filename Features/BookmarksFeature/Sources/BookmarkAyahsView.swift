@@ -1,0 +1,112 @@
+#if QURAN_SYNC
+//
+//  BookmarkAyahsView.swift
+//
+
+import AnnotationsService
+import Localization
+import NoorUI
+import QuranAnnotations
+import SwiftUI
+import UIx
+
+@MainActor
+struct BookmarkAyahsView: View {
+    @ObservedObject var viewModel: BookmarkAyahsViewModel
+
+    var body: some View {
+        NoorList {
+            NoorBasicSection(title: l("ayah.menu.highlight")) {
+                HighlightColorPicker(
+                    selectedColor: viewModel.selectedHighlightColor,
+                    partiallySelectedColors: viewModel.partiallySelectedHighlightColors,
+                    onSelect: { await viewModel.selectHighlight($0) },
+                    onRemove: viewModel.highlightSelection == .none
+                        ? nil
+                        : { await viewModel.selectHighlight(nil) }
+                )
+                .disabled(viewModel.isUpdatingHighlight)
+            }
+
+            NoorBasicSection(title: l("bookmarks.collections.mine")) {
+                ForEach(viewModel.displayedCollections, id: \.id) { collection in
+                    collectionRow(collection)
+                }
+
+                NoorListItem(
+                    image: .init(.plusCircle, color: .accentColor),
+                    title: .text(l("bookmarks.collections.new")),
+                    titleColor: .accentColor,
+                    action: .sync { viewModel.presentAddCollection() }
+                )
+            }
+        }
+        .task { await viewModel.start() }
+        .addBookmarkCollectionAlert(viewModel: viewModel)
+        .errorAlert(error: $viewModel.error)
+    }
+
+    private func collectionRow(_ collection: AyahBookmarkCollection) -> some View {
+        let selection = viewModel.collectionSelection(for: collection)
+        return NoorListItem(
+            image: .init(collection.displayImage, color: collection.displayImageColor),
+            title: .text(collection.displayName),
+            accessory: collectionAccessory(selection),
+            action: .async { await viewModel.toggleCollection(collection) }
+        )
+        .disabled(viewModel.isUpdatingCollection(collection))
+        .accessibilityValue(collectionAccessibilityValue(selection))
+    }
+
+    private func collectionAccessory(
+        _ selection: BookmarkAyahsViewModel.CollectionSelection
+    ) -> NoorListItem.Accessory {
+        switch selection {
+        case .unselected:
+            .image(.checkmark_unchecked, color: .tertiaryLabel)
+        case .mixed:
+            .image(.checkmark_indeterminate, color: .accentColor)
+        case .selected:
+            .image(.checkmark_checked, color: .accentColor)
+        }
+    }
+
+    private func collectionAccessibilityValue(
+        _ selection: BookmarkAyahsViewModel.CollectionSelection
+    ) -> String {
+        switch selection {
+        case .unselected:
+            l("bookmarks.editor.collection.unselected")
+        case .mixed:
+            l("bookmarks.editor.collection.mixed")
+        case .selected:
+            l("bookmarks.editor.collection.selected")
+        }
+    }
+}
+
+private extension View {
+    @MainActor
+    func addBookmarkCollectionAlert(viewModel: BookmarkAyahsViewModel) -> some View {
+        alert(
+            l("bookmarks.collections.add"),
+            isPresented: Binding(
+                get: { viewModel.isPresentingAddCollection },
+                set: { viewModel.isPresentingAddCollection = $0 }
+            )
+        ) {
+            TextField(
+                l("bookmarks.collections.new.placeholder"),
+                text: Binding(
+                    get: { viewModel.newCollectionName },
+                    set: { viewModel.newCollectionName = $0 }
+                )
+            )
+            Button(lAndroid("cancel"), role: .cancel) {}
+            Button(l("bookmarks.collections.add")) {
+                Task { await viewModel.createPendingCollection() }
+            }
+        }
+    }
+}
+#endif

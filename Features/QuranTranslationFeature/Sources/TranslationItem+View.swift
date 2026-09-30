@@ -1,0 +1,245 @@
+//
+//  TranslationItem+View.swift
+//
+//
+//  Created by Mohamed Afifi on 2023-12-28.
+//
+
+import NoorUI
+import QuranKit
+import QuranLocalization
+import QuranText
+import SwiftUI
+
+extension TranslationPageHeader: View {
+    var body: some View {
+        QuranPageHeader(quarterName: page.localizedQuarterName, suraNames: page.suraNames())
+    }
+}
+
+extension TranslationPageFooter: View {
+    var body: some View {
+        QuranPageFooter(page: page.localizedNumber)
+    }
+}
+
+extension TranslationSuraName: View {
+    var body: some View {
+        QuranSuraName(
+            sura: sura,
+            besmAllah: QuranText(sura.startsWithBesmAllah ? sura.quran.arabicBesmAllah : ""),
+            quranFont: quranFont,
+            besmAllahFontSize: arabicFontSize
+        )
+    }
+}
+
+extension TranslationArabicText {
+    #if QURAN_SYNC
+    func view(onAyahNumberTapped: @escaping (AyahNumber, CGPoint) -> Void) -> some View {
+        QuranArabicText(verse: verse, text: text, quranFont: quranFont, fontSize: arabicFontSize, annotations: annotations, onAyahNumberTapped: { point in onAyahNumberTapped(verse, point) })
+    }
+    #else
+    func view() -> some View {
+        QuranArabicText(verse: verse, text: text, quranFont: quranFont, fontSize: arabicFontSize)
+    }
+    #endif
+}
+
+extension TranslationTextChunk {
+    var readMoreURL: URL {
+        TranslationURL.readMore(
+            translationId: translation.id,
+            sura: verse.sura.suraNumber,
+            ayah: verse.ayah
+        ).url
+    }
+}
+
+extension TranslationTextChunk: View {
+    var body: some View {
+        QuranTranslationTextChunk(
+            text: text.text,
+            chunk: chunks[chunkIndex],
+            footnoteRanges: text.footnoteRanges,
+            quranRanges: text.quranRanges,
+            firstChunk: chunkIndex == 0,
+            readMoreURL: readMore ? readMoreURL : nil,
+            footnoteURL: { index in
+                TranslationURL.footnote(
+                    translationId: translation.id,
+                    sura: verse.sura.suraNumber,
+                    ayah: verse.ayah,
+                    footnoteIndex: index
+                ).url
+            },
+            font: translation.textFont,
+            fontSize: translationFontSize,
+            characterDirection: translation.characterDirection
+        )
+    }
+}
+
+extension TranslationReferenceVerse: View {
+    var body: some View {
+        QuranTranslationReferenceVerse(reference: reference, fontSize: translationFontSize, characterDirection: translation.characterDirection)
+    }
+}
+
+extension TranslatorText: View {
+    var body: some View {
+        QuranTranslatorName(name: translation.translationName, fontSize: translationFontSize, characterDirection: translation.characterDirection)
+    }
+}
+
+extension TranslationItem {
+    #if QURAN_SYNC
+    func view(onAyahNumberTapped: @escaping (AyahNumber, CGPoint) -> Void) -> some View {
+        content { $0.view(onAyahNumberTapped: onAyahNumberTapped) }
+    }
+    #else
+    func view() -> some View {
+        content { $0.view() }
+    }
+    #endif
+
+    private func content(@ViewBuilder arabicTextView: (TranslationArabicText) -> some View) -> some View {
+        VStack {
+            switch self {
+            case .pageHeader(let pageHeader):
+                pageHeader
+            case .pageFooter(let pageFooter):
+                pageFooter
+            case .verseSeparator:
+                QuranVerseSeparator()
+            case .suraName(let suraName, _):
+                suraName
+            case .arabicText(let arabicText, _):
+                arabicTextView(arabicText)
+            case .translationTextChunk(let translationTextChunk, _):
+                translationTextChunk
+            case .translationReferenceVerse(let translationReferenceVerse, _):
+                translationReferenceVerse
+            case .translatorText(let translatorText, _):
+                translatorText
+            }
+        }
+        .font(.footnote)
+        .listRowSeparator(.hidden)
+        .listRowInsets(.zero)
+        .listRowBackground(Color.clear)
+        .background(color)
+        .trackingTarget(item: id)
+    }
+}
+
+import NoorFont
+
+#Preview {
+    ContentTranslationPreview()
+}
+
+private struct ContentTranslationPreview: View {
+    @State var readMore: Bool = true
+
+    let quran = Quran.hafsMadani1405
+
+    let fontSize = FontSize.large
+
+    var translation: Translation {
+        Translation(
+            id: 1,
+            displayName: "",
+            translator: "",
+            translatorForeign: "Khan & Hilai",
+            fileURL: URL(validURL: "a"),
+            fileName: "quran.en.khanhilali.db",
+            languageCode: "",
+            version: 5,
+            installedVersion: 5
+        )
+    }
+
+    var translationText: String {
+        """
+        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
+        """
+    }
+
+    private func itemView(_ item: TranslationItem) -> some View {
+        #if QURAN_SYNC
+        item.view(onAyahNumberTapped: { _, _ in })
+        #else
+        item.view()
+        #endif
+    }
+
+    var chunks: [Range<String.Index>] {
+        translationText.chunkRanges(maxChunkSize: 70)
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            List {
+                itemView(TranslationItem.pageHeader(.init(page: quran.pages[0])))
+                itemView(TranslationItem.suraName(
+                    .init(sura: quran.firstSura, quranFont: .uthmanicHafs, arabicFontSize: fontSize),
+                    nil
+                ))
+                #if QURAN_SYNC
+                itemView(TranslationItem.arabicText(.init(
+                    verse: quran.firstVerse,
+                    text: QuranText(quran.arabicBesmAllah),
+                    quranFont: .uthmanicHafs,
+                    arabicFontSize: fontSize,
+                    annotations: []
+                ), nil))
+                #else
+                itemView(TranslationItem.arabicText(.init(
+                    verse: quran.firstVerse,
+                    text: QuranText(quran.arabicBesmAllah),
+                    quranFont: .uthmanicHafs,
+                    arabicFontSize: fontSize
+                ), nil))
+                #endif
+                ForEach(0 ..< (readMore ? 1 : chunks.count), id: \.self) { chunkIndex in
+                    itemView(TranslationItem.translationTextChunk(
+                        .init(
+                            verse: quran.firstVerse,
+                            translation: translation,
+                            text: .init(text: translationText, quranRanges: [], footnoteRanges: [], footnotes: []),
+                            chunks: chunks,
+                            chunkIndex: chunkIndex,
+                            readMore: readMore && chunkIndex == 0,
+                            translationFontSize: fontSize
+                        ), nil
+                    ))
+                }
+                itemView(TranslationItem.translatorText(.init(verse: quran.firstVerse, translation: translation, translationFontSize: fontSize), nil))
+                itemView(TranslationItem.verseSeparator(.init(verse: quran.firstVerse), nil))
+
+                itemView(TranslationItem.translationReferenceVerse(.init(verse: quran.firstVerse, translation: translation, reference: quran.lastVerse, translationFontSize: .medium), nil))
+                itemView(TranslationItem.verseSeparator(.init(verse: quran.firstVerse), nil))
+
+                itemView(TranslationItem.pageFooter(.init(page: quran.firstVerse.page)))
+            }
+            .listStyle(.plain)
+            .environment(\.defaultMinListRowHeight, 1)
+            .populateReadableInsets()
+
+            Button {
+                readMore.toggle()
+            } label: {
+                Text("Toggle Read more")
+                    .foregroundStyle(Color.onAccent)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding()
+            .padding()
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            FontName.registerFonts()
+        }
+    }
+}

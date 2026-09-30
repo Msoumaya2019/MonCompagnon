@@ -1,0 +1,317 @@
+//
+//  SettingsRootViewModel.swift
+//
+//
+//  Created by Mohamed Afifi on 2023-06-26.
+//
+
+import Analytics
+import AppIconFeature
+import AudioDownloadsFeature
+import Combine
+import FeaturesSupport
+import Localization
+#if QURAN_SYNC
+import AuthenticationClient
+import LegacyDataMigration
+import MobileSync
+#endif
+import NoorUI
+import QuranAudio
+import QuranAudioKit
+import ReadingSelectorFeature
+import SafariServices
+import SettingsService
+import TranslationsFeature
+import UIKit
+import UIx
+import VLogging
+
+@MainActor
+final class SettingsRootViewModel: ObservableObject {
+    // MARK: Lifecycle
+
+    #if QURAN_SYNC
+    init(
+        analytics: AnalyticsLibrary,
+        reviewService: ReviewService,
+        authenticationClient: any AuthenticationClient,
+        legacyDataImportCoordinator: LegacyDataImportCoordinator,
+        audioDownloadsBuilder: AudioDownloadsBuilder,
+        translationsListBuilder: TranslationsListBuilder,
+        readingSelectorBuilder: ReadingSelectorBuilder,
+        diagnosticsBuilder: DiagnosticsBuilder,
+        appIconService: AppIconService,
+        appIconBuilder: AppIconBuilder,
+        quranProfileURL: URL,
+        navigationController: UINavigationController
+    ) {
+        appearanceMode = themeService.appearanceMode
+        audioEnd = audioPreferences.audioEnd
+        streamingEnabled = audioPreferences.streamingEnabled
+        isAppIconAvailable = appIconService.isAvailable
+        appIconOption = appIconService.currentOption
+        self.analytics = analytics
+        self.reviewService = reviewService
+        self.authenticationClient = authenticationClient
+        self.legacyDataImportCoordinator = legacyDataImportCoordinator
+        self.audioDownloadsBuilder = audioDownloadsBuilder
+        self.translationsListBuilder = translationsListBuilder
+        self.readingSelectorBuilder = readingSelectorBuilder
+        self.diagnosticsBuilder = diagnosticsBuilder
+        self.appIconBuilder = appIconBuilder
+        self.quranProfileURL = quranProfileURL
+        self.navigationController = navigationController
+
+        themeService.appearanceModePublisher.assign(to: &$appearanceMode)
+        audioPreferences.$audioEnd.assign(to: &$audioEnd)
+        audioPreferences.$streamingEnabled.assign(to: &$streamingEnabled)
+        appIconService.currentOptionPublisher.assign(to: &$appIconOption)
+    }
+    #else
+    init(
+        analytics: AnalyticsLibrary,
+        reviewService: ReviewService,
+        audioDownloadsBuilder: AudioDownloadsBuilder,
+        translationsListBuilder: TranslationsListBuilder,
+        readingSelectorBuilder: ReadingSelectorBuilder,
+        diagnosticsBuilder: DiagnosticsBuilder,
+        appIconService: AppIconService,
+        appIconBuilder: AppIconBuilder,
+        navigationController: UINavigationController
+    ) {
+        appearanceMode = themeService.appearanceMode
+        audioEnd = audioPreferences.audioEnd
+        streamingEnabled = audioPreferences.streamingEnabled
+        isAppIconAvailable = appIconService.isAvailable
+        appIconOption = appIconService.currentOption
+        self.analytics = analytics
+        self.reviewService = reviewService
+        self.audioDownloadsBuilder = audioDownloadsBuilder
+        self.translationsListBuilder = translationsListBuilder
+        self.readingSelectorBuilder = readingSelectorBuilder
+        self.diagnosticsBuilder = diagnosticsBuilder
+        self.appIconBuilder = appIconBuilder
+        self.navigationController = navigationController
+
+        themeService.appearanceModePublisher.assign(to: &$appearanceMode)
+        audioPreferences.$audioEnd.assign(to: &$audioEnd)
+        audioPreferences.$streamingEnabled.assign(to: &$streamingEnabled)
+        appIconService.currentOptionPublisher.assign(to: &$appIconOption)
+    }
+    #endif
+
+    // MARK: Internal
+
+    let analytics: AnalyticsLibrary
+    let reviewService: ReviewService
+    let audioDownloadsBuilder: AudioDownloadsBuilder
+    let translationsListBuilder: TranslationsListBuilder
+    let readingSelectorBuilder: ReadingSelectorBuilder
+    let diagnosticsBuilder: DiagnosticsBuilder
+    let appIconBuilder: AppIconBuilder
+
+    /// Whether the app can change its Home Screen icon. The App Icon row hides otherwise.
+    let isAppIconAvailable: Bool
+
+    let contactUsService = ContactUsService()
+    let themeService = ThemeService.shared
+    let audioPreferences = AudioPreferences.shared
+
+    weak var navigationController: UINavigationController?
+
+    @Published var audioEnd: AudioEnd
+    @Published var error: Error? = nil
+    #if QURAN_SYNC
+    @Published var isAuthenticated: Bool = false
+    @Published var loggedInUser: UserInfo? = nil
+    #endif
+
+    @Published var streamingEnabled: Bool {
+        didSet {
+            guard streamingEnabled != audioPreferences.streamingEnabled else { return }
+            audioPreferences.streamingEnabled = streamingEnabled
+        }
+    }
+
+    @Published var appearanceMode: AppearanceMode {
+        didSet {
+            themeService.appearanceMode = appearanceMode
+        }
+    }
+
+    /// The icon iOS shows for the app.
+    @Published private(set) var appIconOption: AppIconOption
+
+    func selectAppearanceMode(_ mode: AppearanceMode) {
+        guard mode != appearanceMode else {
+            return
+        }
+        logger.info("Settings: appearance mode changed to \(mode)")
+        analytics.changeAppearanceMode(mode)
+        appearanceMode = mode
+    }
+
+    func navigateToAppIcons() {
+        logger.info("Settings: navigateToAppIcons")
+        let viewController = appIconBuilder.build(source: .settings)
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+
+    func navigateToAudioEndSelector() {
+        logger.info("Settings: presentAudioEndSelector")
+        showSingleChoiceSelector(
+            title: l("audio.download-play-amount"),
+            sections: [SingleChoiceSection(
+                header: l("audio.download-play-amount.description"),
+                items: [AudioEnd.juz, .sura, .page, .quran]
+            )],
+            selected: audioPreferences.audioEnd,
+            itemText: { $0.name },
+            onSelection: { [weak self] item in
+                self?.audioPreferences.audioEnd = item
+            }
+        )
+    }
+
+    func navigateToAudioManager() {
+        logger.info("Settings: presentAudioDownloads")
+        let viewController = audioDownloadsBuilder.build()
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+
+    func navigateToTranslationsList() {
+        logger.info("Settings: presentTranslationsList")
+        let viewController = translationsListBuilder.build()
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+
+    func navigateToReadingSelectors() {
+        logger.info("Settings: navigateToReadingSelectors")
+        let viewController = readingSelectorBuilder.build()
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+
+    func shareApp() {
+        logger.info("Settings: Share the app.")
+        let url = URL(validURL: "https://itunes.apple.com/app/id1118663303")
+        let appName = "Quran - by Quran.com - قرآن"
+
+        navigationController?.share([appName, url])
+    }
+
+    func donate() {
+        logger.info("Settings: Open donation page.")
+        let url = URL(validURL: "https://give.quran.foundation/ios")
+        let viewController = SFSafariViewController(url: url)
+        navigationController?.present(viewController, animated: true)
+    }
+
+    func writeReview() {
+        logger.info("Settings: Navigate to app store to write a review.")
+        reviewService.openAppReview()
+    }
+
+    func contactUs() {
+        logger.info("Settings: presentContactUs")
+        let viewController = contactUsService.contactUsController()
+        navigationController?.present(viewController, animated: true)
+    }
+
+    #if QURAN_SYNC
+    var currentUserEmail: String? {
+        loggedInUser?.email
+    }
+
+    func openQuranComProfile() {
+        logger.info("Settings: Open Quran.com profile.")
+        let viewController = SFSafariViewController(url: quranProfileURL)
+        navigationController?.present(viewController, animated: true)
+    }
+    #endif
+
+    func navigateToDiagnotics() {
+        logger.info("Settings: navigateToDiagnotics")
+        let viewController = diagnosticsBuilder.build(navigationController: navigationController)
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+
+    #if QURAN_SYNC
+    func refreshAuthenticationState() async {
+        isAuthenticated = await authenticationClient.safelyRestoreState() == .authenticated
+        loggedInUser = isAuthenticated ? await authenticationClient.loggedInUser : nil
+        logger.info("Quran Sync: restored authentication from Settings. Authenticated: \(isAuthenticated)")
+    }
+
+    func loginToQuranCom() async {
+        guard let viewController = navigationController else {
+            return
+        }
+
+        analytics.quranSyncSignIn(from: .settings)
+        logger.info("Quran Sync: starting sign in from Settings")
+        do {
+            try await authenticationClient.login(on: viewController)
+            isAuthenticated = await authenticationClient.authenticationState == .authenticated
+            loggedInUser = isAuthenticated ? await authenticationClient.loggedInUser : nil
+            logger.info("Quran Sync: sign in completed from Settings. Authenticated: \(isAuthenticated)")
+        } catch AuthenticationClientError.cancelled {
+            logger.info("Quran Sync: sign in cancelled from Settings")
+            return
+        } catch {
+            logger.error("Failed to login to Quran.com: \(error)")
+            self.error = error
+        }
+    }
+
+    func logoutFromQuranCom() async {
+        analytics.quranSyncSignOut(from: .settings)
+        logger.info("Quran Sync: starting sign out from Settings")
+        // Stop legacy import before the logout reset, so legacy data never returns afterwards.
+        await legacyDataImportCoordinator.disable()
+        do {
+            try await authenticationClient.logout()
+            isAuthenticated = false
+            loggedInUser = nil
+            logger.info("Quran Sync: sign out succeeded from Settings")
+        } catch {
+            logger.error("Failed to logout from Quran.com: \(error)")
+            self.error = error
+        }
+    }
+    #endif
+
+    // MARK: Private
+
+    #if QURAN_SYNC
+    private let quranProfileURL: URL
+    private var authenticationClient: any AuthenticationClient
+    private let legacyDataImportCoordinator: LegacyDataImportCoordinator
+    #endif
+
+    private func showSingleChoiceSelector<T: Hashable>(
+        title: String,
+        sections: [SingleChoiceSection<T>],
+        selected: T?,
+        itemText: @escaping (T) -> String,
+        onSelection: @escaping (T) -> Void
+    ) {
+        let viewController = singleChoiceSelector(
+            sections: sections,
+            selected: selected,
+            itemText: itemText,
+            onSelection: { [weak self] item in
+                onSelection(item)
+                self?.navigationController?.popViewController(animated: true)
+            }
+        )
+        viewController.title = title
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+}
+
+private extension AnalyticsLibrary {
+    func changeAppearanceMode(_ mode: AppearanceMode) {
+        logEvent("ChangeAppearanceMode", value: mode.description)
+    }
+}

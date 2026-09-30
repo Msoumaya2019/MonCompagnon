@@ -1,0 +1,126 @@
+//
+//  GaplessAudioRequestBuilder.swift
+//  Quran
+//
+//  Created by Afifi, Mohamed on 4/28/19.
+//  Copyright © 2019 Quran.com. All rights reserved.
+//
+
+import AudioTimingService
+import Foundation
+import QueuePlayer
+import QuranAudio
+import QuranKit
+import QuranLocalization
+import QuranTextKit
+import Utilities
+
+struct GaplessAudioRequest: QuranAudioRequest {
+    let request: AudioRequest
+    let ayahs: [[AyahNumber]]
+    let reciter: Reciter
+
+    func getRequest() -> AudioRequest {
+        request
+    }
+
+    func getAyahNumberFrom(fileIndex: Int, frameIndex: Int) -> AyahNumber {
+        ayahs[fileIndex][frameIndex]
+    }
+
+    func getPlayerInfo(for fileIndex: Int) -> PlayerItemInfo {
+        PlayerItemInfo(
+            title: ayahs[fileIndex][0].sura.localizedName(),
+            artist: reciter.localizedName,
+            image: nil
+        )
+    }
+
+    func withVerseDelay(_ delay: VerseDelay) -> any QuranAudioRequest {
+        let updatedRequest = AudioRequest(
+            files: request.files,
+            endTime: request.endTime,
+            frameRuns: request.frameRuns,
+            requestRuns: request.requestRuns,
+            verseDelay: delay,
+            repetitionDelay: request.repetitionDelay
+        )
+        return GaplessAudioRequest(request: updatedRequest, ayahs: ayahs, reciter: reciter)
+    }
+
+    func withRepetitionDelay(_ delay: RepetitionDelay) -> any QuranAudioRequest {
+        let updatedRequest = AudioRequest(
+            files: request.files,
+            endTime: request.endTime,
+            frameRuns: request.frameRuns,
+            requestRuns: request.requestRuns,
+            verseDelay: request.verseDelay,
+            repetitionDelay: delay
+        )
+        return GaplessAudioRequest(request: updatedRequest, ayahs: ayahs, reciter: reciter)
+    }
+}
+
+struct GaplessAudioRequestBuilder: QuranAudioRequestBuilder {
+    // MARK: Internal
+
+    let timingRetriever = ReciterTimingRetriever()
+
+    func buildRequest(
+        with reciter: Reciter,
+        from start: AyahNumber,
+        to end: AyahNumber,
+        frameRuns: Runs,
+        requestRuns: Runs,
+        streaming: Bool
+    ) async throws -> QuranAudioRequest {
+        let range = try await timingRetriever.timing(for: reciter, from: start, to: end)
+        let suraURLs = urlsToPlay(reciter: reciter, suras: range.timings.keys, streaming: streaming)
+
+        var files: [AudioFile] = []
+        var ayahs: [[AyahNumber]] = []
+
+        for (url, sura) in suraURLs {
+            let suraTimings = range.timings[sura]!
+
+            var frames: [AudioFrame] = []
+            var fileAyahs: [AyahNumber] = []
+
+            for (offset, verse) in suraTimings.verses.enumerated() {
+                // start from 0 (beginning) if first ayah of the sura
+                let endTime = offset == suraTimings.verses.count - 1 ? suraTimings.endTime : nil
+
+                var startTimeSeconds = verse.time.seconds
+
+                // Do not include the basmalah when the first verse is repeated
+                if offset == 0 && verse.ayah.ayah == 1 && (requestRuns == .finite(1) || !ayahs.isEmpty) {
+                    startTimeSeconds = 0
+                }
+
+                let frame = AudioFrame(startTime: startTimeSeconds, endTime: endTime?.seconds)
+                frames.append(frame)
+                fileAyahs.append(verse.ayah)
+            }
+            files.append(AudioFile(url: url, frames: frames))
+            ayahs.append(fileAyahs)
+        }
+        let request = AudioRequest(files: files, endTime: range.endTime?.seconds, frameRuns: frameRuns, requestRuns: requestRuns)
+        let quranRequest = GaplessAudioRequest(request: request, ayahs: ayahs, reciter: reciter)
+        return quranRequest
+    }
+
+    // MARK: Private
+
+    private func urlsToPlay(reciter: Reciter, suras: some Collection<Sura>, streaming: Bool) -> [(url: URL, sura: Sura)] {
+        guard case AudioType.gapless = reciter.audioType else {
+            fatalError("Unsupported reciter type gapped. Only gapless reciters can be played here.")
+        }
+
+        var files: [(URL, Sura)] = []
+        for sura in suras.sorted() {
+            let url = streaming ? reciter.remoteURL(sura: sura) : reciter.localURL(sura: sura).url
+            files.append((url, sura))
+        }
+        return files
+    }
+}

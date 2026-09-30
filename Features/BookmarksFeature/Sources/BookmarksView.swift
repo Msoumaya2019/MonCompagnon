@@ -1,0 +1,141 @@
+//
+//  BookmarksView.swift
+//
+//
+//  Created by Mohamed Afifi on 2023-07-13.
+//
+
+#if !QURAN_SYNC
+import Localization
+import NoorUI
+import QuranAnnotations
+import QuranKit
+import SwiftUI
+import UIx
+
+@MainActor
+struct BookmarksView: View {
+    @StateObject var viewModel: BookmarksViewModel
+
+    init(viewModel: BookmarksViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    var body: some View {
+        BookmarksViewUI(
+            editMode: $viewModel.editMode,
+            error: $viewModel.error,
+            bookmarks: viewModel.bookmarks,
+            start: { await viewModel.start() },
+            selectAction: { viewModel.navigateTo($0) },
+            deleteAction: { viewModel.deleteItem($0) }
+        )
+    }
+}
+
+@MainActor
+private struct BookmarksViewUI: View {
+    // MARK: Internal
+
+    @Binding var editMode: EditMode
+    @Binding var error: Error?
+
+    let bookmarks: [PageBookmark]
+    let start: AsyncAction
+    let selectAction: ItemAction<PageBookmark>
+    let deleteAction: ItemDeletionAction<PageBookmark>
+
+    var body: some View {
+        Group {
+            if bookmarks.isEmpty {
+                noData
+            } else {
+                NoorList {
+                    NoorSection(bookmarks, onDelete: deleteAction) { bookmark in
+                        listItem(bookmark)
+                    }
+                }
+            }
+        }
+        .task {
+            await start()
+        }
+        .errorAlert(error: $error)
+        .environment(\.editMode, $editMode)
+    }
+
+    // MARK: Private
+
+    private var noData: some View {
+        DataUnavailableView(
+            title: l("bookmarks.no-data.title"),
+            text: l("bookmarks.no-data.text"),
+            image: .bookmark
+        )
+    }
+
+    private func listItem(_ bookmark: PageBookmark) -> some View {
+        let ayah = bookmark.page.firstVerse
+        return NoorListItem(
+            image: .init(.bookmark, color: .red),
+            title: "\(sura: ayah.sura)",
+            subtitle: .init(text: .text(bookmark.creationDate.timeAgo()), location: .bottom),
+            accessory: .text(bookmark.page.localizedNumber, accessibilityLabel: bookmark.page.localizedName),
+            action: .sync { selectAction(bookmark) }
+        )
+    }
+}
+
+struct BookmarksView_Previews: PreviewProvider {
+    struct Preview: View {
+        static var staticItems: [PageBookmark] {
+            let pages = Quran.hafsMadani1405.pages.shuffled()
+            return (0 ..< 100).map { i in
+                PageBookmark(page: pages[i], creationDate: Date())
+            }
+        }
+
+        @State var items: [PageBookmark] = staticItems
+        @State var editMode: EditMode = .inactive
+        @State var error: Error? = nil
+
+        var body: some View {
+            NavigationView {
+                BookmarksViewUI(
+                    editMode: $editMode,
+                    error: $error,
+                    bookmarks: items,
+                    start: {},
+                    selectAction: { _ in },
+                    deleteAction: { item in
+                        items = items.filter { $0 != item }
+                        return {}
+                    }
+                )
+                .navigationTitle(lAndroid("menu_bookmarks"))
+                .toolbar {
+                    if items.isEmpty {
+                        Button("Populate") { items = Self.staticItems }
+                    } else {
+                        Button("Empty") { items = [] }
+                    }
+
+                    if error == nil {
+                        Button("Error") { error = URLError(.notConnectedToInternet) }
+                    }
+
+                    EditModeButton(editMode: $editMode)
+                }
+            }
+        }
+    }
+
+    // MARK: Internal
+
+    static var previews: some View {
+        VStack {
+            Preview()
+        }
+    }
+}
+#endif

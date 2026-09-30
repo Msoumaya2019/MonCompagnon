@@ -1,0 +1,310 @@
+//
+//  GRDBVerseTextPersistence.swift
+//
+//
+//  Created by Mohamed Afifi on 2023-05-23.
+//
+
+import Crashing
+import Foundation
+import GRDB
+import QuranKit
+import QuranText
+import SQLitePersistence
+
+public struct GRDBQuranVerseTextPersistence: VerseTextPersistence {
+    public enum Mode {
+        case arabic
+        case share
+
+        // MARK: Internal
+
+        var tabelName: String {
+            switch self {
+            case .arabic:
+                return "arabic_text"
+            case .share:
+                return "share_text"
+            }
+        }
+    }
+
+    // MARK: Lifecycle
+
+    public init(fileURL: URL) {
+        self.init(mode: .arabic, fileURL: fileURL)
+    }
+
+    public init(mode: Mode, fileURL: URL) {
+        persistence = GRDBVerseTextPersistence(fileURL: fileURL, textTable: mode.tabelName)
+    }
+
+    // MARK: Public
+
+    public func textForVerses(_ verses: [AyahNumber]) async throws -> [AyahNumber: QuranText] {
+        try await persistence.textForVerses(verses, transform: textFromRow)
+    }
+
+    public func textForVerse(_ verse: AyahNumber) async throws -> QuranText {
+        try await persistence.textForVerse(verse, transform: textFromRow)
+    }
+
+    public func autocomplete(term: String) async throws -> [QuranText] {
+        try await persistence.autocomplete(term: term).map { QuranText($0) }
+    }
+
+    public func search(for term: String, quran: Quran) async throws -> [(verse: AyahNumber, text: QuranText)] {
+        try await persistence.search(for: term, quran: quran, transform: textFromRow)
+    }
+
+    // MARK: Private
+
+    private let persistence: GRDBVerseTextPersistence
+
+    private func textFromRow(_ row: Row, quran: Quran) throws -> QuranText {
+        guard let text = row["text"] as? String else {
+            throw PersistenceError.general("Quran text is not a String")
+        }
+        return QuranText(text)
+    }
+}
+
+public struct GRDBTranslationVerseTextPersistence: TranslationVerseTextPersistence {
+    // MARK: Lifecycle
+
+    public init(fileURL: URL) {
+        self.fileURL = fileURL
+        persistence = GRDBVerseTextPersistence(fileURL: fileURL, textTable: "verses")
+    }
+
+    // MARK: Public
+
+    public func textForVerses(_ verses: [AyahNumber]) async throws -> [AyahNumber: TranslationTextPersistenceModel] {
+        try await persistence.textForVerses(verses, transform: textFromRow)
+    }
+
+    public func textForVerse(_ verse: AyahNumber) async throws -> TranslationTextPersistenceModel {
+        try await persistence.textForVerse(verse, transform: textFromRow)
+    }
+
+    public func autocomplete(term: String) async throws -> [String] {
+        try await persistence.autocomplete(term: term)
+    }
+
+    public func search(for term: String, quran: Quran) async throws -> [(verse: AyahNumber, text: String)] {
+        try await persistence.search(for: term, quran: quran) { row, quran in
+            switch try textFromRow(row, quran: quran) {
+            case .string(let text):
+                return text
+            case .reference:
+                return nil
+            }
+        }
+    }
+
+    // MARK: Private
+
+    private let fileURL: URL
+    private let persistence: GRDBVerseTextPersistence
+
+    private func textFromRow(_ row: Row, quran: Quran) throws -> TranslationTextPersistenceModel {
+        let value = row["text"]
+        if let stringText = value as? String {
+            // if the data is an Integer but saved as String, try to see if it's a valid verseId
+            if let verseId = Int(stringText), verseId > 0 && verseId <= quran.verses.count {
+                return referenceVerse(verseId, quran: quran)
+            } else {
+                return .string(stringText)
+            }
+        } else if let verseId = value as? Int64,
+                  verseId > 0,
+                  verseId <= Int64(quran.verses.count)
+        {
+            return referenceVerse(Int(verseId), quran: quran)
+        }
+        throw PersistenceError.general("Text for verse is neither Int nor String. File: \(fileURL.lastPathComponent)")
+    }
+
+    private func referenceVerse(_ verseId: Int, quran: Quran) -> TranslationTextPersistenceModel {
+        // VerseId saved is an index in the quran.verses starts with 1
+        let verse = quran.verses[verseId - 1]
+        return .reference(verse)
+    }
+}
+
+// MARK: - Helper
+
+private struct GRDBVerseTextPersistence {
+    // MARK: Lifecycle
+
+    init(db: DatabaseConnection, textTable: String) {
+        self.db = db
+        self.textTable = textTable
+    }
+
+    init(fileURL: URL, textTable: String) {
+        self.init(db: DatabaseConnection(url: fileURL), textTable: textTable)
+    }
+
+    // MARK: Internal
+
+    let db: DatabaseConnection
+
+    func textForVerse<T>(_ verse: AyahNumber, transform: @escaping (Row, Quran) throws -> T) async throws -> T {
+        try await perform(operation: "text_for_verse") {
+            try await db.read { db in
+                if let text = try textForVerse(using: db, verse: verse, transform: transform) {
+                    return text
+                }
+                throw PersistenceError.general("Cannot find any records for verse '\(verse)'")
+            }
+        }
+    }
+
+    func textForVerses<T>(
+        _ verses: [AyahNumber],
+        transform: @escaping (Row, Quran) throws -> T
+    ) async throws -> [AyahNumber: T] {
+        try await perform(operation: "text_for_verses") {
+            try await db.read { db in
+                var dictionary: [AyahNumber: T] = [:]
+                for verse in verses {
+                    dictionary[verse] = try textForVerse(using: db, verse: verse, transform: transform)
+                }
+                return dictionary
+            }
+        }
+    }
+
+    // MARK: - Search
+
+    func autocomplete(term: String) async throws -> [String] {
+        try await perform(operation: "autocomplete") {
+            try await db.read { db in
+                let request = SQLRequest<String>("""
+                SELECT text
+                FROM \(sql: searchTable)
+                WHERE text match \(term) || '*'
+                LIMIT 100
+                """)
+                let rows = try request.fetchAll(db)
+                return rows
+            }
+        }
+    }
+
+    func search<Text>(
+        for term: String,
+        quran: Quran,
+        transform: @escaping (Row, Quran) throws -> Text?
+    ) async throws -> [(verse: AyahNumber, text: Text)] {
+        try await perform(operation: "search") {
+            try await db.read { db in
+                // TODO: Use match for FTS.
+                // Use like to match "_" in the Arabic regex as `match` treats "_" as a regular character.
+                let request = SQLRequest<Row>("""
+                SELECT text, sura, ayah
+                FROM \(sql: searchTable)
+                WHERE text like '%' || \(term) || '%'
+                """)
+                let rows = try request.fetchAll(db)
+                return try rowsToResults(rows, quran: quran, transform: transform)
+            }
+        }
+    }
+
+    // MARK: Private
+
+    private let textTable: String
+    private let searchTable = "verses"
+
+    private func perform<T>(operation: String, body: () async throws -> T) async throws -> T {
+        let store = "verse_text_\(textTable)"
+        crashContext.setPersistence(store: store, operation: operation, phase: "executing")
+        do {
+            let result = try await body()
+            crashContext.setPersistence(store: store, operation: operation, phase: "ready")
+            return result
+        } catch {
+            crashContext.setPersistence(store: store, operation: operation, phase: "failed")
+            throw error
+        }
+    }
+
+    private func textForVerse<T>(
+        using db: Database,
+        verse: AyahNumber,
+        transform: @escaping (Row, Quran) throws -> T
+    ) throws -> T? {
+        // Try to search using integer and string ayah/sura.
+        // Needed by some translation sqlite files.
+        let request = SQLRequest<Row>("""
+        SELECT text
+        FROM \(sql: textTable)
+        WHERE (ayah = \(verse.ayah) OR ayah = \(verse.ayah.description))
+          AND (sura = \(verse.sura.suraNumber) OR sura = \(verse.sura.suraNumber.description))
+        """)
+
+        guard let row = try request.fetchOne(db) else {
+            return nil
+        }
+
+        return try transform(row, verse.quran)
+    }
+
+    private func rowsToResults<Text>(
+        _ rows: [Row],
+        quran: Quran,
+        transform: (Row, Quran) throws -> Text?
+    ) throws -> [(verse: AyahNumber, text: Text)] {
+        var invalidCoordinates: [(sura: Int, ayah: Int)] = []
+        var results: [(verse: AyahNumber, text: Text)] = []
+        for row in rows {
+            let sura = try integerValue(in: row, column: "sura")
+            let ayah = try integerValue(in: row, column: "ayah")
+
+            guard let verse = AyahNumber(quran: quran, sura: sura, ayah: ayah) else {
+                invalidCoordinates.append((sura: sura, ayah: ayah))
+                continue
+            }
+            guard let text = try transform(row, quran) else {
+                continue
+            }
+            results.append((verse: verse, text: text))
+        }
+
+        if let firstInvalidCoordinate = invalidCoordinates.first {
+            crasher.recordError(
+                InvalidVerseSearchRowsError(
+                    count: invalidCoordinates.count,
+                    firstSura: firstInvalidCoordinate.sura,
+                    firstAyah: firstInvalidCoordinate.ayah
+                ),
+                reason: "Skipped invalid verse search rows in \(textTable)"
+            )
+        }
+
+        return results
+    }
+
+    private func integerValue(in row: Row, column: String) throws -> Int {
+        let value = row[column]
+        if let integer = value as? Int64 {
+            return Int(integer)
+        }
+        if let string = value as? String, let integer = Int(string) {
+            return integer
+        }
+        throw PersistenceError.general("\(column) is neither Int nor numeric String in \(textTable)")
+    }
+}
+
+private struct InvalidVerseSearchRowsError: LocalizedError {
+    let count: Int
+    let firstSura: Int
+    let firstAyah: Int
+
+    var errorDescription: String? {
+        "Found \(count) search row(s) with invalid Quran coordinates; first=\(firstSura):\(firstAyah)"
+    }
+}

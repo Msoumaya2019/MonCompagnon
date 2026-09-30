@@ -1,0 +1,623 @@
+//
+//  QuranInteractor.swift
+//  Quran
+//
+//  Created by Afifi, Mohamed on 3/31/19.
+//  Copyright © 2019 Quran.com. All rights reserved.
+//
+
+import Analytics
+import AnnotationsService
+import AudioBannerFeature
+import AyahMenuFeature
+#if QURAN_SYNC
+import BookmarksFeature
+#endif
+import Combine
+import Crashing
+import FeaturesSupport
+import MoreMenuFeature
+import NoorUI
+import NoteEditorFeature
+#if QURAN_SYNC
+import NotesFeature
+#endif
+import QuranAnnotations
+import QuranContentFeature
+import QuranKit
+import QuranText
+import QuranTextKit
+import ReadingService
+#if QURAN_SYNC
+import ReadingBookmarkMenuFeature
+#endif
+import TranslationService
+import TranslationsFeature
+import TranslationVerseFeature
+import UIKit
+import UIx
+import VLogging
+import WordPointerFeature
+import WordTextService
+
+@MainActor
+protocol QuranPresentable: UIViewController {
+    var pagesView: UIView { get }
+
+    func startHiddenBarsTimer()
+    func hideBars()
+    func refreshBarScrollEdgeInteractions()
+
+    func setVisiblePages(_ pages: [Page])
+    #if QURAN_SYNC
+    func updateReadingBookmark(_ bookmark: PlacedReadingBookmark?)
+    #else
+    func updateBookmark(_ isBookmarked: Bool)
+    #endif
+
+    func shareText(_ lines: [String], in sourceView: UIView, at point: CGPoint, completion: @escaping () -> Void)
+
+    func presentMoreMenu(_ viewController: UIViewController)
+    func presentAyahMenu(_ viewController: UIViewController, in sourceView: UIView, at point: CGPoint)
+    #if QURAN_SYNC
+    func presentReadingBookmarkMenu(_ viewController: UIViewController)
+    func presentBookmarkAyahs(_ viewController: UIViewController)
+    func presentAyahNotes(_ viewController: UIViewController)
+    #endif
+    func presentTranslatedVerse(_ viewController: UIViewController, didDismiss: @escaping () -> Void)
+    func presentAudioBanner(_ audioBanner: UIViewController)
+    func presentWordPointer(_ viewController: UIViewController)
+    func presentQuranContent(_ viewController: ContentViewController)
+    func presentTranslationsSelection(_ viewController: UIViewController)
+
+    func dismissWordPointer(_ viewController: UIViewController)
+    func dismissPresentedViewController(completion: (() -> Void)?)
+}
+
+@MainActor
+final class QuranInteractor: WordPointerListener, ContentListener, NoteEditorListener,
+    MoreMenuListener, AudioBannerListener, AyahMenuListener
+{
+    struct Deps {
+        let quran: Quran
+        let overlayService: VerseOverlayService
+        let ayahMenuBuilder: AyahMenuBuilder
+        let moreMenuBuilder: MoreMenuBuilder
+        let audioBannerBuilder: AudioBannerBuilder
+        let wordPointerBuilder: WordPointerBuilder
+        let contentBuilder: ContentBuilder
+        let translationsSelectionBuilder: TranslationsListBuilder
+        let translationVerseBuilder: TranslationVerseBuilder
+        let resources: ReadingResourcesService
+        let annotationsObserver: QuranAnnotationsObserver
+        #if QURAN_SYNC
+        let ayahNotesBuilder: AyahNotesBuilder
+        let bookmarkAyahsBuilder: BookmarkAyahsBuilder
+        let noteService: MobileSyncNoteService
+        let readingBookmarkMenuBuilder: ReadingBookmarkMenuBuilder
+        #else
+        let noteEditorBuilder: NoteEditorBuilder
+        let analytics: AnalyticsLibrary
+        let pageBookmarkService: PageBookmarkService
+        let noteService: NoteService
+        #endif
+    }
+
+    // MARK: Lifecycle
+
+    init(deps: Deps, input: QuranInput) {
+        self.deps = deps
+        self.input = input
+        isWordPointerActive = WordTextPreferences.shared.isWordPointerActive
+        logger.info("Quran: opening quran \(input)")
+    }
+
+    // MARK: Internal
+
+    @Published var contentStatus: ContentStatusView.State?
+
+    weak var presenter: QuranPresentable?
+
+    // MARK: - Preferences
+
+    var quranMode: QuranMode {
+        contentStatePreferences.quranMode
+    }
+
+    // MARK: - Audio Banner
+
+    var visiblePages: [Page] { contentViewModel?.visiblePages ?? [] }
+
+    func start() {
+        #if QURAN_SYNC
+        deps.annotationsObserver.$readingBookmarks
+            .receive(on: DispatchQueue.main) // sink after the bookmark property is updated
+            .sink { [weak self] _ in self?.reloadPageBookmark() }
+            .store(in: &cancellables)
+        #else
+        deps.pageBookmarkService.pageBookmarks(quran: deps.quran)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.pageBookmarks = $0 }
+            .store(in: &cancellables)
+        #endif
+
+        deps.annotationsObserver.start()
+
+        contentStatePreferences.$quranMode
+            .sink { [weak self] _ in self?.onQuranModeUpdated() }
+            .store(in: &cancellables)
+
+        deps.resources.publisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                switch status {
+                case .downloading(let progress):
+                    self?.contentStatus = .downloading(progress: progress)
+                case .error(let error):
+                    self?.contentStatus = .error(error, retry: { [weak self] in
+                        guard let self else { return }
+                        contentStatus = .downloading(progress: 0)
+                        Task {
+                            await self.deps.resources.retry()
+                        }
+                    })
+                case .ready:
+                    self?.contentStatus = nil
+                    self?.loadContent()
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Popover
+
+    func didDismissPopover() {
+        logger.info("Quran: dismiss popover")
+        contentViewModel?.removeAyahMenuHighlight()
+    }
+
+    // MARK: - More Menu
+
+    func onMoreBarButtonTapped() {
+        logger.info("Quran: more bar button tapped")
+        var state = MoreMenuControlsState()
+        state.wordPointer = readingPreferences.reading.supportsWordPositions ? .conditional : .alwaysOff
+        state.linePageDisplay = readingPreferences.reading == .indoPak ? .conditional : .alwaysOff
+        // TODO: Enable vertical scrolling.
+        state.verticalScrolling = .alwaysOff
+        let model = MoreMenuModel(isWordPointerActive: isWordPointerActive, state: state)
+        let viewController = deps.moreMenuBuilder.build(withListener: self, model: model)
+        presenter?.presentMoreMenu(viewController)
+    }
+
+    func onQuranModeUpdated() {
+        let noTranslationsSelected = selectedTranslationsPreferences.selectedTranslationIds.isEmpty
+        if quranMode == .translation, noTranslationsSelected {
+            presentTranslationsSelection()
+        }
+    }
+
+    func onTranslationsSelectionsTapped() {
+        presentTranslationsSelection()
+    }
+
+    func highlightReadingAyah(_ ayah: AyahNumber?) {
+        logger.info("Quran: highlight reading verse \(ayah?.nonLocalizedDescription ?? "nil")")
+        contentViewModel?.highlightReadingAyah(ayah)
+    }
+
+    // MARK: - Ayah Menu
+
+    func playAudio(_ from: AyahNumber, to: AyahNumber?, repeatVerses: Bool) {
+        Task { @MainActor in // TODO: remove
+            audioBanner?.play(from: from, to: to, repeatVerses: repeatVerses)
+        }
+    }
+
+    func deleteNotes(in verses: [AyahNumber]) async {
+        #if QURAN_SYNC
+        let noteService = deps.noteService
+        let notesToDelete = notesInteractingVerses(verses)
+        if !notesToDelete.isEmpty {
+            presenter?.confirmNoteDelete(
+                delete: { [weak self] in
+                    do {
+                        self?.contentViewModel?.removeAyahMenuHighlight()
+                        for note in notesToDelete {
+                            try await noteService.removeNote(note)
+                        }
+                    } catch {
+                        crasher.recordError(error, reason: "Failed to delete synced notes")
+                    }
+                },
+                cancel: { self.contentViewModel?.removeAyahMenuHighlight() }
+            )
+        }
+        #else
+        let notes = notesInteractingVerses(verses)
+        let containsText = notes.contains { note in
+            !(note.text ?? "").isEmpty
+        }
+        if containsText {
+            // confirm deletion first if there is text
+            presenter?.confirmNoteDelete(
+                delete: { await self.forceDeleteNotes(notes, verses: verses) },
+                cancel: { self.contentViewModel?.removeAyahMenuHighlight() }
+            )
+        } else {
+            // delete highlight
+            await forceDeleteNotes(notes, verses: verses)
+        }
+        #endif
+    }
+
+    func shareText(_ lines: [String], in sourceView: UIView, at point: CGPoint) {
+        logger.info("Quran: share text")
+        dismissAyahMenu()
+        presenter?.shareText(lines, in: sourceView, at: point, completion: {})
+    }
+
+    #if QURAN_SYNC
+    func showNotes(for verses: [AyahNumber], addingNewNote: Bool) async {
+        logger.info("Quran: show ayah notes. Verses: \(verses.map(\.nonLocalizedDescription).joined(separator: ", "))")
+        contentViewModel?.removeAyahMenuHighlight()
+        presenter?.dismissPresentedViewController { [weak self] in
+            guard let self else {
+                return
+            }
+            let viewController = deps.ayahNotesBuilder.build(
+                verses: verses,
+                presentsNewNote: addingNewNote
+            )
+            presenter?.presentAyahNotes(viewController)
+        }
+    }
+
+    #else
+    func showNoteEditor(for verses: [AyahNumber]) async {
+        let notes = notesInteractingVerses(verses)
+        if let note = notes.first {
+            presentNoteEditor(note: note)
+            return
+        }
+        do {
+            let color = deps.noteService.color(from: notes)
+            let note = try await deps.noteService.updateHighlight(verses: verses, color: color, quran: deps.quran)
+            presentNoteEditor(note: note)
+        } catch {
+            crasher.recordError(error, reason: "Failed to prepare note editor")
+        }
+    }
+    #endif
+
+    #if QURAN_SYNC
+    func showCollectionEditor(for verses: [AyahNumber]) {
+        logger.info("Quran: show bookmark editor. Verses: \(verses.map(\.nonLocalizedDescription).joined(separator: ", "))")
+        contentViewModel?.removeAyahMenuHighlight()
+        presenter?.dismissPresentedViewController { [weak self] in
+            guard let self else {
+                return
+            }
+            let viewController = deps.bookmarkAyahsBuilder.build(
+                verses: verses,
+                collections: deps.annotationsObserver.collections,
+                highlights: deps.overlayService.overlays.colorHighlights
+            )
+            presenter?.presentBookmarkAyahs(viewController)
+        }
+    }
+
+    func showReadingBookmarkMenu(
+        _ viewController: UIViewController,
+        in sourceView: UIView,
+        at point: CGPoint
+    ) {
+        contentViewModel?.removeAyahMenuHighlight()
+        presenter?.dismissPresentedViewController { [weak self] in
+            self?.presenter?.presentAyahMenu(viewController, in: sourceView, at: point)
+        }
+    }
+    #endif
+
+    func dismissNoteEditor() {
+        logger.info("Quran: dismiss note editor")
+        presenter?.dismiss(animated: true)
+    }
+
+    func showTranslation(_ verses: [AyahNumber]) {
+        guard let verse = verses.first else {
+            return
+        }
+
+        let viewController = deps.translationVerseBuilder.build(
+            startingVerse: verse,
+            actions: .init(updateCurrentVerseTo: { [weak self] verse in
+                self?.contentViewModel?.highlightTranslationVerse(verse)
+            })
+        )
+        presenter?.dismissPresentedViewController {
+            self.presenter?.presentTranslatedVerse(viewController) { [weak self] in
+                self?.contentViewModel?.removeAyahMenuHighlight()
+            }
+        }
+    }
+
+    func presentAyahMenu(in sourceView: UIView, at point: CGPoint, verses: [AyahNumber]) {
+        logger.info("Quran: present ayah menu, verses: \(verses.map(\.nonLocalizedDescription).joined(separator: ", "))")
+        #if QURAN_SYNC
+        let colorHighlights = deps.overlayService.overlays.colorHighlights
+        let bookmarkedVerses = Set(deps.annotationsObserver.collections.flatMap { collection in
+            collection.bookmarks.map(\.ayah)
+        })
+        #endif
+        #if QURAN_SYNC
+        let input = AyahMenuInput(
+            sourceView: sourceView,
+            pointInView: point,
+            verses: verses,
+            notes: notesInteractingVerses(verses),
+            highlightVerses: colorHighlights,
+            bookmarkedVerses: bookmarkedVerses,
+            readingBookmark: verses.count == 1
+                ? deps.annotationsObserver.latestReadingBookmark(at: [.ayah(verses[0])])
+                : nil
+        )
+        #else
+        let input = AyahMenuInput(
+            sourceView: sourceView,
+            pointInView: point,
+            verses: verses,
+            notes: notesInteractingVerses(verses)
+        )
+        #endif
+        let ayahMenuViewController = deps.ayahMenuBuilder.build(withListener: self, input: input)
+        presenter?.presentAyahMenu(ayahMenuViewController, in: sourceView, at: point)
+    }
+
+    func dismissAyahMenu() {
+        logger.info("Quran: dismiss ayah menu")
+        presenter?.dismissPresentedViewController(completion: nil)
+        contentViewModel?.removeAyahMenuHighlight()
+    }
+
+    // MARK: - Word Pointer
+
+    func onWordPointerPanBegan() {
+        presenter?.hideBars()
+    }
+
+    func word(at point: CGPoint) -> Word? {
+        contentViewController?.word(at: point)
+    }
+
+    func highlightWord(_ word: Word?) {
+        contentViewModel?.highlightWord(word)
+    }
+
+    func onIsWordPointerActiveUpdated(to isWordPointerActive: Bool) {
+        self.isWordPointerActive = isWordPointerActive
+        wordTextPreferences.isWordPointerActive = isWordPointerActive
+        if isWordPointerActive {
+            if let presenter {
+                showWordPointer(referenceView: presenter.pagesView)
+            }
+        } else {
+            hideWordPointer()
+        }
+    }
+
+    func userWillBeginDragScroll() {
+        logger.info("Quran: userWillBeginDragScroll")
+        presenter?.hideBars()
+    }
+
+    func contentViewDidChangeVisiblePage() {
+        presenter?.refreshBarScrollEdgeInteractions()
+    }
+
+    #if QURAN_SYNC
+    func onReadingBookmarkMenuTapped() {
+        guard let firstPage = visiblePages.min() else {
+            logger.info("Quran: ignore reading bookmarks tap when no visible pages")
+            return
+        }
+        let viewController = deps.readingBookmarkMenuBuilder.build(page: firstPage, pages: visiblePages)
+        presenter?.presentReadingBookmarkMenu(viewController)
+    }
+    #else
+    func toogleBookmark() async {
+        guard !isBookmarkMutationInFlight else {
+            logger.info("Quran: ignore bookmark tap while mutation is in progress")
+            return
+        }
+        isBookmarkMutationInFlight = true
+        defer { isBookmarkMutationInFlight = false }
+
+        logger.info("Quran: onBookmarkBarButtonTapped")
+        let pages = visiblePages
+        let visibleBookmarks = pageBookmarks.filter { pages.contains($0.page) }
+
+        do {
+            let analytics = deps.analytics
+            let service = deps.pageBookmarkService
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                if visibleBookmarks.isEmpty {
+                    for page in pages {
+                        group.addTask {
+                            analytics.bookmarkPage(page)
+                            try await service.insertPageBookmark(page)
+                        }
+                    }
+                } else {
+                    for bookmark in visibleBookmarks {
+                        group.addTask {
+                            analytics.removeBookmarkPage(bookmark.page)
+                            try await service.removePageBookmark(bookmark)
+                        }
+                    }
+                }
+                try await group.waitForAll()
+            }
+        } catch {
+            crasher.recordError(error, reason: "Failed to toggle page bookmark")
+        }
+    }
+    #endif
+
+    // MARK: Private
+
+    private let readingPreferences = ReadingPreferences.shared
+    private let contentStatePreferences = QuranContentStatePreferences.shared
+    private let selectedTranslationsPreferences = SelectedTranslationsPreferences.shared
+    private let wordTextPreferences = WordTextPreferences.shared
+
+    private var deps: Deps
+    private let input: QuranInput
+    private var audioBanner: AudioBannerViewModel?
+    private var cancellables: Set<AnyCancellable> = []
+    private var isWordPointerActive: Bool
+    private var wordPointer: WordPointerViewController?
+
+    private var visiblePageCancellable: AnyCancellable?
+
+    private var contentViewController: ContentViewController?
+
+    private var contentViewModel: ContentViewModel? {
+        didSet {
+            visiblePageCancellable = contentViewModel?.$visiblePages
+                .sink { [weak self] in self?.setVisiblePages($0) }
+        }
+    }
+
+    #if !QURAN_SYNC
+    private var isBookmarkMutationInFlight = false
+    private var pageBookmarks: [PageBookmark] = [] {
+        didSet {
+            reloadPageBookmark()
+        }
+    }
+    #endif
+
+    private func setVisiblePages(_ pages: [Page]) {
+        logger.info("Quran: set visible pages \(pages)")
+        presenter?.setVisiblePages(pages)
+        showPageBookmarkIfNeeded(for: pages)
+    }
+
+    private func loadContent() {
+        let (viewController, viewModel) = deps.audioBannerBuilder.build(withListener: self)
+        audioBanner = viewModel
+        presenter?.presentAudioBanner(viewController)
+
+        (contentViewController, contentViewModel) = presentQuranContent(with: input)
+        presenter?.startHiddenBarsTimer()
+        restoreWordPointerIfNeeded()
+    }
+
+    private func restoreWordPointerIfNeeded() {
+        guard isWordPointerActive, readingPreferences.reading.supportsWordPositions, let presenter else {
+            return
+        }
+        showWordPointer(referenceView: presenter.pagesView)
+    }
+
+    private func presentTranslationsSelection() {
+        presenter?.dismissPresentedViewController {
+            let controller = self.deps.translationsSelectionBuilder.build()
+            self.presenter?.presentTranslationsSelection(controller)
+        }
+    }
+
+    #if !QURAN_SYNC
+    private func forceDeleteNotes(_ notes: [Note], verses: [AyahNumber]) async {
+        contentViewModel?.removeAyahMenuHighlight()
+        do {
+            try await deps.noteService.removeNotes(with: verses)
+        } catch {
+            crasher.recordError(error, reason: "Failed to remove notes")
+        }
+    }
+    #endif
+
+    private func notesInteractingVerses(_ verses: [AyahNumber]) -> [Note] {
+        deps.annotationsObserver.notes(interacting: verses)
+    }
+
+    #if !QURAN_SYNC
+    private func presentNoteEditor(note: Note) {
+        dismissAyahMenu()
+        presenter?.rotateToPortraitIfPhone()
+        let viewController = deps.noteEditorBuilder.build(withListener: self, note: note)
+        presenter?.present(viewController, animated: true)
+    }
+    #endif
+
+    private func dismissWordPointer() {
+        logger.info("Quran: dismiss word pointer")
+        guard let viewController = wordPointer else {
+            return
+        }
+        presenter?.dismissWordPointer(viewController)
+        wordPointer = nil
+    }
+
+    private func showWordPointer(referenceView: UIView) {
+        logger.info("Quran: show word pointer")
+        presentWordPointerIfNeeded()
+        wordPointer?.showWordPointer(referenceView: referenceView)
+    }
+
+    private func hideWordPointer() {
+        logger.info("Quran: hide word pointer")
+        wordPointer?.hideWordPointer { self.dismissWordPointer() }
+    }
+
+    private func presentWordPointerIfNeeded() {
+        guard wordPointer == nil else {
+            return
+        }
+        let viewController = deps.wordPointerBuilder.build(withListener: self)
+        wordPointer = viewController
+        presenter?.presentWordPointer(viewController)
+    }
+
+    // MARK: - Quran Content
+
+    private func presentQuranContent(with input: QuranInput) -> (ContentViewController, ContentViewModel) {
+        let (viewController, contentViewModel) = deps.contentBuilder.build(withListener: self, input: input)
+        presenter?.presentQuranContent(viewController)
+        return (viewController, contentViewModel)
+    }
+
+    // MARK: - Page Bookmark
+
+    private func reloadPageBookmark() {
+        logger.info("Quran: reloadPageBookmark")
+        if !visiblePages.isEmpty {
+            showPageBookmarkIfNeeded(for: visiblePages)
+        }
+    }
+
+    #if !QURAN_SYNC
+    private func bookmarked(_ pages: [Page]) -> Bool {
+        let visibleBookmarks = pageBookmarks.filter { pages.contains($0.page) }
+        return !visibleBookmarks.isEmpty
+    }
+    #endif
+
+    private func showPageBookmarkIfNeeded(for pages: [Page]) {
+        #if QURAN_SYNC
+        let placements = pages.map(PlacedReadingBookmark.Placement.page)
+        let bookmark = deps.annotationsObserver.latestReadingBookmark(at: placements)
+        presenter?.updateReadingBookmark(bookmark)
+        #else
+        presenter?.updateBookmark(bookmarked(pages))
+        #endif
+    }
+}
+
+private extension AnalyticsLibrary {
+    func bookmarkPage(_ page: Page) {
+        logEvent("BookmarkPage", value: page.pageNumber.description)
+    }
+}

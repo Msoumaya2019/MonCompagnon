@@ -1,0 +1,41 @@
+{
+  "playing" : {
+    "_0" : {
+      "endTime" : 33.093,
+      "files" : [
+        {
+          "frames" : [
+            {
+              "endTime" : null,
+              "startTime" : 269.197
+            },
+            {
+              "endTime" : 284.899,
+              "startTime" : 275.881
+            }
+          ],
+          "url" : "\/audio_files\/mishari_alafasy\/077.mp3"
+        },
+        {
+          "frames" : [
+            {
+              "endTime" : null,
+              "startTime" : 0
+            },
+            {
+              "endTime" : null,
+              "startTime" : 21.519
+            },
+            {
+              "endTime" : null,
+              "startTime" : 27.112
+            }
+          ],
+          "url" : "\/audio_files\/mishari_alafasy\/078.mp3"
+        }
+      ],
+      "frameRuns" : 1,
+      "requestRuns" : 1
+    }
+  }
+}

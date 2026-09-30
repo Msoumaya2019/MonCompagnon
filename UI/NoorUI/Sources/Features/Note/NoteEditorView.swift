@@ -1,0 +1,245 @@
+//
+//  NoteEditorView.swift
+//  Quran
+//
+//  Created by Afifi, Mohamed on 12/20/20.
+//  Copyright © 2020 Quran.com. All rights reserved.
+//
+
+import Localization
+import QuranAnnotations
+import QuranKit
+import SwiftUI
+import UIx
+
+@MainActor
+public struct NoteEditorView: View {
+    // MARK: Lifecycle
+
+    public init(
+        note: EditableNote,
+        showsColors: Bool = true,
+        done: @escaping () -> Void,
+        delete: @escaping AsyncAction
+    ) {
+        _note = StateObject(wrappedValue: note)
+        self.showsColors = showsColors
+        self.done = done
+        self.delete = delete
+    }
+
+    // MARK: Public
+
+    public var body: some View {
+        NoteEditorContent(
+            note: note,
+            showsColors: showsColors,
+            delete: delete
+        )
+        .populateThemeStyle()
+    }
+
+    // MARK: Internal
+
+    @StateObject var note: EditableNote
+
+    let showsColors: Bool
+    let done: () -> Void
+    let delete: AsyncAction
+}
+
+@MainActor
+private struct NoteEditorContent: View {
+    @ObservedObject var note: EditableNote
+
+    let showsColors: Bool
+    let delete: AsyncAction
+
+    @Environment(\.locale) private var locale
+    @Environment(\.themeStyle) private var themeStyle
+    @Environment(\.themeColors) private var themeColors
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @ScaledMetric private var highlightSpacing = 12.0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if verticalSizeClass != .compact && !showsColors {
+                quranDivider
+                quranText
+            }
+
+            if showsColors {
+                highlightPicker
+            }
+
+            if verticalSizeClass != .compact {
+                noteDivider
+            }
+
+            TextView(
+                $note.note,
+                editing: $note.editing,
+                textColor: themeStyle.textColor
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding()
+            .onTapGesture { } // Prevent the parent tap gesture from dismissing the keyboard.
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            footer
+        }
+        .foregroundColor(themeColors.text)
+        .background(themeColors.background.ignoresSafeArea())
+        .contentShape(Rectangle())
+        .onTapGesture {
+            note.editing = false
+        }
+        .onAppear {
+            note.editing = note.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
+    private var quranText: some View {
+        let text: MultipartText = "\(quran: note.ayahText, font: note.reading.quranFont, color: .clear, lineLimit: 2)"
+        return text
+            .view(ofSize: .footnote, alignment: .trailing)
+            .foregroundColor(.secondaryLabel)
+            .environment(\.layoutDirection, .rightToLeft)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding()
+    }
+
+    private var quranDivider: some View {
+        sectionDivider {
+            Text("✳︎")
+                .font(.title3)
+                .foregroundColor(themeColors.pageSeparatorLine)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var noteDivider: some View {
+        sectionDivider {
+            Text(l("notes.editor.note-divider"))
+                .font(.footnote)
+                .tracking(locale.isArabicLanguage ? 0 : 3)
+                .foregroundColor(themeColors.secondaryText)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
+        }
+    }
+
+    private var highlightPicker: some View {
+        HStack(spacing: highlightSpacing) {
+            ForEach(HighlightColor.sortedColors, id: \.self) { color in
+                Button {
+                    note.selectedColor = color
+                } label: {
+                    NoteCircle(color: color.color, selected: color == note.selectedColor)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top)
+        .padding(.bottom, verticalSizeClass == .compact ? 0 : nil)
+    }
+
+    private var footer: some View {
+        HStack(alignment: .firstTextBaseline) {
+            metadata
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            AsyncButton(action: delete) {
+                Text(l("notes.editor.delete"))
+                    .foregroundColor(.red)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+        .font(.footnote)
+        .padding()
+        .background(themeColors.background)
+        .overlay(alignment: .top) {
+            thinDivider
+        }
+    }
+
+    private var metadata: some View {
+        metadataText
+            .foregroundColor(themeColors.secondaryText)
+            .accessibilityLabel(Text(metadataAccessibilityLabel))
+    }
+
+    private var metadataText: Text {
+        let wordsCount = Text(lFormat("notes.editor.words-count", note.wordCount))
+        if note.modifiedSince.isEmpty {
+            return wordsCount
+        }
+
+        return Text(lFormat("notes.editor.created", note.modifiedSince)) + Text(" · ") + wordsCount
+    }
+
+    private var metadataAccessibilityLabel: String {
+        if note.modifiedSince.isEmpty {
+            return lFormat("notes.editor.words-count", note.wordCount)
+        }
+
+        return [
+            lFormat("notes.editor.created", note.modifiedSince),
+            lFormat("notes.editor.words-count", note.wordCount),
+        ].joined(separator: ", ")
+    }
+
+    private var thinDivider: some View {
+        Divider()
+            .overlay(themeColors.secondaryText.opacity(0.2))
+    }
+
+    private var dividerLine: some View {
+        Rectangle()
+            .fill(themeColors.pageSeparatorLine)
+            .frame(height: 1)
+    }
+
+    private func sectionDivider(
+        @ViewBuilder label: () -> some View
+    ) -> some View {
+        HStack(spacing: 16) {
+            dividerLine
+            label()
+            dividerLine
+        }
+        .padding(.horizontal)
+    }
+}
+
+@MainActor
+private struct NoteEditorPreview: View {
+    let showsColors: Bool
+
+    var body: some View {
+        let verses = Quran.hafsMadani1405.suras[15].verses
+        NoteEditorView(
+            note: EditableNote(
+                ayahRange: verses[34] ... verses[35],
+                ayahText: "وَقَالَ ٱلَّذِينَ أَشْرَكُوا۟ لَوْ شَآءَ ٱللَّهُ مَا عَبَدْنَا مِن دُونِهِۦ مِن شَىْءٍ نَّحْنُ وَلَآ ءَابَآؤُنَا",
+                reading: .hafs_1405,
+                modifiedSince: Date(timeIntervalSince1970: 1).timeAgo(),
+                selectedColor: .blue,
+                note: "The “if Allah willed” excuse — the same argument every nation made. Cross-ref 6:148."
+            ),
+            showsColors: showsColors,
+            done: {},
+            delete: {}
+        )
+    }
+}
+
+#Preview("Synced note") {
+    NoteEditorPreview(showsColors: false)
+}
+
+#Preview("Legacy note") {
+    NoteEditorPreview(showsColors: true)
+}
