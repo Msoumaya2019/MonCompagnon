@@ -114,11 +114,15 @@ final class LearningSetupDraftTests: XCTestCase {
     /// Sans jour de travail, l'étape des jours bloque — et aucune fin n'est estimable.
     func test_noWorkingDay_blocksTheDaysStepAndTheEstimate() {
         var draft = makeDraft()
+        // Un objectif est nécessaire : sans lui le programme est vide, et une estimation de fin
+        // « déjà terminé » court-circuite la question des jours. C'est bien « aucun jour » que ce
+        // test interroge, pas « rien à apprendre ».
+        draft.toggleGoal(juz30)
         draft.go(to: .days)
         draft.days = []
 
-        XCTAssertFalse(draft.canAdvance)
-        XCTAssertNil(draft.summary(from: day0).estimatedEndDate)
+        XCTAssertFalse(draft.canAdvance, "sans jour de travail, l'étape ne se franchit pas")
+        XCTAssertNil(draft.summary(from: day0).estimatedEndDate, "et il n'y a alors pas de fin")
     }
 
     // MARK: - Ce que je connais
@@ -196,7 +200,16 @@ final class LearningSetupDraftTests: XCTestCase {
         descending.toggleGoal(juz30)
         descending.toggleGoal(QuranRange(quran.juzs[0]))
 
-        XCTAssertEqual(ascending, descending)
+        // Comparer les deux brouillons entiers serait trop fort : chaque déclaration porte un
+        // identifiant neuf, et deux saisies dans un ordre différent en engendrent de différents.
+        // Ce qui doit être identique, c'est ce qui décide — intervalles, solidité, objectifs,
+        // allure, jours — et leur ordre.
+        XCTAssertEqual(ascending.known.map(\.range), descending.known.map(\.range))
+        XCTAssertEqual(ascending.known.map(\.solidity), descending.known.map(\.solidity))
+        XCTAssertEqual(ascending.goals.map(\.range), descending.goals.map(\.range))
+        XCTAssertEqual(ascending.days, descending.days)
+        XCTAssertEqual(ascending.pace, descending.pace)
+        XCTAssertEqual(ascending.sessionMinutes, descending.sessionMinutes)
         XCTAssertEqual(ascending.goals.map(\.range.firstSura), [1, 78], "les objectifs sont rangés")
         XCTAssertEqual(ascending.known.map(\.range.firstSura), [2, 78], "les acquis sont rangés")
     }
