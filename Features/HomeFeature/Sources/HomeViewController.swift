@@ -37,6 +37,9 @@ final class HomeViewController: UIHostingController<HomeView> {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         viewModel.setListVisible(true)
+        // L'apprentissage vit dans un autre onglet : revenir ici doit montrer ce qu'on y a appris,
+        // sans avoir à relancer l'application.
+        viewModel.refreshCoverage()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -62,6 +65,7 @@ final class HomeViewController: UIHostingController<HomeView> {
     private func configureSegmentedControl() {
         segmentedControl.insertSegment(withTitle: lAndroid("quran_sura"), at: 0, animated: false)
         segmentedControl.insertSegment(withTitle: lAndroid("quran_juz2"), at: 1, animated: false)
+        segmentedControl.insertSegment(withTitle: lAndroid("quran_hizb"), at: 2, animated: false)
         segmentedControl.selectedSegmentIndex = viewModel.type.rawValue
         segmentedControl.addTarget(self, action: #selector(segmentChanged), for: .valueChanged)
         navigationItem.titleView = segmentedControl
@@ -137,6 +141,8 @@ final class HomeViewController: UIHostingController<HomeView> {
             navigationItem.title = lAndroid("quran_sura")
         case .juzs:
             navigationItem.title = lAndroid("quran_juz2")
+        case .hizbs:
+            navigationItem.title = lAndroid("quran_hizb")
         }
         viewModel.type = type
     }

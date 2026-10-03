@@ -1,3 +1,6 @@
+"learning.coverage.complete" = "Tout est appris";
+"learning.coverage.none" = "Rien d’appris";
+"learning.coverage.partial" = "%d / %d versets";
 "learning.dashboard.consolidate" = "À consolider";
 "learning.dashboard.consolidate.none" = "Rien de fragile pour l’instant.";
 "learning.dashboard.consolidated" = "Passages consolidés";

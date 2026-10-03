@@ -1,3 +1,6 @@
+"learning.coverage.complete" = "All %d verses";
+"learning.coverage.none" = "Nothing learned";
+"learning.coverage.partial" = "%d / %d verses";
 "learning.dashboard.consolidate" = "To consolidate";
 "learning.dashboard.consolidate.none" = "Nothing fragile for now.";
 "learning.dashboard.consolidated" = "Consolidated passages";

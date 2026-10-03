@@ -34,6 +34,7 @@ public struct HomeBuilder {
             lastPageService: container.lastPageService(),
             textRetriever: textRetriever,
             readingBookmarkService: container.readingBookmarkService(),
+            learningPersistence: container.learningPersistence,
             navigateToPage: { [weak listener] page, lastPage in
                 listener?.navigateTo(page: page, lastPage: lastPage)
             },
@@ -45,6 +46,7 @@ public struct HomeBuilder {
         let viewModel = HomeViewModel(
             lastPageService: container.lastPageService(),
             textRetriever: textRetriever,
+            learningPersistence: container.learningPersistence,
             navigateToPage: { [weak listener] page, lastPage in
                 listener?.navigateTo(page: page, lastPage: lastPage)
             },

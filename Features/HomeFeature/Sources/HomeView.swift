@@ -6,6 +6,7 @@
 //
 
 import FeaturesSupport
+import LearningKit
 import Localization
 import NoorUI
 import QuranAnnotations
@@ -26,12 +27,15 @@ struct HomeView: View {
             lastPages: viewModel.lastPages,
             suras: viewModel.suras,
             quarters: viewModel.quarters,
+            hizbs: viewModel.hizbs,
+            coverage: viewModel.coverage,
             quranFont: viewModel.reading.quranFont,
             start: { await viewModel.start() },
             selectReadingBookmark: { viewModel.navigateTo($0) },
             selectLastPage: { viewModel.navigateTo($0) },
             selectSura: { viewModel.navigateTo($0) },
             selectQuarter: { viewModel.navigateTo($0) },
+            selectHizb: { viewModel.navigateTo($0) },
             surahSortOrder: viewModel.surahSortOrder,
             isJuzExpanded: { viewModel.isJuzExpanded($0) },
             setJuzExpanded: { viewModel.setJuz($0, expanded: $1) }
@@ -42,11 +46,14 @@ struct HomeView: View {
             lastPages: viewModel.lastPages,
             suras: viewModel.suras,
             quarters: viewModel.quarters,
+            hizbs: viewModel.hizbs,
+            coverage: viewModel.coverage,
             quranFont: viewModel.reading.quranFont,
             start: { await viewModel.start() },
             selectLastPage: { viewModel.navigateTo($0) },
             selectSura: { viewModel.navigateTo($0) },
             selectQuarter: { viewModel.navigateTo($0) },
+            selectHizb: { viewModel.navigateTo($0) },
             surahSortOrder: viewModel.surahSortOrder,
             isJuzExpanded: { viewModel.isJuzExpanded($0) },
             setJuzExpanded: { viewModel.setJuz($0, expanded: $1) }
@@ -63,6 +70,10 @@ private struct HomeViewUI: View {
     let lastPages: [LastPage]
     let suras: [Sura]
     let quarters: [QuarterItem]
+    let hizbs: [HizbItem]
+    /// Ce qui est appris. `nil` tant que le relevé n'a pas été fait : une ligne ne doit alors rien
+    /// affirmer sur l'avancement, plutôt que d'affirmer qu'il n'y en a aucun.
+    let coverage: LearningCoverageReport?
     let quranFont: QuranFont
 
     let start: AsyncAction
@@ -73,6 +84,7 @@ private struct HomeViewUI: View {
     let selectLastPage: ItemAction<LastPage>
     let selectSura: ItemAction<Sura>
     let selectQuarter: ItemAction<QuarterItem>
+    let selectHizb: ItemAction<HizbItem>
     let surahSortOrder: SurahSortOrder
     let isJuzExpanded: (Juz) -> Bool
     let setJuzExpanded: (Juz, Bool) -> Void
@@ -101,6 +113,10 @@ private struct HomeViewUI: View {
                     sectionsView(items: quarters, groupBy: \.quarter.juz) { quarter in
                         quarterView(quarter)
                     }
+                case .hizbs:
+                    sectionsView(items: hizbs, groupBy: \.hizb.juz) { hizb in
+                        hizbView(hizb)
+                    }
                 }
             }
             // iOS 15's SwiftUI List produces invalid UITableView batch updates when
@@ -117,9 +133,14 @@ private struct HomeViewUI: View {
         if !Locale.preferredLanguageLocale.isArabicLanguage {
             subtitleComponents.insert(sura.localizedTranslatedName(), at: 0)
         }
+        let style = LearningCoverageStyle(report: coverage, group: sura)
+        if let label = style?.label {
+            subtitleComponents.append(label)
+        }
         let subtitle = subtitleComponents.joined(separator: " · ")
 
         return NoorListItem(
+            leadingEdgeLineColor: style?.edgeColor,
             title: "\(sura.localizedSuraNumber). \(sura: sura)",
             subtitle: .init(text: .text(subtitle), location: .bottom),
             accessory: .text(sura.page.localizedNumber, accessibilityLabel: sura.page.localizedName),
@@ -131,13 +152,38 @@ private struct HomeViewUI: View {
         let quarter = item.quarter
         let ayah = quarter.firstVerse
         let page = ayah.page
+        let style = LearningCoverageStyle(report: coverage, group: quarter)
 
         return NoorListItem(
+            leadingEdgeLineColor: style?.edgeColor,
             subheading: .text(quarter.localizedName),
             title: "\(ayah: ayah)",
             rightSubtitle: "\(quran: item.ayahText, font: quranFont, lineLimit: 1)",
+            subtitle: style.map { NoorListItem.Subtitle(text: .text($0.label), location: .bottom) },
             accessory: .text(page.localizedNumber, accessibilityLabel: page.localizedName),
             action: .sync { selectQuarter(item) }
+        )
+    }
+
+    /// La ligne d'un hizb : même forme que celle d'un rubu'.
+    ///
+    /// Les deux groupes sont des plages de versets du même genre, et les montrer différemment
+    /// n'apprendrait rien à l'utilisateur. Seul le sous-titre change — « Hizb 12 » au lieu de
+    /// « Hizb 12 نصف » — parce que c'est le nom du groupe lui-même.
+    func hizbView(_ item: HizbItem) -> some View {
+        let hizb = item.hizb
+        let ayah = hizb.firstVerse
+        let page = ayah.page
+        let style = LearningCoverageStyle(report: coverage, group: hizb)
+
+        return NoorListItem(
+            leadingEdgeLineColor: style?.edgeColor,
+            subheading: .text(hizb.localizedName),
+            title: "\(ayah: ayah)",
+            rightSubtitle: "\(quran: item.ayahText, font: quranFont, lineLimit: 1)",
+            subtitle: style.map { NoorListItem.Subtitle(text: .text($0.label), location: .bottom) },
+            accessory: .text(page.localizedNumber, accessibilityLabel: page.localizedName),
+            action: .sync { selectHizb(item) }
         )
     }
 
@@ -159,6 +205,8 @@ private struct HomeViewUI: View {
                     surahSortOrder.rawValue * (thisSura.suraNumber - thatSura.suraNumber) < 0
                 case let (thisQuarter as QuarterItem, thatQuarter as QuarterItem):
                     surahSortOrder.rawValue * (thisQuarter.quarter.quarterNumber - thatQuarter.quarter.quarterNumber) < 0
+                case let (thisHizb as HizbItem, thatHizb as HizbItem):
+                    surahSortOrder.rawValue * (thisHizb.hizb.hizbNumber - thatHizb.hizb.hizbNumber) < 0
                 default:
                     false
                 }
@@ -177,6 +225,26 @@ private struct HomeViewUI: View {
 @MainActor
 private struct HomePreview: View {
     static let ayahText: QuranText = "وَإِذۡ قَالَ مُوسَىٰ لِقَوۡمِهِۦ يَٰقَوۡمِ إِنَّكُمۡ ظَلَمۡتُمۡ أَنفُسَكُم بِٱتِّخَاذِكُمُ ٱلۡعِجۡلَ فَتُوبُوٓاْ إِلَىٰ بَارِئِكُمۡ فَٱقۡتُلُوٓاْ أَنفُسَكُمۡ ذَٰلِكُمۡ خَيۡرٞ لَّكُمۡ عِندَ بَارِئِكُمۡ فَتَابَ عَلَيۡكُمۡۚ إِنَّهُۥ هُوَ ٱلتَّوَّابُ ٱلرَّحِيمُ"
+
+    /// Un relevé de démonstration, pour que la maquette montre les **trois** états : Al-Fâtiha sue
+    /// en entier, le début d'Al-Baqarah sue à moitié, tout le reste inconnu.
+    static var previewCoverage: LearningCoverageReport {
+        LearningCoverageReport(
+            profile: LearningProfile(knownRanges: [
+                KnownRange(
+                    range: QuranRange(firstSura: 1, firstAyah: 1, lastSura: 1, lastAyah: 7),
+                    label: nil,
+                    solidity: .solide
+                ),
+                KnownRange(
+                    range: QuranRange(firstSura: 2, firstAyah: 1, lastSura: 2, lastAyah: 100),
+                    label: nil,
+                    solidity: .fragile
+                ),
+            ]),
+            program: LearningProgram()
+        )
+    }
 
     static var staticLastPages: [LastPage] {
         let pages = [0, 4, 49, 76, 105, 127, 150, 176, 200, 221].map { Quran.hafsMadani1405.pages[$0] }
@@ -233,12 +301,15 @@ private struct HomePreview: View {
                     lastPages: lastPages,
                     suras: quran.suras,
                     quarters: quran.quarters.map { QuarterItem(quarter: $0, ayahText: Self.ayahText) },
+                    hizbs: quran.hizbs.map { HizbItem(hizb: $0, ayahText: Self.ayahText) },
+                    coverage: Self.previewCoverage,
                     quranFont: .uthmanicHafs,
                     start: {},
                     selectReadingBookmark: { _ in },
                     selectLastPage: { _ in },
                     selectSura: { _ in },
                     selectQuarter: { _ in },
+                    selectHizb: { _ in },
                     surahSortOrder: .ascending,
                     isJuzExpanded: { !collapsedJuzs.contains($0) },
                     setJuzExpanded: { juz, expanded in
@@ -251,11 +322,14 @@ private struct HomePreview: View {
                     lastPages: lastPages,
                     suras: quran.suras,
                     quarters: quran.quarters.map { QuarterItem(quarter: $0, ayahText: Self.ayahText) },
+                    hizbs: quran.hizbs.map { HizbItem(hizb: $0, ayahText: Self.ayahText) },
+                    coverage: Self.previewCoverage,
                     quranFont: .uthmanicHafs,
                     start: {},
                     selectLastPage: { _ in },
                     selectSura: { _ in },
                     selectQuarter: { _ in },
+                    selectHizb: { _ in },
                     surahSortOrder: .ascending,
                     isJuzExpanded: { !collapsedJuzs.contains($0) },
                     setJuzExpanded: { juz, expanded in

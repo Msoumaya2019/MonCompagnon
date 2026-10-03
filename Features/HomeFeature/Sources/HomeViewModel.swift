@@ -9,6 +9,8 @@ import AnnotationsService
 import Combine
 import Crashing
 import Foundation
+import LearningKit
+import LearningPersistence
 import NoorUI
 import Preferences
 import QuranAnnotations
@@ -26,6 +28,13 @@ enum SurahSortOrder: Int, Codable {
 enum HomeViewType: Int {
     case suras
     case juzs
+    /// Le hizb, soixantième partie du Coran.
+    ///
+    /// Il a son propre segment plutôt que d'être un sous-niveau du juz' : c'est ainsi que
+    /// l'utilisateur en parle (« j'ai appris ce hizb »), et le hizb est déjà une unité de la
+    /// configuration de l'apprentissage. Le montrer sous le juz' aurait densifié la liste des
+    /// rubu' sans rien éclairer.
+    case hizbs
 }
 
 @MainActor
@@ -37,12 +46,14 @@ final class HomeViewModel: ObservableObject {
         lastPageService: any LastPageService,
         textRetriever: QuranTextDataService,
         readingBookmarkService: MobileSyncReadingBookmarkService,
+        learningPersistence: LearningPersistence,
         navigateToPage: @escaping (Page, LastPage?) -> Void,
         navigateToAyah: @escaping (AyahNumber) -> Void
     ) {
         self.lastPageService = lastPageService
         self.textRetriever = textRetriever
         self.readingBookmarkService = readingBookmarkService
+        self.learningPersistence = learningPersistence
         reading = ReadingPreferences.shared.reading
         self.navigateToPage = navigateToPage
         self.navigateToAyah = navigateToAyah
@@ -56,11 +67,13 @@ final class HomeViewModel: ObservableObject {
     init(
         lastPageService: any LastPageService,
         textRetriever: QuranTextDataService,
+        learningPersistence: LearningPersistence,
         navigateToPage: @escaping (Page, LastPage?) -> Void,
         navigateToAyah: @escaping (AyahNumber) -> Void
     ) {
         self.lastPageService = lastPageService
         self.textRetriever = textRetriever
+        self.learningPersistence = learningPersistence
         reading = ReadingPreferences.shared.reading
         self.navigateToPage = navigateToPage
         self.navigateToAyah = navigateToAyah
@@ -81,6 +94,17 @@ final class HomeViewModel: ObservableObject {
     @Published var quarters: [QuarterItem] = [] {
         didSet { recordListUpdate(reason: "quarters_loaded") }
     }
+
+    @Published var hizbs: [HizbItem] = [] {
+        didSet { recordListUpdate(reason: "hizbs_loaded") }
+    }
+
+    /// Ce qui est appris, pour marquer chaque ligne d'une liste.
+    ///
+    /// **Dérivé, et non stocké** : le relevé se recalcule à partir du profil et du programme
+    /// enregistrés, et rien n'est écrit. Il n'y a donc rien à migrer, et aucune seconde vérité à
+    /// tenir à jour.
+    @Published private(set) var coverage: LearningCoverageReport?
 
     @Published var lastPages: [LastPage] = [] {
         didSet { recordListUpdate(reason: "last_pages_changed") }
@@ -131,15 +155,32 @@ final class HomeViewModel: ObservableObject {
         recordListUpdate(reason: "section_expansion_changed")
     }
 
+    /// Relit l'avancement de l'apprentissage.
+    ///
+    /// Appelé à chaque apparition de l'écran, et non une seule fois au lancement : l'apprentissage
+    /// vit dans un autre onglet, et y apprendre une sourate doit se voir sur ces listes **sans
+    /// relancer l'application**. Le relevé est bon marché — il rassemble une fois les versets
+    /// appris — mais il n'a pas à être refait à chaque rendu de ligne : c'est pourquoi il est lu
+    /// ici et rangé, plutôt que calculé dans le corps de la vue.
+    func refreshCoverage() {
+        coverage = LearningCoverageReport(
+            profile: learningPersistence.loadProfile(),
+            program: learningPersistence.loadProgram(),
+            quran: reading.quran
+        )
+    }
+
     func start() async {
+        refreshCoverage()
         async let lastPages: () = loadLastPages()
         async let suras: () = loadSuras()
         async let quarters: () = loadQuarters()
+        async let hizbs: () = loadHizbs()
         #if QURAN_SYNC
         async let readingBookmarks: () = loadReadingBookmarks()
-        _ = await [lastPages, suras, quarters, readingBookmarks]
+        _ = await [lastPages, suras, quarters, hizbs, readingBookmarks]
         #else
-        _ = await [lastPages, suras, quarters]
+        _ = await [lastPages, suras, quarters, hizbs]
         #endif
     }
 
@@ -166,6 +207,10 @@ final class HomeViewModel: ObservableObject {
         navigateToAyah(item.quarter.firstVerse)
     }
 
+    func navigateTo(_ item: HizbItem) {
+        navigateToAyah(item.hizb.firstVerse)
+    }
+
     func toggleSurahSortOrder() {
         HomePreferences.shared.surahSortOrder = surahSortOrder == .ascending ? .descending : .ascending
     }
@@ -174,6 +219,7 @@ final class HomeViewModel: ObservableObject {
 
     private let lastPageService: any LastPageService
     private let textRetriever: QuranTextDataService
+    private let learningPersistence: LearningPersistence
     #if QURAN_SYNC
     private let readingBookmarkService: MobileSyncReadingBookmarkService
     #endif
@@ -254,32 +300,43 @@ final class HomeViewModel: ObservableObject {
         for await reading in readings {
             crashContext.setReading(id: String(describing: reading))
             let quarters = reading.quran.quarters
-            let quartersText = await textForQuarters(quarters)
-            let quarterItems = quarters.map { QuarterItem(quarter: $0, ayahText: quartersText[$0] ?? "") }
-            self.quarters = quarterItems
+            let text = await textForFirstVerses(quarters.map(\.firstVerse))
+            self.quarters = quarters.map { QuarterItem(quarter: $0, ayahText: text[$0.firstVerse] ?? "") }
         }
     }
 
-    private func textForQuarters(
-        _ quarters: [Quarter]
-    ) async -> [Quarter: QuranText] {
+    private func loadHizbs() async {
+        let readings = readingPreferences.$reading
+            .prepend(readingPreferences.reading)
+            .values()
+
+        for await reading in readings {
+            crashContext.setReading(id: String(describing: reading))
+            let hizbs = reading.quran.hizbs
+            let text = await textForFirstVerses(hizbs.map(\.firstVerse))
+            self.hizbs = hizbs.map { HizbItem(hizb: $0, ayahText: text[$0.firstVerse] ?? "") }
+        }
+    }
+
+    /// Le texte du premier verset de chaque groupe, pour la ligne de liste.
+    ///
+    /// Les deux sortes de groupes partagent le même besoin — un repère de texte sous leur nom — et
+    /// le même nettoyage : le premier verset d'un hizb comme d'un rubu' porte le signe ۞, qui n'a
+    /// pas sa place dans une liste. Une seule requête, donc, et un seul nettoyage.
+    private func textForFirstVerses(_ verses: [AyahNumber]) async -> [AyahNumber: QuranText] {
         do {
-            let verses = Array(quarters.map(\.firstVerse))
             let verseTexts = try await textRetriever.textForVerses(verses, translations: [])
-            return cleanUpText(quarters: quarters, verseTexts: verseTexts)
+            return cleanUpText(verseTexts)
         } catch {
-            crasher.recordError(error, reason: "Failed to retrieve quarters text")
+            crasher.recordError(error, reason: "Failed to retrieve groups text")
             return [:]
         }
     }
 
-    private func cleanUpText(quarters: [Quarter], verseTexts: [AyahNumber: VerseText]) -> [Quarter: QuranText] {
+    private func cleanUpText(_ verseTexts: [AyahNumber: VerseText]) -> [AyahNumber: QuranText] {
         let quarterStart = "۞" // Hizb marker
-        let cleanedVersesText = verseTexts.mapValues {
+        return verseTexts.mapValues {
             QuranText($0.arabicText.text.replacingOccurrences(of: quarterStart, with: ""))
-        }
-        return quarters.reduce(into: [Quarter: QuranText]()) { partialResult, quarter in
-            partialResult[quarter] = cleanedVersesText[quarter.firstVerse]
         }
     }
 
@@ -291,6 +348,7 @@ final class HomeViewModel: ObservableObject {
         switch type {
         case .suras: "suras"
         case .juzs: "juzs"
+        case .hizbs: "hizbs"
         }
     }
 
@@ -312,6 +370,8 @@ final class HomeViewModel: ObservableObject {
             count += suras.count
         case .juzs:
             count += quarters.count
+        case .hizbs:
+            count += hizbs.count
         }
         return count
     }
@@ -323,6 +383,8 @@ final class HomeViewModel: ObservableObject {
             count += Set(suras.map(\.page.startJuz)).count
         case .juzs:
             count += Set(quarters.map(\.quarter.juz)).count
+        case .hizbs:
+            count += Set(hizbs.map(\.hizb.juz)).count
         }
         return count
     }
