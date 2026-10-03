@@ -261,8 +261,8 @@ private struct HomeViewUI: View {
     /// les réglages de l'apprentissage. L'état, lui, ignore délibérément les échéances : il dit ce
     /// qu'on sait, jamais ce qu'on doit.
     @ViewBuilder
-    func markable<Row: View>(
-        _ row: Row,
+    func markable(
+        _ row: some View,
         group: some QuranGroup,
         name: String,
         apply: @escaping Action
