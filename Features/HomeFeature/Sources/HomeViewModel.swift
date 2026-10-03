@@ -211,6 +211,27 @@ final class HomeViewModel: ObservableObject {
         navigateToAyah(item.hizb.firstVerse)
     }
 
+    /// Déclare un groupe connu, puis refait le programme.
+    ///
+    /// C'est l'opération la plus lourde du module : elle ajoute un acquis au profil et régénère
+    /// **tous** les passages. Ce qui la rend sûre ne vit pas ici — c'est `regenerateProgram`, qui
+    /// relit lui-même l'ancien programme pour reporter ce qui a été appris, et un test du magasin
+    /// le garde. La confirmer avant de l'appliquer, en revanche, appartient à l'écran.
+    ///
+    /// Une déclaration déjà faite n'est pas répétée : deux gestes sur la même ligne ne doivent pas
+    /// empiler deux fois le même intervalle dans le profil.
+    func markAsKnown(_ group: some QuranGroup, label: String) {
+        var profile = learningPersistence.loadProfile()
+        let range = QuranRange(group)
+        guard !profile.knownRanges.contains(where: { $0.range == range }) else {
+            return
+        }
+        profile.knownRanges.append(KnownRange(range: range, label: label, solidity: .solide))
+        learningPersistence.saveProfile(profile)
+        learningPersistence.regenerateProgram(for: profile, from: Date())
+        refreshCoverage()
+    }
+
     func toggleSurahSortOrder() {
         HomePreferences.shared.surahSortOrder = surahSortOrder == .ascending ? .descending : .ascending
     }

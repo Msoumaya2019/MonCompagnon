@@ -55,6 +55,10 @@
 "learning.known.detail" = "Tap what you already know. Nothing is required.";
 "learning.known.fragile" = "To review";
 "learning.known.fragile.detail" = "You know it but forget it: it will come back as review.";
+"learning.known.mark" = "Mark as known";
+"learning.known.mark.confirm" = "Mark";
+"learning.known.mark.message" = "%@ will join what you know: its %d verses will leave the programme. What you have already learned is kept.";
+"learning.known.mark.title" = "Mark as known?";
 "learning.known.scratch" = "Start from scratch";
 "learning.known.solid" = "Solid";
 "learning.known.solid.detail" = "You recite it without hesitating: it will not be scheduled.";

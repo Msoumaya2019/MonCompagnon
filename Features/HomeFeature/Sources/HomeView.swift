@@ -36,6 +36,9 @@ struct HomeView: View {
             selectSura: { viewModel.navigateTo($0) },
             selectQuarter: { viewModel.navigateTo($0) },
             selectHizb: { viewModel.navigateTo($0) },
+            markSuraAsKnown: { viewModel.markAsKnown($0, label: $0.localizedName()) },
+            markQuarterAsKnown: { viewModel.markAsKnown($0.quarter, label: $0.quarter.localizedName) },
+            markHizbAsKnown: { viewModel.markAsKnown($0.hizb, label: $0.hizb.localizedName) },
             surahSortOrder: viewModel.surahSortOrder,
             isJuzExpanded: { viewModel.isJuzExpanded($0) },
             setJuzExpanded: { viewModel.setJuz($0, expanded: $1) }
@@ -54,6 +57,9 @@ struct HomeView: View {
             selectSura: { viewModel.navigateTo($0) },
             selectQuarter: { viewModel.navigateTo($0) },
             selectHizb: { viewModel.navigateTo($0) },
+            markSuraAsKnown: { viewModel.markAsKnown($0, label: $0.localizedName()) },
+            markQuarterAsKnown: { viewModel.markAsKnown($0.quarter, label: $0.quarter.localizedName) },
+            markHizbAsKnown: { viewModel.markAsKnown($0.hizb, label: $0.hizb.localizedName) },
             surahSortOrder: viewModel.surahSortOrder,
             isJuzExpanded: { viewModel.isJuzExpanded($0) },
             setJuzExpanded: { viewModel.setJuz($0, expanded: $1) }
@@ -85,9 +91,18 @@ private struct HomeViewUI: View {
     let selectSura: ItemAction<Sura>
     let selectQuarter: ItemAction<QuarterItem>
     let selectHizb: ItemAction<HizbItem>
+    let markSuraAsKnown: ItemAction<Sura>
+    let markQuarterAsKnown: ItemAction<QuarterItem>
+    let markHizbAsKnown: ItemAction<HizbItem>
     let surahSortOrder: SurahSortOrder
     let isJuzExpanded: (Juz) -> Bool
     let setJuzExpanded: (Juz, Bool) -> Void
+
+    /// La déclaration en attente de confirmation, ou `nil`.
+    ///
+    /// L'état vit ici, et non dans le modèle de vue : c'est une affaire d'écran, et le magasin ne
+    /// doit rien savoir d'une intention qu'on peut encore annuler.
+    @State private var pendingKnown: PendingKnown? = nil
 
     var body: some View {
         ZStack {
@@ -124,6 +139,32 @@ private struct HomeViewUI: View {
             .id(surahSortOrder.rawValue)
         }
         .task { await start() }
+        .alert(
+            l("learning.known.mark.title", table: .learning),
+            isPresented: isConfirmingKnown,
+            presenting: pendingKnown
+        ) { pending in
+            Button(l("learning.known.mark.confirm", table: .learning)) {
+                pending.confirm()
+                pendingKnown = nil
+            }
+            Button(lAndroid("cancel"), role: .cancel) {
+                pendingKnown = nil
+            }
+        } message: { pending in
+            Text(lFormat("learning.known.mark.message", table: .learning, pending.groupName, pending.verseCount))
+        }
+    }
+
+    /// La confirmation ouverte, vue comme un booléen.
+    ///
+    /// C'est la forme qu'attend `alert(isPresented:)`, et le seul endroit où l'on remet l'intention
+    /// à zéro : fermer l'alerte — par un bouton ou autrement — annule la déclaration.
+    private var isConfirmingKnown: Binding<Bool> {
+        Binding(
+            get: { pendingKnown != nil },
+            set: { if !$0 { pendingKnown = nil } }
+        )
     }
 
     func suraView(_ sura: Sura) -> some View {
@@ -139,12 +180,17 @@ private struct HomeViewUI: View {
         }
         let subtitle = subtitleComponents.joined(separator: " · ")
 
-        return NoorListItem(
-            leadingEdgeLineColor: style?.edgeColor,
-            title: "\(sura.localizedSuraNumber). \(sura: sura)",
-            subtitle: .init(text: .text(subtitle), location: .bottom),
-            accessory: .text(sura.page.localizedNumber, accessibilityLabel: sura.page.localizedName),
-            action: .sync { selectSura(sura) }
+        return markable(
+            NoorListItem(
+                leadingEdgeLineColor: style?.edgeColor,
+                title: "\(sura.localizedSuraNumber). \(sura: sura)",
+                subtitle: .init(text: .text(subtitle), location: .bottom),
+                accessory: .text(sura.page.localizedNumber, accessibilityLabel: sura.page.localizedName),
+                action: .sync { selectSura(sura) }
+            ),
+            group: sura,
+            name: sura.localizedName(),
+            apply: { markSuraAsKnown(sura) }
         )
     }
 
@@ -154,14 +200,19 @@ private struct HomeViewUI: View {
         let page = ayah.page
         let style = LearningCoverageStyle(report: coverage, group: quarter)
 
-        return NoorListItem(
-            leadingEdgeLineColor: style?.edgeColor,
-            subheading: .text(quarter.localizedName),
-            title: "\(ayah: ayah)",
-            rightSubtitle: "\(quran: item.ayahText, font: quranFont, lineLimit: 1)",
-            subtitle: style.map { NoorListItem.Subtitle(text: .text($0.label), location: .bottom) },
-            accessory: .text(page.localizedNumber, accessibilityLabel: page.localizedName),
-            action: .sync { selectQuarter(item) }
+        return markable(
+            NoorListItem(
+                leadingEdgeLineColor: style?.edgeColor,
+                subheading: .text(quarter.localizedName),
+                title: "\(ayah: ayah)",
+                rightSubtitle: "\(quran: item.ayahText, font: quranFont, lineLimit: 1)",
+                subtitle: style.map { NoorListItem.Subtitle(text: .text($0.label), location: .bottom) },
+                accessory: .text(page.localizedNumber, accessibilityLabel: page.localizedName),
+                action: .sync { selectQuarter(item) }
+            ),
+            group: quarter,
+            name: quarter.localizedName,
+            apply: { markQuarterAsKnown(item) }
         )
     }
 
@@ -176,15 +227,61 @@ private struct HomeViewUI: View {
         let page = ayah.page
         let style = LearningCoverageStyle(report: coverage, group: hizb)
 
-        return NoorListItem(
-            leadingEdgeLineColor: style?.edgeColor,
-            subheading: .text(hizb.localizedName),
-            title: "\(ayah: ayah)",
-            rightSubtitle: "\(quran: item.ayahText, font: quranFont, lineLimit: 1)",
-            subtitle: style.map { NoorListItem.Subtitle(text: .text($0.label), location: .bottom) },
-            accessory: .text(page.localizedNumber, accessibilityLabel: page.localizedName),
-            action: .sync { selectHizb(item) }
+        return markable(
+            NoorListItem(
+                leadingEdgeLineColor: style?.edgeColor,
+                subheading: .text(hizb.localizedName),
+                title: "\(ayah: ayah)",
+                rightSubtitle: "\(quran: item.ayahText, font: quranFont, lineLimit: 1)",
+                subtitle: style.map { NoorListItem.Subtitle(text: .text($0.label), location: .bottom) },
+                accessory: .text(page.localizedNumber, accessibilityLabel: page.localizedName),
+                action: .sync { selectHizb(item) }
+            ),
+            group: hizb,
+            name: hizb.localizedName,
+            apply: { markHizbAsKnown(item) }
         )
+    }
+
+    /// La ligne, augmentée du geste qui déclare son groupe connu.
+    ///
+    /// Le menu contextuel est ce qui rend le geste **découvrable** : rien, sur la ligne, ne dirait
+    /// autrement qu'on peut la cocher. C'est aussi le seul appui long que SwiftUI gère sans entrer
+    /// en conflit avec le défilement de la liste — un `onLongPressGesture` posé sur une ligne le
+    /// fait. **Premier emploi dans l'application** : le dépôt n'avait jusqu'ici aucun menu
+    /// contextuel.
+    ///
+    /// Le geste n'est posé que s'il a quelque chose à faire. Un groupe déjà su en entier n'a rien à
+    /// rejoindre : proposer « marquer comme connue » pour ne rien faire ensuite serait un mensonge,
+    /// et coûterait une confirmation pour rien.
+    ///
+    /// **Limite assumée.** Un groupe su en entier par le programme, mais encore en révision, porte
+    /// l'état `.complete` : le geste ne lui est donc pas offert. C'est voulu — le geste dit « je la
+    /// connais », pas « cessez de me la faire réviser », qui est une autre décision et se prend dans
+    /// les réglages de l'apprentissage. L'état, lui, ignore délibérément les échéances : il dit ce
+    /// qu'on sait, jamais ce qu'on doit.
+    @ViewBuilder
+    func markable<Row: View>(
+        _ row: Row,
+        group: some QuranGroup,
+        name: String,
+        apply: @escaping Action
+    ) -> some View {
+        if let report = coverage, report.coverage(of: group) == .complete {
+            row
+        } else {
+            row.contextMenu {
+                Button {
+                    pendingKnown = PendingKnown(
+                        groupName: name,
+                        verseCount: group.verses.count,
+                        confirm: apply
+                    )
+                } label: {
+                    Label(l("learning.known.mark", table: .learning), systemImage: "checkmark.circle")
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -220,6 +317,21 @@ private struct HomeViewUI: View {
             }
         }
     }
+}
+
+/// Une déclaration de groupe connu, en attente de confirmation.
+///
+/// La confirmation n'est pas une politesse. Déclarer un groupe connu ajoute un acquis au profil
+/// puis refait **tous** les passages : c'est l'opération la plus lourde du module, et la seule qui
+/// retire des passages du programme. L'intention est donc rangée ici, avec de quoi l'annoncer, tant
+/// que l'utilisateur n'a pas tranché.
+///
+/// Elle vit dans la vue, et non dans le modèle de vue : le magasin ne doit rien savoir d'une
+/// intention qu'on peut encore annuler.
+private struct PendingKnown {
+    let groupName: String
+    let verseCount: Int
+    let confirm: Action
 }
 
 @MainActor
@@ -310,6 +422,9 @@ private struct HomePreview: View {
                     selectSura: { _ in },
                     selectQuarter: { _ in },
                     selectHizb: { _ in },
+                    markSuraAsKnown: { _ in },
+                    markQuarterAsKnown: { _ in },
+                    markHizbAsKnown: { _ in },
                     surahSortOrder: .ascending,
                     isJuzExpanded: { !collapsedJuzs.contains($0) },
                     setJuzExpanded: { juz, expanded in
@@ -330,6 +445,9 @@ private struct HomePreview: View {
                     selectSura: { _ in },
                     selectQuarter: { _ in },
                     selectHizb: { _ in },
+                    markSuraAsKnown: { _ in },
+                    markQuarterAsKnown: { _ in },
+                    markHizbAsKnown: { _ in },
                     surahSortOrder: .ascending,
                     isJuzExpanded: { !collapsedJuzs.contains($0) },
                     setJuzExpanded: { juz, expanded in

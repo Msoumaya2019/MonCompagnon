@@ -55,6 +55,10 @@
 "learning.known.detail" = "Touchez ce que vous connaissez déjà. Rien n’est obligatoire.";
 "learning.known.fragile" = "À revoir";
 "learning.known.fragile.detail" = "Vous le connaissez mais vous l’oubliez : il reviendra en révision.";
+"learning.known.mark" = "Marquer comme connue";
+"learning.known.mark.confirm" = "Marquer";
+"learning.known.mark.message" = "%@ rejoindra ce que vous connaissez : ses %d versets quitteront le programme. Ce que vous avez déjà appris est conservé.";
+"learning.known.mark.title" = "Marquer comme connue ?";
 "learning.known.scratch" = "Je commence de zéro";
 "learning.known.solid" = "Solide";
 "learning.known.solid.detail" = "Vous le récitez sans hésiter : il ne sera pas programmé.";

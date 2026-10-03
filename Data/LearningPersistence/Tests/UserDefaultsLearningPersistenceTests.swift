@@ -205,6 +205,44 @@ final class UserDefaultsLearningPersistenceTests: XCTestCase {
         XCTAssertTrue(persistence.regenerateProgram(for: profile, from: day(0)).isEmpty)
     }
 
+    /// Déclarer connue une sourate qu'on a déjà commencé à apprendre.
+    ///
+    /// C'est le geste de la liste des sourates, et le seul endroit où la déclaration et l'acquis se
+    /// rencontrent sur la même sourate : l'objectif est retranché du programme, qui devient vide,
+    /// alors qu'un travail a déjà été fait. Deux choses doivent y survivre — l'avancement, et ce que
+    /// la liste en lit.
+    func testDeclaringAPartiallyLearnedSurahKnownKeepsWhatWasLearned() {
+        var profile = learningProfile(pace: .doux)
+        var program = persistence.regenerateProgram(for: profile, from: day(0))
+        for item in program.items.prefix(2) {
+            program.markLearned(id: item.id, at: day(0), calendar: calendar)
+        }
+        persistence.saveProgram(program)
+        let acquired = persistence.loadProgress().lastMemorizedVerse(inSurah: 78)
+        XCTAssertGreaterThan(acquired, 0)
+
+        // Le geste : la sourate entière rejoint ce qui est connu, en solide.
+        profile.knownRanges.append(KnownRange(range: goal, label: "An-Naba", solidity: .solide))
+        persistence.saveProfile(profile)
+
+        let regenerated = persistence.regenerateProgram(for: profile, from: day(2))
+
+        // Plus rien à programmer : tout l'objectif est déclaré connu.
+        XCTAssertTrue(regenerated.isEmpty)
+        XCTAssertTrue(persistence.loadProgram().isEmpty)
+        // Et rien de perdu : l'avancement reste dans le relevé, prêt à resservir si l'objectif
+        // revenait un jour.
+        XCTAssertEqual(persistence.loadProgress().lastMemorizedVerse(inSurah: 78), acquired)
+        // La liste doit lire la sourate comme sue — du profil **et** du programme réunis, puisque le
+        // programme, lui, ne dit plus rien d'elle.
+        let coverage = LearningCoverageReport(
+            profile: persistence.loadProfile(),
+            program: persistence.loadProgram(),
+            quran: quran
+        )
+        XCTAssertEqual(coverage.coverage(of: quran.suras[77]), .complete)
+    }
+
     func testRegeneratePreservesAcquiredProgressAcrossAPaceChange() {
         var profile = learningProfile(pace: .doux)
         var program = persistence.regenerateProgram(for: profile, from: day(0))
