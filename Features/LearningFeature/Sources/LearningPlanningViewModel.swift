@@ -30,6 +30,7 @@ final class LearningPlanningViewModel: ObservableObject {
         self.calendar = calendar
         self.now = now
         quran = persistence.quran
+        profile = persistence.loadProfile()
         program = persistence.loadProgram()
     }
 
@@ -183,13 +184,18 @@ final class LearningPlanningViewModel: ObservableObject {
         item.range.bounds(in: quran)?.first
     }
 
-    /// Relit le programme et rafraîchit l'instant de référence.
+    /// Relit le profil et le programme, et rafraîchit l'instant de référence.
+    ///
+    /// Le profil est relu **avec** le programme, et non une fois pour toutes : c'est lui qui porte
+    /// le rythme et les jours de travail, donc une configuration refaite dans l'autre onglet doit se
+    /// voir ici sans relancer l'application.
     ///
     /// L'instant est repris, et non conservé : un écran de planning laissé ouvert une nuit
     /// montrerait sinon la grille de la veille. Il est repris **une fois**, et les deux lectures —
     /// la grille et les listes — partagent le même, sans quoi elles se contrediraient.
     func reload() {
         now = Date()
+        profile = persistence.loadProfile()
         program = persistence.loadProgram()
     }
 
@@ -199,6 +205,7 @@ final class LearningPlanningViewModel: ObservableObject {
     private let calendar: Calendar
     private let quran: Quran
     private var now: Date
+    private var profile: LearningProfile
     private var program: LearningProgram
 
     /// Les jours de la période affichée, ou rien si l'onglet n'en a pas.
@@ -211,12 +218,21 @@ final class LearningPlanningViewModel: ObservableObject {
     ///
     /// La fenêtre va d'aujourd'hui au **dernier** jour de la période : le passé de la période n'est
     /// pas planifiable, et c'est `LearningProgram.schedule` qui ramène sur aujourd'hui tout ce qui
-    /// était dû avant.
+    /// était dû avant. Le **rythme** et les **jours de travail** viennent du profil : le planning ne
+    /// peut pas les deviner, et ce sont eux qui répartissent le dû au lieu de l'empiler.
     private func schedule() -> [LearningDayPlan] {
         guard let period = tab.period, let last = period.lastDay(containing: now, calendar: calendar) else {
             return []
         }
-        return program.schedule(from: now, through: last, now: now, calendar: calendar)
+        return program.schedule(
+            from: now,
+            through: last,
+            now: now,
+            versesPerDay: profile.versesPerSession,
+            workingDays: profile.days,
+            quran: quran,
+            calendar: calendar
+        )
     }
 
     /// Combien de passages sont dus à chaque jour de la période.
